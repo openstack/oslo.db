@@ -13,7 +13,7 @@
 
 from oslo.config import cfg
 
-from openstack.common.fixture import config
+from oslo.db.openstack.common.fixture import config
 from tests import utils as test_utils
 
 

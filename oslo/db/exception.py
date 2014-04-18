@@ -18,7 +18,7 @@
 
 import six
 
-from openstack.common.gettextutils import _
+from oslo.db.openstack.common.gettextutils import _
 
 
 class DBError(Exception):

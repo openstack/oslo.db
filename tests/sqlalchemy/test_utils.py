@@ -33,12 +33,12 @@ from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
 from oslo.db import exception
+from oslo.db.openstack.common.fixture import moxstubout
 from oslo.db.sqlalchemy import migration
 from oslo.db.sqlalchemy import models
 from oslo.db.sqlalchemy import session
 from oslo.db.sqlalchemy import test_migrations
 from oslo.db.sqlalchemy import utils
-from openstack.common.fixture import moxstubout
 from tests import utils as test_utils
 
 

@@ -51,7 +51,7 @@ import sqlalchemy
 from sqlalchemy.schema import UniqueConstraint
 
 from oslo.db import exception
-from openstack.common.gettextutils import _
+from oslo.db.openstack.common.gettextutils import _
 
 
 def _get_unique_constraints(self, table):

@@ -19,7 +19,7 @@ import mock
 
 from oslo.db import api
 from oslo.db import exception
-from openstack.common import importutils
+from oslo.db.openstack.common import importutils
 from tests import utils as test_utils
 
 sqla = importutils.import_module('sqlalchemy')
@@ -63,7 +63,7 @@ class DBAPI(object):
 
 class DBAPITestCase(test_utils.BaseTestCase):
     def test_dbapi_full_path_module_method(self):
-        dbapi = api.DBAPI('tests.unit.db.test_api')
+        dbapi = api.DBAPI('tests.test_api')
         result = dbapi.api_class_call1(1, 2, kwarg1='meow')
         expected = ((1, 2), {'kwarg1': 'meow'})
         self.assertEqual(expected, result)
@@ -72,7 +72,7 @@ class DBAPITestCase(test_utils.BaseTestCase):
         self.assertRaises(ImportError, api.DBAPI, 'tests.unit.db.not_existent')
 
     def test_dbapi_lazy_loading(self):
-        dbapi = api.DBAPI('tests.unit.db.test_api', lazy=True)
+        dbapi = api.DBAPI('tests.test_api', lazy=True)
 
         self.assertIsNone(dbapi._backend)
         dbapi.api_class_call1(1, 'abc')

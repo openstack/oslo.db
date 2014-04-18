@@ -13,7 +13,7 @@
 from stevedore import enabled
 
 
-MIGRATION_NAMESPACE = 'openstack.common.migration'
+MIGRATION_NAMESPACE = 'oslo.db.migration'
 
 
 def check_plugin_enabled(ext):

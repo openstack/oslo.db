@@ -291,8 +291,8 @@ from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
 
 from oslo.db import exception
-from openstack.common.gettextutils import _LE, _LW
-from openstack.common import timeutils
+from oslo.db.openstack.common.gettextutils import _LE, _LW
+from oslo.db.openstack.common import timeutils
 
 
 LOG = logging.getLogger(__name__)

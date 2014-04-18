@@ -26,8 +26,8 @@ import threading
 import time
 
 from oslo.db import exception
-from openstack.common.gettextutils import _LE
-from openstack.common import importutils
+from oslo.db.openstack.common.gettextutils import _LE
+from oslo.db.openstack.common import importutils
 
 
 LOG = logging.getLogger(__name__)

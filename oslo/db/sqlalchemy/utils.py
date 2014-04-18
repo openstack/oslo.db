@@ -36,10 +36,10 @@ from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy.types import NullType
 
-from openstack.common import context as request_context
+from oslo.db.openstack.common import context as request_context
+from oslo.db.openstack.common.gettextutils import _, _LI, _LW
+from oslo.db.openstack.common import timeutils
 from oslo.db.sqlalchemy import models
-from openstack.common.gettextutils import _, _LI, _LW
-from openstack.common import timeutils
 
 
 LOG = logging.getLogger(__name__)
