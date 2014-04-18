@@ -26,7 +26,7 @@ from six.moves.urllib import parse
 import sqlalchemy
 import sqlalchemy.exc
 
-from openstack.common.db.sqlalchemy import utils
+from oslo.db.sqlalchemy import utils
 from openstack.common.gettextutils import _LE
 
 LOG = logging.getLogger(__name__)

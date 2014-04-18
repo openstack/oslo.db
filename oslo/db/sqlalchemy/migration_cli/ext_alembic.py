@@ -16,8 +16,8 @@ import alembic
 from alembic import config as alembic_config
 import alembic.migration as alembic_migration
 
-from openstack.common.db.sqlalchemy.migration_cli import ext_base
-from openstack.common.db.sqlalchemy import session as db_session
+from oslo.db.sqlalchemy.migration_cli import ext_base
+from oslo.db.sqlalchemy import session as db_session
 
 
 class AlembicExtension(ext_base.MigrationExtensionBase):

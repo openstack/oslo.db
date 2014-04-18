@@ -18,8 +18,8 @@ from sqlalchemy import Column
 from sqlalchemy import Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
-from openstack.common.db.sqlalchemy import models
-from openstack.common.db.sqlalchemy import test_base
+from oslo.db.sqlalchemy import models
+from oslo.db.sqlalchemy import test_base
 
 
 BASE = declarative_base()

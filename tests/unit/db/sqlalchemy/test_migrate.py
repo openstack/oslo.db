@@ -17,8 +17,8 @@ from migrate.changeset.constraint import UniqueConstraint
 from migrate.changeset.databases import sqlite
 import sqlalchemy as sa
 
-from openstack.common.db.sqlalchemy import migration
-from openstack.common.db.sqlalchemy import test_base
+from oslo.db.sqlalchemy import migration
+from oslo.db.sqlalchemy import test_base
 
 
 def uniques(*constraints):

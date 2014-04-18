@@ -25,7 +25,7 @@ import logging
 import threading
 import time
 
-from openstack.common.db import exception
+from oslo.db import exception
 from openstack.common.gettextutils import _LE
 from openstack.common import importutils
 

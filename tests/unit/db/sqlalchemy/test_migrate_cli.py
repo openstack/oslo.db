@@ -13,9 +13,9 @@
 import mock
 from oslotest import base as test_base
 
-from openstack.common.db.sqlalchemy.migration_cli import ext_alembic
-from openstack.common.db.sqlalchemy.migration_cli import ext_migrate
-from openstack.common.db.sqlalchemy.migration_cli import manager
+from oslo.db.sqlalchemy.migration_cli import ext_alembic
+from oslo.db.sqlalchemy.migration_cli import ext_migrate
+from oslo.db.sqlalchemy.migration_cli import manager
 
 
 class MockWithCmp(mock.MagicMock):
@@ -26,7 +26,7 @@ class MockWithCmp(mock.MagicMock):
         return self.order > other.order
 
 
-@mock.patch(('openstack.common.db.sqlalchemy.migration_cli.'
+@mock.patch(('oslo.db.sqlalchemy.migration_cli.'
              'ext_alembic.alembic.command'))
 class TestAlembicExtension(test_base.BaseTestCase):
 
@@ -86,7 +86,7 @@ class TestAlembicExtension(test_base.BaseTestCase):
         self.assertIsNone(version)
 
 
-@mock.patch(('openstack.common.db.sqlalchemy.migration_cli.'
+@mock.patch(('oslo.db.sqlalchemy.migration_cli.'
              'ext_migrate.migration'))
 class TestMigrateExtension(test_base.BaseTestCase):
 

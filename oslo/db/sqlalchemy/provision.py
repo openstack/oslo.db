@@ -24,7 +24,7 @@ import string
 from six import moves
 import sqlalchemy
 
-from openstack.common.db import exception as exc
+from oslo.db import exception as exc
 
 
 LOG = logging.getLogger(__name__)

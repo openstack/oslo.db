@@ -17,7 +17,7 @@ from openstack.common.fixture import config
 from tests import utils as test_utils
 
 
-cfg.CONF.import_opt('connection', 'openstack.common.db.options',
+cfg.CONF.import_opt('connection', 'oslo.db.options',
                     group='database')
 
 

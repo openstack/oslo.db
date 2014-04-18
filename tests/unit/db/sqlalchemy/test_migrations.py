@@ -17,7 +17,7 @@
 import mock
 from oslotest import base as test_base
 
-from openstack.common.db.sqlalchemy import test_migrations as migrate
+from oslo.db.sqlalchemy import test_migrations as migrate
 
 
 class TestWalkVersions(test_base.BaseTestCase, migrate.WalkVersionsMixin):

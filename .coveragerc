@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = db
+omit = db/tests/*,db/openstack/*
+
+[report]
+ignore-errors = True

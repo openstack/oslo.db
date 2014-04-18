@@ -17,8 +17,8 @@
 
 import mock
 
-from openstack.common.db import api
-from openstack.common.db import exception
+from oslo.db import api
+from oslo.db import exception
 from openstack.common import importutils
 from tests import utils as test_utils
 

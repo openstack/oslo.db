@@ -23,9 +23,9 @@ from migrate.versioning import api as versioning_api
 import mock
 import sqlalchemy
 
-from openstack.common.db import exception as db_exception
-from openstack.common.db.sqlalchemy import migration
-from openstack.common.db.sqlalchemy import test_base
+from oslo.db import exception as db_exception
+from oslo.db.sqlalchemy import migration
+from oslo.db.sqlalchemy import test_base
 
 
 class TestMigrationCommon(test_base.DbTestCase):

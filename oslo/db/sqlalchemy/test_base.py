@@ -21,9 +21,9 @@ import fixtures
 from oslotest import base as test_base
 import six
 
-from openstack.common.db.sqlalchemy import provision
-from openstack.common.db.sqlalchemy import session
-from openstack.common.db.sqlalchemy import utils
+from oslo.db.sqlalchemy import provision
+from oslo.db.sqlalchemy import session
+from oslo.db.sqlalchemy import utils
 
 
 class DbFixture(fixtures.Fixture):

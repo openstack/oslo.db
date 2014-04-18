@@ -50,7 +50,7 @@ from migrate.versioning.repository import Repository
 import sqlalchemy
 from sqlalchemy.schema import UniqueConstraint
 
-from openstack.common.db import exception
+from oslo.db import exception
 from openstack.common.gettextutils import _
 
 

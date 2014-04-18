@@ -13,9 +13,9 @@
 import logging
 import os
 
-from openstack.common.db.sqlalchemy import migration
-from openstack.common.db.sqlalchemy.migration_cli import ext_base
-from openstack.common.db.sqlalchemy import session as db_session
+from oslo.db.sqlalchemy import migration
+from oslo.db.sqlalchemy.migration_cli import ext_base
+from oslo.db.sqlalchemy import session as db_session
 from openstack.common.gettextutils import _LE
 
 

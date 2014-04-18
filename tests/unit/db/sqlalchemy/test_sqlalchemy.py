@@ -29,10 +29,10 @@ from sqlalchemy import exc as sqla_exc
 from sqlalchemy.exc import DataError
 from sqlalchemy.ext.declarative import declarative_base
 
-from openstack.common.db import exception as db_exc
-from openstack.common.db.sqlalchemy import models
-from openstack.common.db.sqlalchemy import session
-from openstack.common.db.sqlalchemy import test_base
+from oslo.db import exception as db_exc
+from oslo.db.sqlalchemy import models
+from oslo.db.sqlalchemy import session
+from oslo.db.sqlalchemy import test_base
 
 
 BASE = declarative_base()
@@ -348,8 +348,8 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
         self.assertFalse(ses.autocommit)
         self.assertTrue(ses.expire_on_commit)
 
-    @mock.patch('openstack.common.db.sqlalchemy.session.get_maker')
-    @mock.patch('openstack.common.db.sqlalchemy.session.create_engine')
+    @mock.patch('oslo.db.sqlalchemy.session.get_maker')
+    @mock.patch('oslo.db.sqlalchemy.session.create_engine')
     def test_creation_from_config(self, create_engine, get_maker):
         conf = mock.MagicMock()
         conf.database.items.return_value = [
