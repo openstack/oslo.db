@@ -13,10 +13,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Multiple DB API backend support.
+"""
+=================================
+Multiple DB API backend support.
+=================================
 
 A DB backend module should implement a method named 'get_backend' which
-takes no arguments.  The method can return any object that implements DB
+takes no arguments. The method can return any object that implements DB
 API methods.
 """
 
@@ -35,19 +38,48 @@ LOG = logging.getLogger(__name__)
 
 
 def safe_for_db_retry(f):
-    """Enable db-retry for decorated function, if config option enabled."""
+    """Indicate api method as safe for re-connection to database.
+
+    Database connection retries will be enabled for the decorated api method.
+    Database connection failure can have many causes, which can be temporary.
+    In such cases retry may increase the likelihood of connection.
+
+    Usage::
+
+        @safe_for_db_retry
+        def api_method(self):
+            self.engine.connect()
+
+
+    :param f: database api method.
+    :type f: function.
+    """
     f.__dict__['enable_retry'] = True
     return f
 
 
 class wrap_db_retry(object):
-    """Retry db.api methods, if DBConnectionError() raised
+    """Decorator class. Retry db.api methods, if DBConnectionError() raised.
 
     Retry decorated db.api methods. If we enabled `use_db_reconnect`
     in config, this decorator will be applied to all db.api functions,
     marked with @safe_for_db_retry decorator.
-    Decorator catchs DBConnectionError() and retries function in a
+    Decorator catches DBConnectionError() and retries function in a
     loop until it succeeds, or until maximum retries count will be reached.
+
+    Keyword arguments:
+
+    :param retry_interval: seconds between transaction retries
+    :type retry_interval: int
+
+    :param max_retries: max number of retries before an error is raised
+    :type max_retries: int
+
+    :param inc_retry_interval: determine increase retry interval or not
+    :type inc_retry_interval: bool
+
+    :param max_retry_interval: max interval value between retries
+    :type max_retry_interval: int
     """
 
     def __init__(self, retry_interval, max_retries, inc_retry_interval,
@@ -88,37 +120,41 @@ class wrap_db_retry(object):
 
 
 class DBAPI(object):
+    """Initialize the chosen DB API backend.
+
+    After initialization API methods is available as normal attributes of
+    ``DBAPI`` subclass. Database API methods are supposed to be called as
+    DBAPI instance methods.
+
+    :param backend_name: name of the backend to load
+    :type backend_name: str
+
+    :param backend_mapping: backend name -> module/class to load mapping
+    :type backend_mapping: dict
+    :default backend_mapping: None
+
+    :param lazy: load the DB backend lazily on the first DB API method call
+    :type lazy: bool
+    :default lazy: False
+
+    :keyword use_db_reconnect: retry DB transactions on disconnect or not
+    :type use_db_reconnect: bool
+
+    :keyword retry_interval: seconds between transaction retries
+    :type retry_interval: int
+
+    :keyword inc_retry_interval: increase retry interval or not
+    :type inc_retry_interval: bool
+
+    :keyword max_retry_interval: max interval value between retries
+    :type max_retry_interval: int
+
+    :keyword max_retries: max number of retries before an error is raised
+    :type max_retries: int
+    """
+
     def __init__(self, backend_name, backend_mapping=None, lazy=False,
                  **kwargs):
-        """Initialize the chosen DB API backend.
-
-        :param backend_name: name of the backend to load
-        :type backend_name: str
-
-        :param backend_mapping: backend name -> module/class to load mapping
-        :type backend_mapping: dict
-
-        :param lazy: load the DB backend lazily on the first DB API method call
-        :type lazy: bool
-
-        Keyword arguments:
-
-        :keyword use_db_reconnect: retry DB transactions on disconnect or not
-        :type use_db_reconnect: bool
-
-        :keyword retry_interval: seconds between transaction retries
-        :type retry_interval: int
-
-        :keyword inc_retry_interval: increase retry interval or not
-        :type inc_retry_interval: bool
-
-        :keyword max_retry_interval: max interval value between retries
-        :type max_retry_interval: int
-
-        :keyword max_retries: max number of retries before an error is raised
-        :type max_retries: int
-
-        """
 
         self._backend = None
         self._backend_name = backend_name
