@@ -138,7 +138,53 @@ database_opts = [
 def set_defaults(conf, connection=None, sqlite_db=None,
                  max_pool_size=None, max_overflow=None,
                  pool_timeout=None):
-    """Set defaults for configuration variables."""
+    """Set defaults for configuration variables.
+
+    Overrides default options values.
+
+    :param conf: Config instance specified to set default options in it. Using
+     of instances instead of a global config object prevents conflicts between
+     options declaration.
+    :type conf: oslo.config.cfg.ConfigOpts instance.
+
+    :keyword connection: SQL connection string.
+        Valid SQLite URL forms are:
+          * sqlite:///:memory: (or, sqlite://)
+          * sqlite:///relative/path/to/file.db
+          * sqlite:////absolute/path/to/file.db
+    :type connection: str
+
+    :keyword sqlite_db: path to SQLite database file.
+    :type sqlite_db: str
+
+    :keyword max_pool_size: maximum connections pool size. The size of the pool
+     to be maintained, defaults to 5, will be used if value of the parameter is
+     `None`. This is the largest number of connections that will be kept
+     persistently in the pool. Note that the pool begins with no connections;
+     once this number of connections is requested, that number of connections
+     will remain.
+    :type max_pool_size: int
+    :default max_pool_size: None
+
+    :keyword max_overflow: The maximum overflow size of the pool. When the
+     number of checked-out connections reaches the size set in pool_size,
+     additional connections will be returned up to this limit. When those
+     additional connections are returned to the pool, they are disconnected and
+     discarded. It follows then that the total number of simultaneous
+     connections the pool will allow is pool_size + max_overflow, and the total
+     number of "sleeping" connections the pool will allow is pool_size.
+     max_overflow can be set to -1 to indicate no overflow limit; no limit will
+     be placed on the total number of concurrent connections. Defaults to 10,
+     will be used if value of the parameter in `None`.
+    :type max_overflow: int
+    :default max_overflow: None
+
+    :keyword pool_timeout: The number of seconds to wait before giving up on
+     returning a connection. Defaults to 30, will be used if value of the
+     parameter is `None`.
+    :type pool_timeout: int
+    :default pool_timeout: None
+    """
 
     conf.register_opts(database_opts, group='database')
 
