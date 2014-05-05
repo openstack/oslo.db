@@ -605,7 +605,8 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                   idle_timeout=3600,
                   connection_debug=0, max_pool_size=None, max_overflow=None,
                   pool_timeout=None, sqlite_synchronous=True,
-                  connection_trace=False, max_retries=10, retry_interval=10):
+                  connection_trace=False, max_retries=10, retry_interval=10,
+                  thread_checkin=True):
     """Return a new SQLAlchemy engine."""
 
     connection_dict = sqlalchemy.engine.url.make_url(sql_connection)
@@ -643,7 +644,8 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
 
     engine = sqlalchemy.create_engine(sql_connection, **engine_args)
 
-    sqlalchemy.event.listen(engine, 'checkin', _thread_yield)
+    if thread_checkin:
+        sqlalchemy.event.listen(engine, 'checkin', _thread_yield)
 
     if engine.name in ('ibm_db_sa', 'mysql', 'postgresql'):
         ping_callback = functools.partial(_ping_listener, engine)
@@ -827,7 +829,10 @@ class EngineFacade(object):
                               (defaults to 10)
         :keyword retry_interval: interval between retries of opening a sql
                                  connection (defaults to 10)
-
+        :keyword thread_checkin: boolean that indicates that between each
+                                 engine checkin event a sleep(0) will occur to
+                                 allow other greenthreads to run (defaults to
+                                 True)
         """
 
         super(EngineFacade, self).__init__()
@@ -844,7 +849,8 @@ class EngineFacade(object):
             sqlite_synchronous=kwargs.get('sqlite_synchronous', True),
             connection_trace=kwargs.get('connection_trace', False),
             max_retries=kwargs.get('max_retries', 10),
-            retry_interval=kwargs.get('retry_interval', 10))
+            retry_interval=kwargs.get('retry_interval', 10),
+            thread_checkin=kwargs.get('thread_checkin', True))
         self._session_maker = get_maker(
             engine=self._engine,
             autocommit=autocommit,

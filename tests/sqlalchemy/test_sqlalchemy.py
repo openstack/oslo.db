@@ -376,6 +376,7 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
             connection_trace=mock.ANY,
             sqlite_synchronous=mock.ANY,
             pool_timeout=mock.ANY,
+            thread_checkin=mock.ANY,
         )
         get_maker.assert_called_once_with(engine=create_engine(),
                                           autocommit=False,
