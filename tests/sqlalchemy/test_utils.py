@@ -34,7 +34,6 @@ from sqlalchemy.types import UserDefinedType, NullType
 
 from oslo.db import exception
 from oslo.db.openstack.common.fixture import moxstubout
-from oslo.db.sqlalchemy import migration
 from oslo.db.sqlalchemy import models
 from oslo.db.sqlalchemy import session
 from oslo.db.sqlalchemy import test_migrations
@@ -184,7 +183,6 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
 
     def setUp(self):
         super(TestMigrationUtils, self).setUp()
-        migration.patch_migrate()
 
     def _populate_db_for_drop_duplicate_entries(self, engine, meta,
                                                 table_name):

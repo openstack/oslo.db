@@ -4,5 +4,5 @@ iso8601>=0.1.9
 lockfile>=0.8
 oslo.config>=1.2.0
 SQLAlchemy>=0.7.8,<=0.9.99
-sqlalchemy-migrate>=0.8.2,!=0.8.4
+sqlalchemy-migrate>=0.9.1
 stevedore>=0.14
