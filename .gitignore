@@ -6,7 +6,6 @@
 .venv
 .tox
 cover/
-openstack.common.egg-info/
 .openstack-common-venv/
 skeleton.egg-info/
 build/
@@ -15,10 +14,7 @@ doc/source/api
 AUTHORS
 .update-venv/
 ChangeLog
-openstack/versioninfo
 *.egg
-openstack/common/db/*.sqlite
 .testrepository/
 .project
 .pydevproject
-etc/openstack.conf.sample
