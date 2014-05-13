@@ -15,12 +15,16 @@
 #    under the License.
 
 import mock
-from oslotest import base as test_base
+from oslotest import base as test
+import six
+import sqlalchemy as sa
+import sqlalchemy.ext.declarative as sa_decl
 
+from oslo.db.sqlalchemy import test_base
 from oslo.db.sqlalchemy import test_migrations as migrate
 
 
-class TestWalkVersions(test_base.BaseTestCase, migrate.WalkVersionsMixin):
+class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
     def setUp(self):
         super(TestWalkVersions, self).setUp()
         self.migration_api = mock.MagicMock()
@@ -152,3 +156,103 @@ class TestWalkVersions(test_base.BaseTestCase, migrate.WalkVersionsMixin):
             mock.call(self.engine, v, with_data=True) for v in versions
         ]
         self.assertEqual(upgraded, self._migrate_up.call_args_list)
+
+
+class ModelsMigrationSyncMixin(test.BaseTestCase):
+
+    def setUp(self):
+        super(ModelsMigrationSyncMixin, self).setUp()
+
+        self.metadata = sa.MetaData()
+        self.metadata_migrations = sa.MetaData()
+
+        sa.Table(
+            'testtbl', self.metadata_migrations,
+            sa.Column('id', sa.Integer, primary_key=True),
+            sa.Column('spam', sa.String(10), nullable=False),
+            sa.Column('eggs', sa.DateTime),
+            sa.Column('foo', sa.Boolean,
+                      server_default=sa.sql.expression.true()),
+            sa.Column('bool_wo_default', sa.Boolean),
+            sa.Column('bar', sa.Numeric(10, 5)),
+            sa.UniqueConstraint('spam', 'eggs', name='uniq_cons'),
+        )
+
+        BASE = sa_decl.declarative_base(metadata=self.metadata)
+
+        class TestModel(BASE):
+            __tablename__ = 'testtbl'
+            __table_args__ = (
+                sa.UniqueConstraint('spam', 'eggs', name='uniq_cons'),
+            )
+
+            id = sa.Column('id', sa.Integer, primary_key=True)
+            spam = sa.Column('spam', sa.String(10), nullable=False)
+            eggs = sa.Column('eggs', sa.DateTime)
+            foo = sa.Column('foo', sa.Boolean,
+                            server_default=sa.sql.expression.true())
+            bool_wo_default = sa.Column('bool_wo_default', sa.Boolean)
+            bar = sa.Column('bar', sa.Numeric(10, 5))
+
+        class ModelThatShouldNotBeCompared(BASE):
+            __tablename__ = 'testtbl2'
+
+            id = sa.Column('id', sa.Integer, primary_key=True)
+            spam = sa.Column('spam', sa.String(10), nullable=False)
+
+    def get_metadata(self):
+        return self.metadata
+
+    def get_engine(self):
+        return self.engine
+
+    def db_sync(self, engine):
+        self.metadata_migrations.create_all(bind=engine)
+
+    def include_object(self, object_, name, type_, reflected, compare_to):
+        return type_ == 'table' and name == 'testtbl' or type_ == 'column'
+
+    def _test_models_not_sync(self):
+        self.metadata_migrations.clear()
+        sa.Table(
+            'testtbl', self.metadata_migrations,
+            sa.Column('id', sa.Integer, primary_key=True),
+            sa.Column('spam', sa.String(8), nullable=True),
+            sa.Column('eggs', sa.DateTime),
+            sa.Column('foo', sa.Boolean,
+                      server_default=sa.sql.expression.false()),
+            sa.Column('bool_wo_default', sa.Boolean, unique=True),
+            sa.Column('bar', sa.BigInteger),
+            sa.UniqueConstraint('spam', 'foo', name='uniq_cons'),
+        )
+
+        msg = six.text_type(self.assertRaises(AssertionError,
+                                              self.test_models_sync))
+        # NOTE(I159): Check mentioning of the table and columns.
+        # The log is invalid json, so we can't parse it and check it for
+        # full compliance. We have no guarantee of the log items ordering,
+        # so we can't use regexp.
+        self.assertTrue(msg.startswith(
+            'Models and migration scripts aren\'t in sync:'))
+        self.assertIn('testtbl', msg)
+        self.assertIn('spam', msg)
+        self.assertIn('eggs', msg)
+        self.assertIn('foo', msg)
+        self.assertIn('bar', msg)
+        self.assertIn('bool_wo_default', msg)
+
+
+class ModelsMigrationsSyncMysql(ModelsMigrationSyncMixin,
+                                migrate.ModelsMigrationsSync,
+                                test_base.MySQLOpportunisticTestCase):
+
+    def test_models_not_sync(self):
+        self._test_models_not_sync()
+
+
+class ModelsMigrationsSyncPsql(ModelsMigrationSyncMixin,
+                               migrate.ModelsMigrationsSync,
+                               test_base.PostgreSQLOpportunisticTestCase):
+
+    def test_models_not_sync(self):
+        self._test_models_not_sync()
