@@ -239,6 +239,18 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
             for id_ in expected_ids:
                 self.assertTrue(id_ in real_ids)
 
+    def test_drop_dup_entries_in_file_conn(self):
+        table_name = "__test_tmp_table__"
+        tmp_db_file = self.create_tempfiles([['name', '']], ext='.sql')[0]
+        in_file_engine = session.EngineFacade(
+            'sqlite:///%s' % tmp_db_file).get_engine()
+        meta = MetaData()
+        meta.bind = in_file_engine
+        test_table, values = self._populate_db_for_drop_duplicate_entries(
+            in_file_engine, meta, table_name)
+        utils.drop_old_duplicate_entries_from_table(
+            in_file_engine, table_name, False, 'b', 'c')
+
     def test_drop_old_duplicate_entries_from_table_soft_delete(self):
         table_name = "__test_tmp_table__"
 
