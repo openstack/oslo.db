@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import fixtures
 import uuid
 import warnings
 
@@ -27,7 +28,7 @@ from sqlalchemy.dialects import mysql
 from sqlalchemy import Boolean, Index, Integer, DateTime, String
 from sqlalchemy import MetaData, Table, Column, ForeignKey
 from sqlalchemy.engine import reflection
-from sqlalchemy.exc import SAWarning, OperationalError
+from sqlalchemy.exc import SAWarning, ResourceClosedError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
@@ -649,11 +650,19 @@ class TestConnectionUtils(test_utils.BaseTestCase):
         self.assertTrue(utils.is_backend_avail(**self.full_credentials))
 
     def test_is_backend_unavail(self):
+        log = self.useFixture(fixtures.FakeLogger())
+        error_cause = ('This result object does not return rows. It has been'
+                       'closed automatically.')
+        error_msg = ("The %s backend is unavailable: %s\n" %
+                     ('mysql', error_cause))
+
         self.mox.StubOutWithMock(sqlalchemy.engine.base.Engine, 'connect')
-        sqlalchemy.engine.base.Engine.connect().AndRaise(OperationalError)
+        sqlalchemy.engine.base.Engine.connect().AndRaise(
+            ResourceClosedError(error_cause))
         self.mox.ReplayAll()
 
         self.assertFalse(utils.is_backend_avail(**self.full_credentials))
+        self.assertEqual(error_msg, log.output)
 
     def test_get_db_connection_info(self):
         conn_pieces = parse.urlparse(self.connect_string)

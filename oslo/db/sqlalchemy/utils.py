@@ -631,9 +631,10 @@ def is_backend_avail(backend, database, user=None, passwd=None):
                                          passwd=passwd)
         engine = sqlalchemy.create_engine(connect_uri)
         connection = engine.connect()
-    except Exception:
+    except Exception as e:
         # intentionally catch all to handle exceptions even if we don't
         # have any backend code loaded.
+        LOG.info(_LI("The %s backend is unavailable: %s"), backend, e)
         return False
     else:
         connection.close()
