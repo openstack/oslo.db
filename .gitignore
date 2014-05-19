@@ -18,3 +18,4 @@ ChangeLog
 .testrepository/
 .project
 .pydevproject
+oslo.db.egg-info/
