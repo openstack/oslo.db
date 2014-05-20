@@ -35,6 +35,17 @@ class DBDuplicateEntry(DBError):
         super(DBDuplicateEntry, self).__init__(inner_exception)
 
 
+class DBReferenceError(DBError):
+    """Wraps an implementation specific exception."""
+    def __init__(self, table, constraint, key, key_table,
+                 inner_exception=None):
+        self.table = table
+        self.constraint = constraint
+        self.key = key
+        self.key_table = key_table
+        super(DBReferenceError, self).__init__(inner_exception)
+
+
 class DBDeadlock(DBError):
     def __init__(self, inner_exception=None):
         super(DBDeadlock, self).__init__(inner_exception)

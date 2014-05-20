@@ -156,6 +156,43 @@ def _sqlite_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
     raise exception.DBDuplicateEntry(columns, integrity_error)
 
 
+@filters("sqlite", sqla_exc.IntegrityError,
+         r".*SQL error: foreign key constraint failed")
+@filters("postgresql", sqla_exc.IntegrityError,
+         r".*on table \"(?P<table>[^\"]+)\" violates "
+         "foreign key constraint \"(?P<constraint>[^\"]+)\"\s*\n"
+         "DETAIL:  Key \((?P<key>.+)\)=\(.+\) "
+         "is not present in table "
+         "\"(?P<key_table>[^\"]+)\".")
+@filters("mysql", sqla_exc.IntegrityError,
+         r".* Cannot add or update a child row: "
+         "a foreign key constraint fails "
+         "\((?P<table>.+), CONSTRAINT (?P<constraint>.+) "
+         "FOREIGN KEY \((?P<key>.+)\) "
+         "REFERENCES (?P<key_table>.+) \(.+\)\)")
+def _foreign_key_error(integrity_error, match, engine_name, is_disconnect):
+    """Filter for foreign key errors."""
+    try:
+        table = match.group("table")
+    except IndexError:
+        table = None
+    try:
+        constraint = match.group("constraint")
+    except IndexError:
+        constraint = None
+    try:
+        key = match.group("key")
+    except IndexError:
+        key = None
+    try:
+        key_table = match.group("key_table")
+    except IndexError:
+        key_table = None
+
+    raise exception.DBReferenceError(table, constraint, key, key_table,
+                                     integrity_error)
+
+
 @filters("ibm_db_sa", sqla_exc.IntegrityError, r"^.*SQL0803N.*$")
 def _db2_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
     """Filter for DB2 duplicate key errors.
