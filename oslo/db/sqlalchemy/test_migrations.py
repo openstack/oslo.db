@@ -60,10 +60,10 @@ def _set_db_lock(lock_path=None, lock_prefix=None):
                 path = lock_path or os.environ.get("OSLO_LOCK_PATH")
                 lock = lockfile.FileLock(os.path.join(path, lock_prefix))
                 with lock:
-                    LOG.debug('Got lock "%s"' % f.__name__)
+                    LOG.debug('Got lock "%s"', f.__name__)
                     return f(*args, **kwargs)
             finally:
-                LOG.debug('Lock released "%s"' % f.__name__)
+                LOG.debug('Lock released "%s"', f.__name__)
         return wrapper
     return decorator
 
@@ -88,7 +88,7 @@ class BaseMigrationTestCase(test_base.BaseTestCase):
 
         # Load test databases from the config file. Only do this
         # once. No need to re-run this on each test...
-        LOG.debug('config_path is %s' % self.CONFIG_FILE_PATH)
+        LOG.debug('config_path is %s', self.CONFIG_FILE_PATH)
         if os.path.exists(self.CONFIG_FILE_PATH):
             cp = moves.configparser.RawConfigParser()
             try:
@@ -193,7 +193,7 @@ class WalkVersionsMixin(object):
                          self.migration_api.db_version(engine,
                                                        self.REPOSITORY))
 
-        LOG.debug('latest version is %s' % self.REPOSITORY.latest)
+        LOG.debug('latest version is %s', self.REPOSITORY.latest)
         versions = range(self.INIT_VERSION + 1, self.REPOSITORY.latest + 1)
 
         for version in versions:
@@ -264,6 +264,7 @@ class WalkVersionsMixin(object):
                 if check:
                     check(engine, data)
         except Exception:
-            LOG.error(_LE("Failed to migrate to version %s on engine %s") %
-                      (version, engine))
+            LOG.error(_LE("Failed to migrate to version %(version)s on "
+                          "engine %(engine)s"), {'version': version,
+                                                 'engine': engine})
             raise
