@@ -859,20 +859,11 @@ class EngineFacade(object):
     def get_session(self, **kwargs):
         """Get a Session instance.
 
-        If passed, keyword arguments values override the ones used when the
-        sessionmaker instance was created.
-
-        :keyword autocommit: use autocommit mode for created Session instances
-        :type autocommit: bool
-
-        :keyword expire_on_commit: expire session objects on commit
-        :type expire_on_commit: bool
+        Keyword arugments will be passed to a sessionmaker instance as is (if
+        passed, they will override the ones used when the sessionmaker instance
+        was created). See SQLAlchemy Session docs for details.
 
         """
-
-        for arg in kwargs:
-            if arg not in ('autocommit', 'expire_on_commit'):
-                del kwargs[arg]
 
         return self._session_maker(**kwargs)
 
