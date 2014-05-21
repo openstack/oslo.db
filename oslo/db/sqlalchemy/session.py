@@ -291,6 +291,7 @@ from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
 
 from oslo.db import exception
+from oslo.db import options
 from oslo.db.openstack.common.gettextutils import _LE, _LW
 from oslo.db.openstack.common import timeutils
 
@@ -876,12 +877,9 @@ class EngineFacade(object):
         return self._session_maker(**kwargs)
 
     @classmethod
-    def from_config(cls, connection_string, conf,
+    def from_config(cls, conf,
                     sqlite_fk=False, autocommit=True, expire_on_commit=False):
         """Initialize EngineFacade using oslo.config config instance options.
-
-        :param connection_string: SQLAlchemy connection string
-        :type connection_string: string
 
         :param conf: oslo.config config instance
         :type conf: oslo.config.cfg.ConfigOpts
@@ -897,7 +895,9 @@ class EngineFacade(object):
 
         """
 
-        return cls(sql_connection=connection_string,
+        conf.register_opts(options.database_opts, 'database')
+
+        return cls(sql_connection=conf.database.connection,
                    sqlite_fk=sqlite_fk,
                    autocommit=autocommit,
                    expire_on_commit=expire_on_commit,

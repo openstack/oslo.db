@@ -130,26 +130,24 @@ database_opts = [
                     'count.'),
 ]
 
-CONF = cfg.CONF
-CONF.register_opts(database_opts, 'database')
 
-
-def set_defaults(sql_connection, sqlite_db, max_pool_size=None,
-                 max_overflow=None, pool_timeout=None):
+def set_defaults(conf, connection=None, sqlite_db=None,
+                 max_pool_size=None, max_overflow=None,
+                 pool_timeout=None):
     """Set defaults for configuration variables."""
-    cfg.set_defaults(database_opts,
-                     connection=sql_connection,
-                     sqlite_db=sqlite_db)
-    # Update the QueuePool defaults
+
+    conf.register_opts(database_opts, group='database')
+
+    if connection is not None:
+        conf.set_default('connection', connection, group='database')
+    if sqlite_db is not None:
+        conf.set_default('sqlite_db', sqlite_db, group='database')
     if max_pool_size is not None:
-        cfg.set_defaults(database_opts,
-                         max_pool_size=max_pool_size)
+        conf.set_default('max_pool_size', max_pool_size, group='database')
     if max_overflow is not None:
-        cfg.set_defaults(database_opts,
-                         max_overflow=max_overflow)
+        conf.set_default('max_overflow', max_overflow, group='database')
     if pool_timeout is not None:
-        cfg.set_defaults(database_opts,
-                         pool_timeout=pool_timeout)
+        conf.set_default('pool_timeout', pool_timeout, group='database')
 
 
 def list_opts():
