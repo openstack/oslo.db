@@ -353,6 +353,7 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
     def test_creation_from_config(self, create_engine, get_maker):
         conf = mock.MagicMock()
         conf.database.connection = 'sqlite:///:memory:'
+        conf.database.slave_connection = None
         conf.database.items.return_value = [
             ('connection_debug', 100),
             ('max_pool_size', 10),
@@ -382,6 +383,43 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
         get_maker.assert_called_once_with(engine=create_engine(),
                                           autocommit=False,
                                           expire_on_commit=True)
+
+    def test_slave_connection(self):
+        paths = self.create_tempfiles([('db.master', ''), ('db.slave', '')],
+                                      ext='')
+        master_path = 'sqlite:///' + paths[0]
+        slave_path = 'sqlite:///' + paths[1]
+
+        facade = session.EngineFacade(
+            sql_connection=master_path,
+            slave_connection=slave_path
+        )
+
+        master = facade.get_engine()
+        self.assertEqual(master_path, str(master.url))
+        slave = facade.get_engine(use_slave=True)
+        self.assertEqual(slave_path, str(slave.url))
+
+        master_session = facade.get_session()
+        self.assertEqual(master_path, str(master_session.bind.url))
+        slave_session = facade.get_session(use_slave=True)
+        self.assertEqual(slave_path, str(slave_session.bind.url))
+
+    def test_slave_connection_string_not_provided(self):
+        master_path = 'sqlite:///' + self.create_tempfiles(
+            [('db.master', '')], ext='')[0]
+
+        facade = session.EngineFacade(sql_connection=master_path)
+
+        master = facade.get_engine()
+        slave = facade.get_engine(use_slave=True)
+        self.assertIs(master, slave)
+        self.assertEqual(master_path, str(master.url))
+
+        master_session = facade.get_session()
+        self.assertEqual(master_path, str(master_session.bind.url))
+        slave_session = facade.get_session(use_slave=True)
+        self.assertEqual(master_path, str(slave_session.bind.url))
 
 
 class MysqlSetCallbackTest(oslo_test.BaseTestCase):
