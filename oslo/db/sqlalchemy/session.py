@@ -615,15 +615,15 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
         'convert_unicode': True,
     }
 
-    logger = logging.getLogger('sqlalchemy.engine')
-
-    # Map SQL debug level to Python log level
-    if connection_debug >= 100:
-        logger.setLevel(logging.DEBUG)
-    elif connection_debug >= 50:
-        logger.setLevel(logging.INFO)
-    else:
-        logger.setLevel(logging.WARNING)
+    if connection_debug >= 0:
+        # Map SQL debug level to Python log level
+        logger = logging.getLogger('sqlalchemy.engine')
+        if connection_debug >= 100:
+            logger.setLevel(logging.DEBUG)
+        elif connection_debug >= 50:
+            logger.setLevel(logging.INFO)
+        else:
+            logger.setLevel(logging.WARNING)
 
     if "sqlite" in connection_dict.drivername:
         if sqlite_fk:
@@ -811,7 +811,8 @@ class EngineFacade(object):
         :keyword idle_timeout: timeout before idle sql connections are reaped
                                (defaults to 3600)
         :keyword connection_debug: verbosity of SQL debugging information.
-                                   0=None, 100=Everything (defaults to 0)
+                                   -1=Off, 0=None, 100=Everything (defaults
+                                   to 0)
         :keyword max_pool_size: maximum number of SQL connections to keep open
                                 in a pool (defaults to SQLAlchemy settings)
         :keyword max_overflow: if set, use this value for max_overflow with
