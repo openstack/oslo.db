@@ -8,6 +8,7 @@ To use oslo.db in a project::
   
   .. code:: python
 
+    from oslo.config import cfg
     from oslo.db.sqlalchemy import session as db_session
 
     _FACADE = None
@@ -15,8 +16,7 @@ To use oslo.db in a project::
     def _create_facade_lazily():
         global _FACADE
         if _FACADE is None:
-            _FACADE = db_session.EngineFacade.from_config(
-                CONF.database.connection, CONF)
+            _FACADE = db_session.EngineFacade.from_config(cfg.CONF)
         return _FACADE
 
     def get_engine():
@@ -48,12 +48,10 @@ To use oslo.db in a project::
     from oslo.config import cfg
     from oslo.db import api as db_api
 
-    CONF = cfg.CONF
-    CONF.import_opt('backend', 'oslo.db.options', group='database')
 
     _BACKEND_MAPPING = {'sqlalchemy': 'project.db.sqlalchemy.api'}
 
-    IMPL = db_api.DBAPI(CONF.database.backend, backend_mapping=_BACKEND_MAPPING)
+    IMPL = db_api.DBAPI.from_config(cfg.CONF, backend_mapping=_BACKEND_MAPPING)
 
     def get_engine():
         return IMPL.get_engine()

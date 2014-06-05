@@ -28,6 +28,7 @@ import time
 from oslo.db import exception
 from oslo.db.openstack.common.gettextutils import _LE
 from oslo.db.openstack.common import importutils
+from oslo.db import options
 
 
 LOG = logging.getLogger(__name__)
@@ -160,3 +161,29 @@ class DBAPI(object):
                 max_retry_interval=self.max_retry_interval)(attr)
 
         return attr
+
+    @classmethod
+    def from_config(cls, conf, backend_mapping=None, lazy=False):
+        """Initialize DBAPI instance given a config instance.
+
+        :param conf: oslo.config config instance
+        :type conf: oslo.config.cfg.ConfigOpts
+
+        :param backend_mapping: backend name -> module/class to load mapping
+        :type backend_mapping: dict
+
+        :param lazy: load the DB backend lazily on the first DB API method call
+        :type lazy: bool
+
+        """
+
+        conf.register_opts(options.database_opts, 'database')
+
+        return cls(backend_name=conf.database.backend,
+                   backend_mapping=backend_mapping,
+                   lazy=lazy,
+                   use_db_reconnect=conf.database.use_db_reconnect,
+                   retry_interval=conf.database.db_retry_interval,
+                   inc_retry_interval=conf.database.db_inc_retry_interval,
+                   max_retry_interval=conf.database.db_max_retry_interval,
+                   max_retries=conf.database.db_max_retries)

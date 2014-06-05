@@ -352,13 +352,14 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
     @mock.patch('oslo.db.sqlalchemy.session.create_engine')
     def test_creation_from_config(self, create_engine, get_maker):
         conf = mock.MagicMock()
+        conf.database.connection = 'sqlite:///:memory:'
         conf.database.items.return_value = [
             ('connection_debug', 100),
             ('max_pool_size', 10),
             ('mysql_sql_mode', 'TRADITIONAL'),
         ]
 
-        session.EngineFacade.from_config('sqlite:///:memory:', conf,
+        session.EngineFacade.from_config(conf,
                                          autocommit=False,
                                          expire_on_commit=True)
 

@@ -16,6 +16,7 @@
 """Unit tests for DB API."""
 
 import mock
+from oslo.config import cfg
 
 from oslo.db import api
 from oslo.db import exception
@@ -76,6 +77,13 @@ class DBAPITestCase(test_utils.BaseTestCase):
 
         self.assertIsNone(dbapi._backend)
         dbapi.api_class_call1(1, 'abc')
+        self.assertIsNotNone(dbapi._backend)
+
+    def test_dbapi_from_config(self):
+        conf = cfg.ConfigOpts()
+
+        dbapi = api.DBAPI.from_config(conf,
+                                      backend_mapping={'sqlalchemy': __name__})
         self.assertIsNotNone(dbapi._backend)
 
 

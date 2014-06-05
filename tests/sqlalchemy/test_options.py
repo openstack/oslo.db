@@ -14,11 +14,8 @@
 from oslo.config import cfg
 
 from oslo.db.openstack.common.fixture import config
+from oslo.db import options
 from tests import utils as test_utils
-
-
-cfg.CONF.import_opt('connection', 'oslo.db.options',
-                    group='database')
 
 
 class DbApiOptionsTestCase(test_utils.BaseTestCase):
@@ -27,6 +24,7 @@ class DbApiOptionsTestCase(test_utils.BaseTestCase):
 
         config_fixture = self.useFixture(config.Config())
         self.conf = config_fixture.conf
+        self.conf.register_opts(options.database_opts, group='database')
         self.config = config_fixture.config
 
     def test_deprecated_session_parameters(self):
@@ -118,3 +116,12 @@ pool_timeout=7
 
         self.conf(['--config-file', path])
         self.assertEqual(self.conf.database.backend, 'test_123')
+
+    def test_set_defaults(self):
+        conf = cfg.ConfigOpts()
+
+        options.set_defaults(conf,
+                             connection='sqlite:///:memory:')
+
+        self.assertTrue(len(conf.database.items()) > 1)
+        self.assertEqual('sqlite:///:memory:', conf.database.connection)
