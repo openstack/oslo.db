@@ -52,7 +52,7 @@ def _execute_sql(engine, sql, driver):
     except sqlalchemy.exc.OperationalError:
         msg = ('%s does not match database admin '
                'credentials or database does not exist.')
-        LOG.exception(msg % engine.url)
+        LOG.exception(msg, engine.url)
         raise exc.DBConnectionError(msg % engine.url)
 
 
