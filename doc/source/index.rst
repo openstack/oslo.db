@@ -1,7 +1,11 @@
-Welcome to oslo.db's documentation!
-===================================
+Welcome to oslo.db documentation!
+=================================
+
+The Oslo database handling library. Provides database connectivity
+to the different backends and helper utils.
 
 Contents:
+---------
 
 .. toctree::
    :maxdepth: 2
@@ -12,7 +16,7 @@ Contents:
    contributing
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

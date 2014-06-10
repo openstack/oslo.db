@@ -30,6 +30,14 @@ extensions = [
 # text edit cycles.
 # execute "export SPHINX_DEBUG=1" in your terminal to disable
 
+# A list of glob-style patterns that should be excluded when looking for source
+# files.
+exclude_patterns = [
+    'api/setup.rst', # workaround for https://launchpad.net/bugs/1260495
+    'api/tests.*',  # avoid of docs generation from tests
+    'api/oslo.db.openstack.common.*',  # skip common modules
+]
+
 # The suffix of source filenames.
 source_suffix = '.rst'
 
