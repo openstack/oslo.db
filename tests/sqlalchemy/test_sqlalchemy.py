@@ -20,13 +20,13 @@ import logging
 
 import fixtures
 import mock
+from oslo.config import cfg
 from oslotest import base as oslo_test
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table
 from sqlalchemy import Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
-from oslo.config import cfg
 from oslo.db import exception
 from oslo.db import options as db_options
 from oslo.db.sqlalchemy import models

@@ -13,10 +13,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import fixtures
 import uuid
 import warnings
 
+import fixtures
 from migrate.changeset import UniqueConstraint
 import mock
 from oslotest import base as test_base
