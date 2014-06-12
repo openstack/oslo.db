@@ -144,7 +144,9 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
             matched.message)
 
     def test_operational_error_asis(self):
-        """test that SQLAlchemy OperationalErrors that aren't disconnects
+        """Test operational errors.
+
+        test that SQLAlchemy OperationalErrors that aren't disconnects
         are passed through without wrapping.
         """
 
@@ -504,8 +506,9 @@ class IntegrationTest(test_base.DbTestCase):
         self.assertRaises(exception.DBDuplicateEntry, _session.flush)
 
     def test_autoflush_wrapper_duplicate_entry(self):
-        """test a duplicate entry exception raised via
-        query.all()-> autoflush
+        """Test a duplicate entry exception raised.
+
+        test a duplicate entry exception raised via query.all()-> autoflush
         """
 
         _session = self.sessionmaker()

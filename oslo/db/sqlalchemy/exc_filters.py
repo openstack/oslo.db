@@ -226,9 +226,10 @@ def _db2_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
 @filters("mysql", sqla_exc.DBAPIError, r".*\b1146\b")
 def _raise_mysql_table_doesnt_exist_asis(
         error, match, engine_name, is_disconnect):
-    """Raise MySQL error 1146 as is, so that it does not conflict with
-    the MySQL dialect's checking a table not existing.
+    """Raise MySQL error 1146 as is.
 
+    Raise MySQL error 1146 as is, so that it does not conflict with
+    the MySQL dialect's checking a table not existing.
     """
 
     raise error
@@ -237,9 +238,10 @@ def _raise_mysql_table_doesnt_exist_asis(
 @filters("*", sqla_exc.OperationalError, r".*")
 def _raise_operational_errors_directly_filter(operational_error,
     match, engine_name, is_disconnect):
-    """Filter for all remaining OperationalError classes and apply
-    special rules.
+    """Filter for all remaining OperationalError classes and apply.
 
+    Filter for all remaining OperationalError classes and apply
+    special rules.
     """
     if is_disconnect:
         # operational errors that represent disconnect
@@ -262,9 +264,10 @@ def _is_db_connection_error(operational_error, match, engine_name,
 
 @filters("*", sqla_exc.DBAPIError, r".*")
 def _raise_for_remaining_DBAPIError(error, match, engine_name, is_disconnect):
-    """Filter for remaining DBAPIErrors and wrap if they represent
-    a disconnect error.
+    """Filter for remaining DBAPIErrors.
 
+    Filter for remaining DBAPIErrors and wrap if they represent
+    a disconnect error.
     """
     if is_disconnect:
         raise exception.DBConnectionError(error)
@@ -327,9 +330,10 @@ def register_engine(engine):
 
 
 def handle_connect_error(engine):
-    """Provide a special context that will allow on-connect errors
-    to be raised within the filtering context.
+    """Handle connect error.
 
+    Provide a special context that will allow on-connect errors
+    to be raised within the filtering context.
     """
     try:
         return engine.connect()

@@ -183,6 +183,7 @@ class MySQLStrictAllTablesModeTestCase(MySQLModeTestCase):
 
 class MySQLTraditionalModeTestCase(MySQLStrictAllTablesModeTestCase):
     """Test data integrity enforcement in MySQL TRADITIONAL mode.
+
     Since TRADITIONAL includes STRICT_ALL_TABLES, this inherits all
     STRICT_ALL_TABLES mode tests.
     """

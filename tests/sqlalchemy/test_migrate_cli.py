@@ -37,14 +37,17 @@ class TestAlembicExtension(test_base.BaseTestCase):
         super(TestAlembicExtension, self).setUp()
 
     def test_check_enabled_true(self, command):
-        """Verifies that enabled returns True on non empty
+        """Check enabled returns True
+
+        Verifies that enabled returns True on non empty
         alembic_ini_path conf variable
         """
         self.assertTrue(self.alembic.enabled)
 
     def test_check_enabled_false(self, command):
-        """Verifies enabled returns False on empty
-        alembic_ini_path variable
+        """Check enabled returns False
+
+        Verifies enabled returns False on empty alembic_ini_path variable
         """
         self.migration_config['alembic_ini_path'] = ''
         alembic = ext_alembic.AlembicExtension(self.migration_config)

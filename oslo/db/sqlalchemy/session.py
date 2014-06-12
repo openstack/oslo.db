@@ -338,9 +338,10 @@ def _thread_yield(dbapi_con, con_record):
 
 
 def _begin_ping_listener(connection):
-    """Ping the server at transaction begin and transparently reconnect
-    if a disconnect exception occurs.
+    """Ping the server at transaction begin.
 
+    Ping the server at transaction begin and transparently reconnect
+    if a disconnect exception occurs.
     """
     try:
         # run a SELECT 1.   use a core select() so that
@@ -531,9 +532,10 @@ def get_maker(engine, autocommit=True, expire_on_commit=False):
 
 
 def _add_trace_comments(engine):
-    """Augment statements with a trace of the immediate calling code
-    for a given statement.
+    """Add trace comments.
 
+    Augment statements with a trace of the immediate calling code
+    for a given statement.
     """
 
     import os
