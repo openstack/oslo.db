@@ -831,7 +831,7 @@ class TestUtils(db_test_base.DbTestCase):
     @mock.patch('oslo.db.sqlalchemy.utils.add_index')
     def test_change_index_columns(self, add_index, drop_index):
         utils.change_index_columns(self.engine, 'test_table', 'a_index',
-                                  ('a',))
+                                   ('a',))
         utils.drop_index.assert_called_once_with(self.engine, 'test_table',
                                                  'a_index')
         utils.add_index.assert_called_once_with(self.engine, 'test_table',

@@ -89,16 +89,16 @@ def _deadlock_error(operational_error, match, engine_name, is_disconnect):
 
 
 @filters("mysql", sqla_exc.IntegrityError,
-    r"^.*\b1062\b.*Duplicate entry '(?P<value>[^']+)'"
-    r" for key '(?P<columns>[^']+)'.*$")
+         r"^.*\b1062\b.*Duplicate entry '(?P<value>[^']+)'"
+         r" for key '(?P<columns>[^']+)'.*$")
 # NOTE(pkholkin): the first regex is suitable only for PostgreSQL 9.x versions
 #                 the second regex is suitable for PostgreSQL 8.x versions
 @filters("postgresql", sqla_exc.IntegrityError,
-    (r'^.*duplicate\s+key.*"(?P<columns>[^"]+)"\s*\n.*'
-    r'Key\s+\((?P<key>.*)\)=\((?P<value>.*)\)\s+already\s+exists.*$',
-    r"^.*duplicate\s+key.*\"(?P<columns>[^\"]+)\"\s*\n.*$"))
+         (r'^.*duplicate\s+key.*"(?P<columns>[^"]+)"\s*\n.*'
+          r'Key\s+\((?P<key>.*)\)=\((?P<value>.*)\)\s+already\s+exists.*$',
+          r"^.*duplicate\s+key.*\"(?P<columns>[^\"]+)\"\s*\n.*$"))
 def _default_dupe_key_error(integrity_error, match, engine_name,
-    is_disconnect):
+                            is_disconnect):
     """Filter for MySQL or Postgresql duplicate key error.
 
     note(boris-42): In current versions of DB backends unique constraint
@@ -146,8 +146,8 @@ def _default_dupe_key_error(integrity_error, match, engine_name,
 
 
 @filters("sqlite", sqla_exc.IntegrityError,
-    (r"^.*columns?(?P<columns>[^)]+)(is|are)\s+not\s+unique$",
-    r"^.*UNIQUE\s+constraint\s+failed:\s+(?P<columns>.+)$"))
+         (r"^.*columns?(?P<columns>[^)]+)(is|are)\s+not\s+unique$",
+          r"^.*UNIQUE\s+constraint\s+failed:\s+(?P<columns>.+)$"))
 def _sqlite_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
     """Filter for SQLite duplicate key error.
 
@@ -237,7 +237,8 @@ def _raise_mysql_table_doesnt_exist_asis(
 
 @filters("*", sqla_exc.OperationalError, r".*")
 def _raise_operational_errors_directly_filter(operational_error,
-    match, engine_name, is_disconnect):
+                                              match, engine_name,
+                                              is_disconnect):
     """Filter for all remaining OperationalError classes and apply.
 
     Filter for all remaining OperationalError classes and apply
@@ -257,7 +258,7 @@ def _raise_operational_errors_directly_filter(operational_error,
 @filters("mysql", sqla_exc.OperationalError, r".*\((?:2002|2003|2006|2013)")
 @filters("ibm_db_sa", sqla_exc.OperationalError, r".*(?:-30081)")
 def _is_db_connection_error(operational_error, match, engine_name,
-    is_disconnect):
+                            is_disconnect):
     """Detect the exception as indicating a recoverable error on connect."""
     raise exception.DBConnectionError(operational_error)
 

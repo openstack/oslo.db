@@ -54,7 +54,8 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
                            {'version': version, 'engine': self.engine})
 
         with mock.patch.object(self.migration_api,
-                'upgrade', side_effect=exc.DbMigrationError):
+                               'upgrade',
+                               side_effect=exc.DbMigrationError):
             log = self.useFixture(fixtures.FakeLogger())
             self.assertRaises(exc.DbMigrationError, self._migrate_up, version)
             self.assertEqual(expected_output, log.output)
@@ -80,7 +81,8 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
 
     def test_migrate_down_not_implemented(self):
         with mock.patch.object(self.migration_api,
-            'downgrade', side_effect=NotImplementedError):
+                               'downgrade',
+                               side_effect=NotImplementedError):
             self.assertFalse(self._migrate_down(self.engine, 42))
 
     def test_migrate_down_with_data(self):

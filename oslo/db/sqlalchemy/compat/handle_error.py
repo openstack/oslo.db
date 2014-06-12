@@ -45,14 +45,14 @@ def handle_error(engine, listener):
 
     # use a Connection-wrapper class to wrap _handle_dbapi_exception.
     if not getattr(engine._connection_cls,
-        '_oslo_handle_error_wrapper', False):
+                   '_oslo_handle_error_wrapper', False):
         engine._oslo_handle_error_events = []
 
         class Connection(engine._connection_cls):
             _oslo_handle_error_wrapper = True
 
             def _handle_dbapi_exception(self, e, statement, parameters,
-                cursor, context):
+                                        cursor, context):
 
                 try:
                     super(Connection, self)._handle_dbapi_exception(
@@ -69,19 +69,21 @@ def handle_error(engine, listener):
                     #   re-raise
                     reraised_exception = e
 
-                _oslo_handle_error_events = getattr(self.engine,
-                    '_oslo_handle_error_events', False)
+                _oslo_handle_error_events = getattr(
+                    self.engine,
+                    '_oslo_handle_error_events',
+                    False)
 
                 newraise = None
                 if _oslo_handle_error_events:
                     if isinstance(reraised_exception,
-                        sqla_exc.StatementError):
+                                  sqla_exc.StatementError):
                         sqlalchemy_exception = reraised_exception
                         original_exception = sqlalchemy_exception.orig
-                        self._is_disconnect = is_disconnect = \
+                        self._is_disconnect = is_disconnect = (
                             isinstance(sqlalchemy_exception,
-                            sqla_exc.DBAPIError) and sqlalchemy_exception.\
-                            connection_invalidated
+                                       sqla_exc.DBAPIError)
+                            and sqlalchemy_exception.connection_invalidated)
                     else:
                         sqlalchemy_exception = None
                         original_exception = reraised_exception
@@ -123,7 +125,7 @@ def handle_error(engine, listener):
                     six.reraise(type(newraise), newraise, sys.exc_info()[2])
                 else:
                     six.reraise(type(reraised_exception),
-                        reraised_exception, sys.exc_info()[2])
+                                reraised_exception, sys.exc_info()[2])
 
             def _do_disconnect(self, e):
                 del self._is_disconnect
@@ -151,8 +153,8 @@ class ExceptionContextImpl(object):
     """
 
     def __init__(self, exception, sqlalchemy_exception,
-        connection, cursor, statement, parameters,
-        context, is_disconnect):
+                 connection, cursor, statement, parameters,
+                 context, is_disconnect):
         self.connection = connection
         self.sqlalchemy_exception = sqlalchemy_exception
         self.original_exception = exception

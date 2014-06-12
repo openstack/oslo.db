@@ -65,8 +65,9 @@ class TestsExceptionFilter(test_base.DbTestCase):
     def _dbapi_fixture(self, dialect_name):
         engine = self.engine
         with contextlib.nested(
-            mock.patch.object(engine.dialect.dbapi, "Error",
-                self.Error),
+            mock.patch.object(engine.dialect.dbapi,
+                              "Error",
+                              self.Error),
             mock.patch.object(engine.dialect, "name", dialect_name),
         ):
             yield
@@ -88,16 +89,18 @@ class TestsExceptionFilter(test_base.DbTestCase):
             mock.patch.object(engine.dialect, "do_execute", do_execute),
             # replace the whole DBAPI rather than patching "Error"
             # as some DBAPIs might not be patchable (?)
-            mock.patch.object(engine.dialect, "dbapi",
-                mock.Mock(Error=self.Error)),
+            mock.patch.object(engine.dialect,
+                              "dbapi",
+                              mock.Mock(Error=self.Error)),
             mock.patch.object(engine.dialect, "name", dialect_name),
-            mock.patch.object(engine.dialect, "is_disconnect",
-                    lambda *args: is_disconnect)
+            mock.patch.object(engine.dialect,
+                              "is_disconnect",
+                              lambda *args: is_disconnect)
         ):
             yield
 
     def _run_test(self, dialect_name, statement, raises, expected,
-        is_disconnect=False, params=()):
+                  is_disconnect=False, params=()):
         with self._fixture(dialect_name, raises, is_disconnect=is_disconnect):
             with self.engine.connect() as conn:
                 matched = self.assertRaises(
@@ -269,7 +272,8 @@ class TestRaiseReferenceError(TestsExceptionFilter):
 class TestDuplicate(TestsExceptionFilter):
 
     def _run_dupe_constraint_test(self, dialect_name, message,
-        expected_columns=['a', 'b'], expected_value=None):
+                                  expected_columns=['a', 'b'],
+                                  expected_value=None):
         matched = self._run_test(
             dialect_name, "insert into table some_values",
             self.IntegrityError(message),
@@ -279,7 +283,7 @@ class TestDuplicate(TestsExceptionFilter):
         self.assertEqual(expected_value, matched.value)
 
     def _not_dupe_constraint_test(self, dialect_name, statement, message,
-        expected_cls, expected_message):
+                                  expected_cls, expected_message):
         matched = self._run_test(
             dialect_name, statement,
             self.IntegrityError(message),
@@ -291,16 +295,19 @@ class TestDuplicate(TestsExceptionFilter):
         self._run_dupe_constraint_test("sqlite", 'column a, b are not unique')
 
     def test_sqlite_3_7_16_or_3_8_2_and_higher(self):
-        self._run_dupe_constraint_test("sqlite",
+        self._run_dupe_constraint_test(
+            "sqlite",
             'UNIQUE constraint failed: tbl.a, tbl.b')
 
     def test_mysql_mysqldb(self):
-        self._run_dupe_constraint_test("mysql",
+        self._run_dupe_constraint_test(
+            "mysql",
             '(1062, "Duplicate entry '
             '\'2-3\' for key \'uniq_tbl0a0b\'")', expected_value='2-3')
 
     def test_mysql_mysqlconnector(self):
-        self._run_dupe_constraint_test("mysql",
+        self._run_dupe_constraint_test(
+            "mysql",
             '1062 (23000): Duplicate entry '
             '\'2-3\' for key \'uniq_tbl0a0b\'")', expected_value='2-3')
 
@@ -314,7 +321,8 @@ class TestDuplicate(TestsExceptionFilter):
         )
 
     def test_mysql_single(self):
-        self._run_dupe_constraint_test("mysql",
+        self._run_dupe_constraint_test(
+            "mysql",
             "1062 (23000): Duplicate entry '2' for key 'b'",
             expected_columns=['b'],
             expected_value='2'
@@ -366,7 +374,8 @@ class TestDuplicate(TestsExceptionFilter):
 
 
 class TestDeadlock(TestsExceptionFilter):
-    def _run_deadlock_detect_test(self, dialect_name, message,
+    def _run_deadlock_detect_test(
+        self, dialect_name, message,
         orig_exception_cls=TestsExceptionFilter.OperationalError):
         statement = ('SELECT quota_usages.created_at AS '
                      'quota_usages_created_at FROM quota_usages \n'
@@ -383,7 +392,8 @@ class TestDeadlock(TestsExceptionFilter):
             params=params
         )
 
-    def _not_deadlock_test(self, dialect_name, message,
+    def _not_deadlock_test(
+        self, dialect_name, message,
         expected_cls, expected_message,
         orig_exception_cls=TestsExceptionFilter.OperationalError):
         statement = ('SELECT quota_usages.created_at AS '
@@ -474,13 +484,14 @@ class IntegrationTest(test_base.DbTestCase):
     def setUp(self):
         super(IntegrationTest, self).setUp()
         meta = sqla.MetaData()
-        self.test_table = sqla.Table(_TABLE_NAME, meta,
-                            sqla.Column('id', sqla.Integer,
-                                primary_key=True, nullable=False),
-                            sqla.Column('counter', sqla.Integer,
-                                nullable=False),
-                            sqla.UniqueConstraint('counter',
-                                name='uniq_counter'))
+        self.test_table = sqla.Table(
+            _TABLE_NAME, meta,
+            sqla.Column('id', sqla.Integer,
+                        primary_key=True, nullable=False),
+            sqla.Column('counter', sqla.Integer,
+                        nullable=False),
+            sqla.UniqueConstraint('counter',
+                                  name='uniq_counter'))
         self.test_table.create(self.engine)
         self.addCleanup(self.test_table.drop, self.engine)
 
@@ -523,7 +534,7 @@ class IntegrationTest(test_base.DbTestCase):
         _session.add(foo)
         self.assertTrue(_session.autoflush)
         self.assertRaises(exception.DBDuplicateEntry,
-            _session.query(self.Foo).all)
+                          _session.query(self.Foo).all)
 
     def test_flush_wrapper_plain_integrity_error(self):
         """test a plain integrity error wrapped as DBError."""
@@ -587,9 +598,11 @@ class TestDBDisconnected(TestsExceptionFilter):
         with self._dbapi_fixture(dialect_name):
             with contextlib.nested(
                 mock.patch.object(engine.dialect,
-                    "do_execute", fake_do_execute),
-                mock.patch.object(engine.dialect, "is_disconnect",
-                    mock.Mock(return_value=True))
+                                  "do_execute",
+                                  fake_do_execute),
+                mock.patch.object(engine.dialect,
+                                  "is_disconnect",
+                                  mock.Mock(return_value=True))
             ):
                 yield
 

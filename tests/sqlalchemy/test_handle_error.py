@@ -55,7 +55,7 @@ class ExceptionReraiseTest(test_base.BaseTestCase):
         self._fixture()
 
         with mock.patch.object(self.engine.dialect.execution_ctx_cls,
-            "handle_dbapi_exception") as patched:
+                               "handle_dbapi_exception") as patched:
 
             matchee = self.assertRaises(
                 MyException,
@@ -68,7 +68,7 @@ class ExceptionReraiseTest(test_base.BaseTestCase):
         self._fixture()
 
         with mock.patch.object(self.engine.dialect.execution_ctx_cls,
-            "handle_dbapi_exception") as patched:
+                               "handle_dbapi_exception") as patched:
 
             self.assertRaises(
                 sqla.exc.DBAPIError,
@@ -156,8 +156,9 @@ class ExceptionReraiseTest(test_base.BaseTestCase):
         # done the invalidation.
         expect_failure = not utils.sqla_097 and orig_error and not evt_value
 
-        with mock.patch.object(engine.dialect, "is_disconnect",
-                mock.Mock(return_value=orig_error)):
+        with mock.patch.object(engine.dialect,
+                               "is_disconnect",
+                               mock.Mock(return_value=orig_error)):
 
             with engine.connect() as c:
                 conn_rec = c.connection._connection_record
@@ -179,7 +180,8 @@ class ExceptionReraiseTest(test_base.BaseTestCase):
 
                 except NotImplementedError as ne:
                     self.assertTrue(expect_failure)
-                    self.assertEqual(str(ne),
+                    self.assertEqual(
+                        str(ne),
                         "Can't reset 'disconnect' status of exception once it "
                         "is set with this version of SQLAlchemy")
 

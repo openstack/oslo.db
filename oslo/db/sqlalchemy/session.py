@@ -548,7 +548,7 @@ def _add_trace_comments(engine):
 
     @sqlalchemy.event.listens_for(engine, "before_cursor_execute", retval=True)
     def before_cursor_execute(conn, cursor, statement, parameters, context,
-            executemany):
+                              executemany):
 
         # NOTE(zzzeek) - if different steps per DB dialect are desirable
         # here, switch out on engine.name for now.

@@ -194,7 +194,7 @@ class WalkVersionsMixin(object):
 
         try:
             self.migration_api.downgrade(self.migrate_engine,
-                self.REPOSITORY, version)
+                                         self.REPOSITORY, version)
         except NotImplementedError:
             # NOTE(sirp): some migrations, namely release-level
             # migrations, don't support a downgrade.
@@ -234,7 +234,7 @@ class WalkVersionsMixin(object):
                     data = pre_upgrade(self.migrate_engine)
 
             self.migration_api.upgrade(self.migrate_engine,
-                self.REPOSITORY, version)
+                                       self.REPOSITORY, version)
             self.assertEqual(version,
                              self.migration_api.db_version(self.migrate_engine,
                                                            self.REPOSITORY))
