@@ -17,7 +17,7 @@ MIGRATION_NAMESPACE = 'oslo.db.migration'
 
 
 def check_plugin_enabled(ext):
-    """Used for EnabledExtensionManager"""
+    """Used for EnabledExtensionManager."""
     return ext.obj.enabled
 
 
