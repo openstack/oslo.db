@@ -243,8 +243,8 @@ class WalkVersionsMixin(object):
                 if check:
                     check(self.migrate_engine, data)
         except exc.DbMigrationError:
-            LOG.error(_LE("Failed to migrate to version %s on engine %s") %
-                      (version, self.migrate_engine))
+            msg = _LE("Failed to migrate to version %(ver)s on engine %(eng)s")
+            LOG.error(msg, {"ver": version, "eng": self.migrate_engine})
             raise
 
 

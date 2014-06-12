@@ -686,7 +686,8 @@ def is_backend_avail(backend, database, user=None, passwd=None):
     except Exception as e:
         # intentionally catch all to handle exceptions even if we don't
         # have any backend code loaded.
-        LOG.info(_LI("The %s backend is unavailable: %s"), backend, e)
+        msg = _LI("The %(backend)s backend is unavailable: %(exception)s")
+        LOG.info(msg, {"backend": backend, "exception": e})
         return False
     else:
         connection.close()
