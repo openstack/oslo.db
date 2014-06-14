@@ -183,9 +183,6 @@ class TestPaginateQuery(test_base.BaseTestCase):
 class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
     """Class for testing utils that are used in db migrations."""
 
-    def setUp(self):
-        super(TestMigrationUtils, self).setUp()
-
     def _populate_db_for_drop_duplicate_entries(self, engine, meta,
                                                 table_name):
         values = [
@@ -440,6 +437,23 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         if SA_VERSION < (0, 9, 0):
             self.assertTrue(isinstance(table.c.foo.type, NullType))
         self.assertTrue(isinstance(table.c.deleted.type, Boolean))
+
+    def test_change_deleted_column_type_drops_check_constraint(self):
+        table_name = 'abc'
+        meta = MetaData()
+        engine = self.engines['sqlite']
+        meta.bind = engine
+        table = Table(table_name, meta,
+                      Column('id', Integer, primary_key=True),
+                      Column('deleted', Boolean))
+        table.create()
+
+        utils._change_deleted_column_type_to_id_type_sqlite(engine,
+                                                            table_name)
+        table = Table(table_name, meta, autoload=True)
+        # NOTE(I159): if the CHECK constraint has been dropped (expected
+        # behavior), any integer value can be inserted, otherwise only 1 or 0.
+        engine.execute(table.insert({'deleted': 10}))
 
     def test_utils_drop_unique_constraint(self):
         table_name = "__test_tmp_table__"
