@@ -945,4 +945,13 @@ class EngineFacade(object):
                    sqlite_fk=sqlite_fk,
                    autocommit=autocommit,
                    expire_on_commit=expire_on_commit,
-                   **dict(conf.database.items()))
+                   mysql_sql_mode=conf.database.mysql_sql_mode,
+                   idle_timeout=conf.database.idle_timeout,
+                   connection_debug=conf.database.connection_debug,
+                   max_pool_size=conf.database.max_pool_size,
+                   max_overflow=conf.database.max_overflow,
+                   pool_timeout=conf.database.pool_timeout,
+                   sqlite_synchronous=conf.database.sqlite_synchronous,
+                   connection_trace=conf.database.connection_trace,
+                   max_retries=conf.database.max_retries,
+                   retry_interval=conf.database.retry_interval)

@@ -17,6 +17,7 @@
 
 """Unit tests for SQLAlchemy specific code."""
 import logging
+from oslo.config import cfg
 
 import _mysql_exceptions
 import fixtures
@@ -30,6 +31,7 @@ from sqlalchemy.exc import DataError
 from sqlalchemy.ext.declarative import declarative_base
 
 from oslo.db import exception as db_exc
+from oslo.db import options as db_options
 from oslo.db.sqlalchemy import models
 from oslo.db.sqlalchemy import session
 from oslo.db.sqlalchemy import test_base
@@ -351,20 +353,23 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
     @mock.patch('oslo.db.sqlalchemy.session.get_maker')
     @mock.patch('oslo.db.sqlalchemy.session.create_engine')
     def test_creation_from_config(self, create_engine, get_maker):
-        conf = mock.MagicMock()
-        conf.database.connection = 'sqlite:///:memory:'
-        conf.database.slave_connection = None
-        conf.database.items.return_value = [
-            ('connection_debug', 100),
-            ('max_pool_size', 10),
-            ('mysql_sql_mode', 'TRADITIONAL'),
-        ]
+        conf = cfg.ConfigOpts()
+        conf.register_opts(db_options.database_opts, group='database')
+
+        overrides = {
+            'connection': 'sqlite:///:memory:',
+            'slave_connection': None,
+            'connection_debug': 100,
+            'max_pool_size': 10,
+            'mysql_sql_mode': 'TRADITIONAL',
+        }
+        for optname, optvalue in overrides.items():
+            conf.set_override(optname, optvalue, group='database')
 
         session.EngineFacade.from_config(conf,
                                          autocommit=False,
                                          expire_on_commit=True)
 
-        conf.database.items.assert_called_once_with()
         create_engine.assert_called_once_with(
             sql_connection='sqlite:///:memory:',
             connection_debug=100,
