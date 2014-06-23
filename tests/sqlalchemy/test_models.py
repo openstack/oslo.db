@@ -30,6 +30,7 @@ class ModelBaseTest(test_base.DbTestCase):
     def test_modelbase_has_dict_methods(self):
         dict_methods = ('__getitem__',
                         '__setitem__',
+                        '__contains__',
                         '__iter__',
                         'get',
                         'next',
@@ -50,6 +51,16 @@ class ModelBaseTest(test_base.DbTestCase):
         mb.update(h)
         for key in h.keys():
             self.assertEqual(mb[key], h[key])
+
+    def test_modelbase_contains(self):
+        mb = models.ModelBase()
+        h = {'a': '1', 'b': '2'}
+        mb.update(h)
+        for key in h.keys():
+            # Test 'in' syntax (instead of using .assertIn)
+            self.assertTrue(key in mb)
+
+        self.assertFalse('non-existent-key' in mb)
 
     def test_modelbase_iteritems(self):
         self.skipTest("Requires DB")
