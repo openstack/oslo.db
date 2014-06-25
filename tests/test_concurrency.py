@@ -103,6 +103,6 @@ class TpoolDbapiWrapperTestCase(test_utils.BaseTestCase):
         #     raise ImportError
 
         self.conf.set_override('use_tpool', True, group='database')
-        del sys.modules['eventlet']
+        sys.modules['eventlet'] = None
 
         self.assertRaises(ImportError, getattr, self.db_api, 'fake')
