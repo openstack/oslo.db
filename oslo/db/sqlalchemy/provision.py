@@ -16,6 +16,7 @@
 """Provision test environment for specific DB backends"""
 
 import argparse
+import copy
 import logging
 import os
 import random
@@ -34,9 +35,9 @@ def get_engine(uri):
     """Engine creation
 
     Call the function without arguments to get admin connection. Admin
-    connection required to create temporary user and database for each
-    particular test. Otherwise use existing connection to recreate connection
-    to the temporary database.
+    connection required to create temporary database for each
+    particular test. Otherwise use existing connection to recreate
+    connection to the temporary database.
     """
     return sqlalchemy.create_engine(uri, poolclass=sqlalchemy.pool.NullPool)
 
@@ -57,31 +58,33 @@ def _execute_sql(engine, sql, driver):
 
 
 def create_database(engine):
-    """Provide temporary user and database for each particular test."""
+    """Provide temporary database for each particular test."""
     driver = engine.name
 
-    auth = {
-        'database': ''.join(random.choice(string.ascii_lowercase)
-                            for i in moves.range(10)),
-        'user': engine.url.username,
-        'passwd': engine.url.password,
-    }
+    database = ''.join(random.choice(string.ascii_lowercase)
+                       for i in moves.range(10))
 
     if driver == 'sqlite':
-        return 'sqlite:////tmp/%s' % auth['database']
+        database = '/tmp/%s' % database
     elif driver in ['mysql', 'postgresql']:
-        sql = 'create database %s;' % auth['database']
+        sql = 'create database %s;' % database
         _execute_sql(engine, [sql], driver)
     else:
         raise ValueError('Unsupported RDBMS %s' % driver)
 
-    params = auth.copy()
-    params['backend'] = driver
-    return "%(backend)s://%(user)s:%(passwd)s@localhost/%(database)s" % params
+    # Both shallow and deep copies may lead to surprising behaviour
+    # without knowing the implementation of sqlalchemy.engine.url.
+    # Use a shallow copy here, since we're only overriding a single
+    # property, invoking __str__ and then discarding our copy.  This
+    # is currently safe and _should_ remain safe into the future.
+    new_url = copy.copy(engine.url)
+
+    new_url.database = database
+    return str(new_url)
 
 
 def drop_database(admin_engine, current_uri):
-    """Drop temporary database and user after each particular test."""
+    """Drop temporary database after each particular test."""
 
     engine = get_engine(current_uri)
     driver = engine.name
@@ -101,8 +104,8 @@ def drop_database(admin_engine, current_uri):
 def main():
     """Controller to handle commands
 
-    ::create: Create test user and database with random names.
-    ::drop: Drop user and database created by previous command.
+    ::create: Create test database with random names.
+    ::drop: Drop database created by previous command.
     """
     parser = argparse.ArgumentParser(
         description='Controller to handle database creation and dropping'
@@ -115,8 +118,7 @@ def main():
 
     create = subparsers.add_parser(
         'create',
-        help='Create temporary test '
-        'databases and users.')
+        help='Create temporary test databases.')
     create.set_defaults(which='create')
     create.add_argument(
         'instances_count',
@@ -125,7 +127,7 @@ def main():
 
     drop = subparsers.add_parser(
         'drop',
-        help='Drop temporary test databases and users.')
+        help='Drop temporary test databases.')
     drop.set_defaults(which='drop')
     drop.add_argument(
         'instances',
