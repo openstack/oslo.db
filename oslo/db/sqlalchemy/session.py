@@ -290,11 +290,10 @@ import sqlalchemy.orm
 from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
 
-from oslo.db import exception
-from oslo.db import options
-from oslo.db.openstack.common.gettextutils import _LE, _LW
+from oslo.db.openstack.common.gettextutils import _LW
 from oslo.db.openstack.common import timeutils
-
+from oslo.db import options
+from oslo.db.sqlalchemy import exc_filters
 
 LOG = logging.getLogger(__name__)
 
@@ -308,193 +307,6 @@ class SqliteForeignKeysListener(PoolListener):
     """
     def connect(self, dbapi_con, con_record):
         dbapi_con.execute('pragma foreign_keys=ON')
-
-
-# note(boris-42): In current versions of DB backends unique constraint
-# violation messages follow the structure:
-#
-# sqlite:
-# 1 column - (IntegrityError) column c1 is not unique
-# N columns - (IntegrityError) column c1, c2, ..., N are not unique
-#
-# sqlite since 3.7.16:
-# 1 column - (IntegrityError) UNIQUE constraint failed: tbl.k1
-#
-# N columns - (IntegrityError) UNIQUE constraint failed: tbl.k1, tbl.k2
-#
-# postgres:
-# 1 column - (IntegrityError) duplicate key value violates unique
-#               constraint "users_c1_key"
-# N columns - (IntegrityError) duplicate key value violates unique
-#               constraint "name_of_our_constraint"
-#
-# mysql+mysqldb:
-# 1 column - (IntegrityError) (1062, "Duplicate entry 'value_of_c1' for key
-#               'c1'")
-# N columns - (IntegrityError) (1062, "Duplicate entry 'values joined
-#               with -' for key 'name_of_our_constraint'")
-#
-# mysql+mysqlconnector:
-#  http://docs.sqlalchemy.org/en/rel_0_9/dialects/
-#  mysql.html#module-sqlalchemy.dialects.mysql.mysqlconnector
-# 1 column - (IntegrityError) 1062 (23000): Duplicate entry 'value_of_c1' for
-#               key 'c1'
-# N columns - (IntegrityError) 1062 (23000): Duplicate entry 'values
-#               joined with -' for key 'name_of_our_constraint'
-#
-# ibm_db_sa:
-# N columns - (IntegrityError) SQL0803N  One or more values in the INSERT
-#                statement, UPDATE statement, or foreign key update caused by a
-#                DELETE statement are not valid because the primary key, unique
-#                constraint or unique index identified by "2" constrains table
-#                "NOVA.KEY_PAIRS" from having duplicate values for the index
-#                key.
-_DUP_KEY_RE_DB = {
-    "sqlite": (re.compile(r"^.*columns?([^)]+)(is|are)\s+not\s+unique$"),
-               re.compile(r"^.*UNIQUE\s+constraint\s+failed:\s+(.+)$")),
-    "postgresql": (re.compile(r'^.*duplicate\s+key.*"([^"]+)"\s*\n.*$'),),
-    "mysql": (re.compile(
-        r"^.*\b1062\b.*Duplicate entry '[^']+' for key '([^']+)'.*$"),),
-    "ibm_db_sa": (re.compile(r"^.*SQL0803N.*$"),),
-}
-
-
-def _raise_if_duplicate_entry_error(integrity_error, engine_name):
-    """Raise exception if two entries are duplicated.
-
-    In this function will be raised DBDuplicateEntry exception if integrity
-    error wrap unique constraint violation.
-    """
-
-    def get_columns_from_uniq_cons_or_name(columns):
-        # note(vsergeyev): UniqueConstraint name convention: "uniq_t0c10c2"
-        #                  where `t` it is table name and columns `c1`, `c2`
-        #                  are in UniqueConstraint.
-        uniqbase = "uniq_"
-        if not columns.startswith(uniqbase):
-            if engine_name == "postgresql":
-                return [columns[columns.index("_") + 1:columns.rindex("_")]]
-            return [columns]
-        return columns[len(uniqbase):].split("0")[1:]
-
-    if engine_name not in ("ibm_db_sa", "mysql", "sqlite", "postgresql"):
-        return
-
-    # FIXME(johannes): The usage of the .message attribute has been
-    # deprecated since Python 2.6. However, the exceptions raised by
-    # SQLAlchemy can differ when using unicode() and accessing .message.
-    # An audit across all three supported engines will be necessary to
-    # ensure there are no regressions.
-    for pattern in _DUP_KEY_RE_DB[engine_name]:
-        match = pattern.match(integrity_error.message)
-        if match:
-            break
-    else:
-        return
-
-    # NOTE(mriedem): The ibm_db_sa integrity error message doesn't provide the
-    # columns so we have to omit that from the DBDuplicateEntry error.
-    columns = ''
-
-    if engine_name != 'ibm_db_sa':
-        columns = match.group(1)
-
-    if engine_name == "sqlite":
-        columns = [c.split('.')[-1] for c in columns.strip().split(", ")]
-    else:
-        columns = get_columns_from_uniq_cons_or_name(columns)
-    raise exception.DBDuplicateEntry(columns, integrity_error)
-
-
-# NOTE(comstud): In current versions of DB backends, Deadlock violation
-# messages follow the structure:
-#
-# mysql:
-# (OperationalError) (1213, 'Deadlock found when trying to get lock; try '
-#                     'restarting transaction') <query_str> <query_args>
-#
-# postgresql:
-# (TransactionRollbackError) deadlock detected <deadlock_details>
-#
-# ibm_db_sa:
-# SQL0911N The current transaction has been rolled back because of a deadlock
-#          or timeout <deadlock details>
-_DEADLOCK_RE_DB = {
-    "mysql": re.compile(r"^.*\(1213, 'Deadlock.*"),
-    "postgresql": re.compile(r"^.*deadlock detected.*"),
-    "ibm_db_sa": re.compile(r"^.*SQL0911N.*")
-}
-
-
-def _raise_if_deadlock_error(operational_error, engine_name):
-    """Raise exception on deadlock condition.
-
-    Raise DBDeadlock exception if OperationalError contains a Deadlock
-    condition.
-    """
-    re = _DEADLOCK_RE_DB.get(engine_name)
-    if re is None:
-        return
-    # FIXME(johannes): The usage of the .message attribute has been
-    # deprecated since Python 2.6. However, the exceptions raised by
-    # SQLAlchemy can differ when using unicode() and accessing .message.
-    # An audit across all three supported engines will be necessary to
-    # ensure there are no regressions.
-    m = re.match(operational_error.message)
-    if not m:
-        return
-    raise exception.DBDeadlock(operational_error)
-
-
-def _wrap_db_error(f):
-    @functools.wraps(f)
-    def _wrap(self, *args, **kwargs):
-        try:
-            assert issubclass(
-                self.__class__, sqlalchemy.orm.session.Session
-            ), ('_wrap_db_error() can only be applied to methods of '
-                'subclasses of sqlalchemy.orm.session.Session.')
-
-            return f(self, *args, **kwargs)
-        except UnicodeEncodeError:
-            raise exception.DBInvalidUnicodeParameter()
-        except sqla_exc.OperationalError as e:
-            _raise_if_db_connection_lost(e, self.bind)
-            _raise_if_deadlock_error(e, self.bind.dialect.name)
-            # NOTE(comstud): A lot of code is checking for OperationalError
-            # so let's not wrap it for now.
-            raise
-        # note(boris-42): We should catch unique constraint violation and
-        # wrap it by our own DBDuplicateEntry exception. Unique constraint
-        # violation is wrapped by IntegrityError.
-        except sqla_exc.IntegrityError as e:
-            # note(boris-42): SqlAlchemy doesn't unify errors from different
-            # DBs so we must do this. Also in some tables (for example
-            # instance_types) there are more than one unique constraint. This
-            # means we should get names of columns, which values violate
-            # unique constraint, from error message.
-            _raise_if_duplicate_entry_error(e, self.bind.dialect.name)
-            raise exception.DBError(e)
-        except sqla_exc.DBAPIError as e:
-            # NOTE(wingwj): This branch is used to catch deadlock exception
-            # under postgresql. The original exception thrown from postgresql
-            # is TransactionRollbackError, it's not included in the sqlalchemy.
-            # Moreover, DBAPIError is the base class of OperationalError
-            # and IntegrityError, so we catch it on the end of the process.
-            #
-            # The issue has also submitted to sqlalchemy on
-            # https://bitbucket.org/zzzeek/sqlalchemy/issue/3075/
-            # support-non-standard-dbapi-exception
-            # (FIXME) This branch should be refactored after the patch
-            # merged in & our requirement of sqlalchemy updated
-            _raise_if_db_connection_lost(e, self.bind)
-            _raise_if_deadlock_error(e, self.bind.dialect.name)
-            LOG.exception(_LE('DBAPIError exception wrapped from %s') % e)
-            raise exception.DBError(e)
-        except Exception as e:
-            LOG.exception(_LE('DB exception wrapped.'))
-            raise exception.DBError(e)
-    return _wrap
 
 
 def _synchronous_switch_listener(dbapi_conn, connection_rec):
@@ -624,18 +436,6 @@ def _is_db_connection_error(args):
     return False
 
 
-def _raise_if_db_connection_lost(error, engine):
-    # NOTE(vsergeyev): Function is_disconnect(e, connection, cursor)
-    #                  requires connection and cursor in incoming parameters,
-    #                  but we have no possibility to create connection if DB
-    #                  is not available, so in such case reconnect fails.
-    #                  But is_disconnect() ignores these parameters, so it
-    #                  makes sense to pass to function None as placeholder
-    #                  instead of connection and cursor.
-    if engine.dialect.is_disconnect(error, None, None):
-        raise exception.DBConnectionError(error)
-
-
 def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                   idle_timeout=3600,
                   connection_debug=0, max_pool_size=None, max_overflow=None,
@@ -719,6 +519,9 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                 if (remaining != 'infinite' and remaining == 0) or \
                         not _is_db_connection_error(e.args[0]):
                     raise
+
+    # register alternate exception handler
+    exc_filters.register_engine(engine)
     return engine
 
 
@@ -733,17 +536,6 @@ class Query(sqlalchemy.orm.query.Query):
 
 class Session(sqlalchemy.orm.session.Session):
     """Custom Session class to avoid SqlAlchemy Session monkey patching."""
-    @_wrap_db_error
-    def query(self, *args, **kwargs):
-        return super(Session, self).query(*args, **kwargs)
-
-    @_wrap_db_error
-    def flush(self, *args, **kwargs):
-        return super(Session, self).flush(*args, **kwargs)
-
-    @_wrap_db_error
-    def execute(self, *args, **kwargs):
-        return super(Session, self).execute(*args, **kwargs)
 
 
 def get_maker(engine, autocommit=True, expire_on_commit=False):
