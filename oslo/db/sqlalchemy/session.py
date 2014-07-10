@@ -672,7 +672,7 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
         ping_callback = functools.partial(_ping_listener, engine)
         sqlalchemy.event.listen(engine, 'checkout', ping_callback)
         if engine.name == 'mysql':
-            if mysql_sql_mode:
+            if mysql_sql_mode is not None:
                 _mysql_set_mode_callback(engine, mysql_sql_mode)
     elif 'sqlite' in connection_dict.drivername:
         if not sqlite_synchronous:
