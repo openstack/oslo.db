@@ -28,6 +28,7 @@ from sqlalchemy.types import Integer
 from sqlalchemy.types import TypeDecorator
 
 from oslo.db.sqlalchemy.compat import handle_error
+from oslo.db.sqlalchemy.compat import utils
 
 
 class MyException(Exception):
@@ -141,3 +142,51 @@ class ExceptionReraiseTest(test_base.BaseTestCase):
         self.assertTrue(ctx.statement.startswith("SELECT 1 "))
         self.assertIs(ctx.is_disconnect, False)
         self.assertIs(ctx.original_exception, nope)
+
+    def _test_alter_disconnect(self, orig_error, evt_value):
+        engine = self.engine
+
+        def evt(ctx):
+            ctx.is_disconnect = evt_value
+        handle_error(engine, evt)
+
+        # if we are under sqla 0.9.7, and we are expecting to take
+        # an "is disconnect" exception and make it not a disconnect,
+        # that isn't supported b.c. the wrapped handler has already
+        # done the invalidation.
+        expect_failure = not utils.sqla_097 and orig_error and not evt_value
+
+        with mock.patch.object(engine.dialect, "is_disconnect",
+                mock.Mock(return_value=orig_error)):
+
+            with engine.connect() as c:
+                conn_rec = c.connection._connection_record
+                try:
+                    c.execute("SELECT x FROM nonexistent")
+                    assert False
+                except sqla.exc.StatementError as st:
+                    self.assertFalse(expect_failure)
+
+                    # check the exception's invalidation flag
+                    self.assertEqual(st.connection_invalidated, evt_value)
+
+                    # check the Connection object's invalidation flag
+                    self.assertEqual(c.invalidated, evt_value)
+
+                    # this is the ConnectionRecord object; it's invalidated
+                    # when its .connection member is None
+                    self.assertEqual(conn_rec.connection is None, evt_value)
+
+                except NotImplementedError as ne:
+                    self.assertTrue(expect_failure)
+                    self.assertEqual(str(ne),
+                        "Can't reset 'disconnect' status of exception once it "
+                        "is set with this version of SQLAlchemy")
+
+    def test_alter_disconnect_to_true(self):
+        self._test_alter_disconnect(False, True)
+        self._test_alter_disconnect(True, True)
+
+    def test_alter_disconnect_to_false(self):
+        self._test_alter_disconnect(True, False)
+        self._test_alter_disconnect(False, False)
