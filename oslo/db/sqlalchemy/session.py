@@ -494,8 +494,8 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                                     _synchronous_switch_listener)
         sqlalchemy.event.listen(engine, 'connect', _add_regexp_listener)
 
-    if connection_trace and engine.dialect.dbapi.__name__ == 'MySQLdb':
-        _patch_mysqldb_with_stacktrace_comments()
+    if connection_trace:
+        _add_trace_comments(engine)
 
     try:
         engine.connect()
@@ -547,47 +547,48 @@ def get_maker(engine, autocommit=True, expire_on_commit=False):
                                        query_cls=Query)
 
 
-def _patch_mysqldb_with_stacktrace_comments():
-    """Adds current stack trace as a comment in queries.
+def _add_trace_comments(engine):
+    """Augment statements with a trace of the immediate calling code
+    for a given statement.
 
-    Patches MySQLdb.cursors.BaseCursor._do_query.
     """
-    import MySQLdb.cursors
+
+    import os
+    import sys
     import traceback
+    target_paths = set([
+        os.path.dirname(sys.modules['oslo.db'].__file__),
+        os.path.dirname(sys.modules['sqlalchemy'].__file__)
+    ])
 
-    old_mysql_do_query = MySQLdb.cursors.BaseCursor._do_query
+    @sqlalchemy.event.listens_for(engine, "before_cursor_execute", retval=True)
+    def before_cursor_execute(conn, cursor, statement, parameters, context,
+            executemany):
 
-    def _do_query(self, q):
-        stack = ''
-        for filename, line, method, function in traceback.extract_stack():
-            # exclude various common things from trace
-            if filename.endswith('session.py') and method == '_do_query':
-                continue
-            if filename.endswith('api.py') and method == 'wrapper':
-                continue
-            if filename.endswith('utils.py') and method == '_inner':
-                continue
-            if filename.endswith('exception.py') and method == '_wrap':
-                continue
-            # db/api is just a wrapper around db/sqlalchemy/api
-            if filename.endswith('db/api.py'):
-                continue
-            # only trace inside oslo
-            index = filename.rfind('oslo')
-            if index == -1:
-                continue
-            stack += "File:%s:%s Method:%s() Line:%s | " \
-                     % (filename[index:], line, method, function)
+        # NOTE(zzzeek) - if different steps per DB dialect are desirable
+        # here, switch out on engine.name for now.
+        stack = traceback.extract_stack()
+        our_line = None
+        for idx, (filename, line, method, function) in enumerate(stack):
+            for tgt in target_paths:
+                if filename.startswith(tgt):
+                    our_line = idx
+                    break
+            if our_line:
+                break
 
-        # strip trailing " | " from stack
-        if stack:
-            stack = stack[:-3]
-            qq = "%s /* %s */" % (q, stack)
-        else:
-            qq = q
-        old_mysql_do_query(self, qq)
+        if our_line:
+            trace = "; ".join(
+                "File: %s (%s) %s" % (
+                    line[0], line[1], line[2]
+                )
+                # include three lines of context.
+                for line in stack[our_line - 3:our_line]
 
-    setattr(MySQLdb.cursors.BaseCursor, '_do_query', _do_query)
+            )
+            statement = "%s  -- %s" % (statement, trace)
+
+        return statement, parameters
 
 
 class EngineFacade(object):
