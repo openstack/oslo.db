@@ -279,12 +279,12 @@ Efficient use of soft deletes:
 """
 
 import functools
+import itertools
 import logging
 import re
 import time
 
 import six
-from sqlalchemy import exc as sqla_exc
 from sqlalchemy.interfaces import PoolListener
 import sqlalchemy.orm
 from sqlalchemy.pool import NullPool, StaticPool
@@ -415,18 +415,6 @@ def _mysql_set_mode_callback(engine, sql_mode):
     _mysql_check_effective_sql_mode(engine)
 
 
-def _is_db_connection_error(args):
-    """Return True if error in connecting to db."""
-    # NOTE(adam_g): This is currently MySQL specific and needs to be extended
-    #               to support Postgres and others.
-    # For the db2, the error code is -30081 since the db2 is still not ready
-    conn_err_codes = ('2002', '2003', '2006', '2013', '-30081')
-    for err_code in conn_err_codes:
-        if args.find(err_code) != -1:
-            return True
-    return False
-
-
 def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                   idle_timeout=3600,
                   connection_debug=0, max_pool_size=None, max_overflow=None,
@@ -485,36 +473,34 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     if connection_trace and engine.dialect.dbapi.__name__ == 'MySQLdb':
         _patch_mysqldb_with_stacktrace_comments()
 
-    try:
-        engine.connect()
-    except sqla_exc.OperationalError as e:
-        if not _is_db_connection_error(e.args[0]):
-            raise
-
-        remaining = max_retries
-        if remaining == -1:
-            remaining = 'infinite'
-        while True:
-            msg = _LW('SQL connection failed. %s attempts left.')
-            LOG.warning(msg, remaining)
-            if remaining != 'infinite':
-                remaining -= 1
-            time.sleep(retry_interval)
-            try:
-                engine.connect()
-                break
-            except sqla_exc.OperationalError as e:
-                if (remaining != 'infinite' and remaining == 0) or \
-                        not _is_db_connection_error(e.args[0]):
-                    raise
-
     # register alternate exception handler
     exc_filters.register_engine(engine)
 
     # register on begin handler
     sqlalchemy.event.listen(engine, "begin", _begin_ping_listener)
 
+    # initial connect + test
+    _test_connection(engine, max_retries, retry_interval)
+
     return engine
+
+
+def _test_connection(engine, max_retries, retry_interval):
+    if max_retries == -1:
+        attempts = itertools.count()
+    else:
+        attempts = six.moves.range(max_retries)
+    de = None
+    for attempt in attempts:
+        try:
+            return exc_filters.handle_connect_error(engine)
+        except exception.DBConnectionError as de:
+            msg = _LW('SQL connection failed. %s attempts left.')
+            LOG.warning(msg, max_retries - attempt)
+            time.sleep(retry_interval)
+    else:
+        if de is not None:
+            six.reraise(type(de), de)
 
 
 class Query(sqlalchemy.orm.query.Query):

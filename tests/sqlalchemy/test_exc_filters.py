@@ -21,6 +21,7 @@ import sqlalchemy as sqla
 from sqlalchemy.orm import mapper
 
 from oslo.db import exception
+from oslo.db.sqlalchemy import session
 from oslo.db.sqlalchemy import test_base
 
 _TABLE_NAME = '__tmp__test__tmp__'
@@ -508,4 +509,91 @@ class TestDBDisconnected(TestsExceptionFilter):
             "ibm_db_sa",
             self.OperationalError(
                 'SQL30081N: DB2 Server connection is no longer active')
+        )
+
+
+class TestDBConnectRetry(TestsExceptionFilter):
+
+    def _run_test(self, dialect_name, exception, count, retries):
+        counter = itertools.count()
+
+        engine = self.engine
+
+        # empty out the connection pool
+        engine.dispose()
+
+        connect_fn = engine.dialect.connect
+
+        def cant_connect(*arg, **kw):
+            if next(counter) < count:
+                raise exception
+            else:
+                return connect_fn(*arg, **kw)
+
+        with self._dbapi_fixture(dialect_name):
+            with mock.patch.object(engine.dialect, "connect", cant_connect):
+                return session._test_connection(engine, retries, .01)
+
+    def test_connect_no_retries(self):
+        conn = self._run_test(
+            "mysql",
+            self.OperationalError("Error: (2003) something wrong"),
+            2, 0
+        )
+        # didnt connect because nothing was tried
+        self.assertIsNone(conn)
+
+    def test_connect_inifinite_retries(self):
+        conn = self._run_test(
+            "mysql",
+            self.OperationalError("Error: (2003) something wrong"),
+            2, -1
+        )
+        # conn is good
+        self.assertEqual(conn.scalar(sqla.select([1])), 1)
+
+    def test_connect_retry_past_failure(self):
+        conn = self._run_test(
+            "mysql",
+            self.OperationalError("Error: (2003) something wrong"),
+            2, 3
+        )
+        # conn is good
+        self.assertEqual(conn.scalar(sqla.select([1])), 1)
+
+    def test_connect_retry_not_candidate_exception(self):
+        self.assertRaises(
+            sqla.exc.OperationalError,  # remember, we pass OperationalErrors
+                                        # through at the moment :)
+            self._run_test,
+            "mysql",
+            self.OperationalError("Error: (2015) I can't connect period"),
+            2, 3
+        )
+
+    def test_connect_retry_stops_infailure(self):
+        self.assertRaises(
+            exception.DBConnectionError,
+            self._run_test,
+            "mysql",
+            self.OperationalError("Error: (2003) something wrong"),
+            3, 2
+        )
+
+    def test_db2_error_positive(self):
+        conn = self._run_test(
+            "ibm_db_sa",
+            self.OperationalError("blah blah -30081 blah blah"),
+            2, -1
+        )
+        # conn is good
+        self.assertEqual(conn.scalar(sqla.select([1])), 1)
+
+    def test_db2_error_negative(self):
+        self.assertRaises(
+            sqla.exc.OperationalError,
+            self._run_test,
+            "ibm_db_sa",
+            self.OperationalError("blah blah -39981 blah blah"),
+            2, 3
         )

@@ -202,6 +202,15 @@ def _raise_operational_errors_directly_filter(operational_error,
         raise operational_error
 
 
+# For the db2, the error code is -30081 since the db2 is still not ready
+@filters("mysql", sqla_exc.OperationalError, r".*\((?:2002|2003|2006|2013)")
+@filters("ibm_db_sa", sqla_exc.OperationalError, r".*(?:-30081)")
+def _is_db_connection_error(operational_error, match, engine_name,
+    is_disconnect):
+    """Detect the exception as indicating a recoverable error on connect."""
+    raise exception.DBConnectionError(operational_error)
+
+
 @filters("*", sqla_exc.DBAPIError, r".*")
 def _raise_for_remaining_DBAPIError(error, match, engine_name, is_disconnect):
     """Filter for remaining DBAPIErrors and wrap if they represent
@@ -253,12 +262,36 @@ def handler(context):
                     for fn, regexp in regexp_reg:
                         match = regexp.match(exc.message)
                         if match:
-                            fn(
-                                exc,
-                                match,
-                                context.connection.dialect.name,
-                                context.is_disconnect)
+                            try:
+                                fn(
+                                    exc,
+                                    match,
+                                    context.connection.dialect.name,
+                                    context.is_disconnect)
+                            except exception.DBConnectionError:
+                                context.is_disconnect = True
+                                raise
 
 
 def register_engine(engine):
     compat.handle_error(engine, handler)
+
+
+def handle_connect_error(engine):
+    """Provide a special context that will allow on-connect errors
+    to be raised within the filtering context.
+
+    """
+    try:
+        return engine.connect()
+    except Exception as e:
+        if isinstance(e, sqla_exc.StatementError):
+            s_exc, orig = e, e.orig
+        else:
+            s_exc, orig = None, e
+
+        ctx = compat.ExceptionContextImpl(
+            orig, s_exc, engine, None,
+            None, None, None, False
+        )
+        handler(ctx)
