@@ -78,16 +78,8 @@ class ModelBase(six.Iterator):
         # up, beyond the actual db columns.  An example would be the 'name'
         # property for an Instance.
         columns.extend(self._extra_keys)
-        self._i = iter(columns)
-        return self
 
-    # In Python 3, __next__() has replaced next().
-    def __next__(self):
-        n = six.advance_iterator(self._i)
-        return n, getattr(self, n)
-
-    def next(self):
-        return self.__next__()
+        return ModelIterator(self, iter(columns))
 
     def update(self, values):
         """Make the model object behave like a dict."""
@@ -104,6 +96,24 @@ class ModelBase(six.Iterator):
                       if not k[0] == '_'])
         local.update(joined)
         return six.iteritems(local)
+
+
+class ModelIterator(ModelBase):
+
+    def __init__(self, model, columns):
+        self.model = model
+        self.i = columns
+
+    def __iter__(self):
+        return self
+
+    # In Python 3, __next__() has replaced next().
+    def __next__(self):
+        n = six.advance_iterator(self.i)
+        return n, getattr(self.model, n)
+
+    def next(self):
+        return self.__next__()
 
 
 class TimestampMixin(object):

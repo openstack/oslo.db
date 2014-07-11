@@ -89,6 +89,15 @@ class ModelBaseTest(test_base.DbTestCase):
 
         self.assertEqual(min_items, found_items)
 
+    def test_modelbase_several_iters(self):
+        mb = ExtraKeysModel()
+        it1 = iter(mb)
+        it2 = iter(mb)
+
+        self.assertFalse(it1 is it2)
+        self.assertEqual(dict(it1), dict(mb))
+        self.assertEqual(dict(it2), dict(mb))
+
     def test_extra_keys_empty(self):
         """Test verifies that by default extra_keys return empty list."""
         mb = models.ModelBase()
