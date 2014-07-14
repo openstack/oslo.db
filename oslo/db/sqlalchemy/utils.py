@@ -35,10 +35,14 @@ from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy.types import NullType
 
+from oslo.db import exception
 from oslo.db.openstack.common.gettextutils import _, _LI, _LW
 from oslo.db.openstack.common import timeutils
 from oslo.db.sqlalchemy import models
 
+# NOTE(ochuprykov): Add references for backwards compatibility
+InvalidSortKey = exception.InvalidSortKey
+ColumnError = exception.ColumnError
 
 LOG = logging.getLogger(__name__)
 
@@ -50,10 +54,6 @@ def sanitize_db_url(url):
     if match:
         return '%s****:****%s' % (url[:match.start(1)], url[match.end(2):])
     return url
-
-
-class InvalidSortKey(Exception):
-    message = _("Sort key supplied was not valid.")
 
 
 # copy from glance/db/sqlalchemy/api.py
@@ -119,7 +119,7 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
         try:
             sort_key_attr = getattr(model, current_sort_key)
         except AttributeError:
-            raise InvalidSortKey()
+            raise exception.InvalidSortKey()
         query = query.order_by(sort_dir_func(sort_key_attr))
 
     # Add pagination
@@ -328,10 +328,6 @@ def visit_insert_from_select(element, compiler, **kw):
         compiler.process(element.select))
 
 
-class ColumnError(Exception):
-    """Error raised when no column or an invalid column is found."""
-
-
 def _get_not_supported_column(col_name_col_instance, column_name):
     try:
         column = col_name_col_instance[column_name]
@@ -339,13 +335,13 @@ def _get_not_supported_column(col_name_col_instance, column_name):
         msg = _("Please specify column %s in col_name_col_instance "
                 "param. It is required because column has unsupported "
                 "type by SQLite.")
-        raise ColumnError(msg % column_name)
+        raise exception.ColumnError(msg % column_name)
 
     if not isinstance(column, Column):
         msg = _("col_name_col_instance param has wrong type of "
                 "column instance for column %s It should be instance "
                 "of sqlalchemy.Column.")
-        raise ColumnError(msg % column_name)
+        raise exception.ColumnError(msg % column_name)
     return column
 
 
@@ -450,7 +446,7 @@ def _get_default_deleted_value(table):
         return 0
     if isinstance(table.c.id.type, String):
         return ""
-    raise ColumnError(_("Unsupported id columns type"))
+    raise exception.ColumnError(_("Unsupported id columns type"))
 
 
 def _restore_indexes_on_deleted_columns(migrate_engine, table_name, indexes):
