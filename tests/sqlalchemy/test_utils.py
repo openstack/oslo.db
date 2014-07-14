@@ -685,6 +685,11 @@ class TestConnectionUtils(test_utils.BaseTestCase):
         self.assertEqual(utils.get_db_connection_info(conn_pieces),
                          ('dude', 'pass', 'test', 'localhost'))
 
+    def test_connect_string_host(self):
+        self.full_credentials['host'] = 'myhost'
+        connect_string = utils.get_connect_string(**self.full_credentials)
+        self.assertEqual(connect_string, 'mysql://dude:pass@myhost/test')
+
 
 class MyModelSoftDeletedProjectId(declarative_base(), models.ModelBase,
                                   models.SoftDeleteMixin):
