@@ -41,6 +41,9 @@ class TestsExceptionFilter(test_base.DbTestCase):
     class InterfaceError(Error):
         pass
 
+    class InternalError(Error):
+        pass
+
     class IntegrityError(Error):
         pass
 
@@ -287,12 +290,20 @@ class TestDeadlock(TestsExceptionFilter):
             str(matched)
         )
 
-    def test_mysql_deadlock(self):
+    def test_mysql_mysqldb_deadlock(self):
         self._run_deadlock_detect_test(
             "mysql",
             "(1213, 'Deadlock found when trying "
             "to get lock; try restarting "
             "transaction')"
+        )
+
+    def test_mysql_mysqlconnector_deadlock(self):
+        self._run_deadlock_detect_test(
+            "mysql",
+            "1213 (40001): Deadlock found when trying to get lock; try "
+            "restarting transaction",
+            orig_exception_cls=self.InternalError
         )
 
     def test_mysql_not_deadlock(self):

@@ -57,7 +57,8 @@ def filters(dbname, exception_type, regex):
 # psycopg2.extensions.TransactionRollbackError(OperationalError),
 # as well as sqlalchemy.exc.DBAPIError, as SQLAlchemy will reraise it
 # as this until issue #3075 is fixed.
-@filters("mysql", sqla_exc.OperationalError, r"^.*\(1213, 'Deadlock.*")
+@filters("mysql", sqla_exc.OperationalError, r"^.*\b1213\b.*Deadlock found.*")
+@filters("mysql", sqla_exc.InternalError, r"^.*\b1213\b.*Deadlock found.*")
 @filters("postgresql", sqla_exc.OperationalError, r"^.*deadlock detected.*")
 @filters("postgresql", sqla_exc.DBAPIError, r"^.*deadlock detected.*")
 @filters("ibm_db_sa", sqla_exc.DBAPIError, r"^.*SQL0911N.*")
@@ -67,9 +68,13 @@ def _deadlock_error(operational_error, match, engine_name, is_disconnect):
     NOTE(comstud): In current versions of DB backends, Deadlock violation
     messages follow the structure:
 
-    mysql:
+    mysql+mysqldb:
     (OperationalError) (1213, 'Deadlock found when trying to get lock; try '
                          'restarting transaction') <query_str> <query_args>
+
+    mysql+mysqlconnector:
+    (InternalError) 1213 (40001): Deadlock found when trying to get lock; try
+                         restarting transaction
 
     postgresql:
     (TransactionRollbackError) deadlock detected <deadlock_details>
@@ -174,7 +179,7 @@ def _db2_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
     raise exception.DBDuplicateEntry([], integrity_error)
 
 
-@filters("mysql", sqla_exc.DBAPIError, r".*\(1146")
+@filters("mysql", sqla_exc.DBAPIError, r".*\b1146\b")
 def _raise_mysql_table_doesnt_exist_asis(
         error, match, engine_name, is_disconnect):
     """Raise MySQL error 1146 as is, so that it does not conflict with
