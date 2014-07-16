@@ -476,6 +476,11 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
             engine_args['max_overflow'] = max_overflow
         if pool_timeout is not None:
             engine_args['pool_timeout'] = pool_timeout
+        if connection_dict.get_dialect().driver == 'mysqlconnector':
+            # mysqlconnector engine (<1.0) incorrectly defaults to
+            # raise_on_warnings=True
+            #  https://bitbucket.org/zzzeek/sqlalchemy/issue/2515
+            engine_args['connect_args'] = {'raise_on_warnings': False}
 
     engine = sqlalchemy.create_engine(sql_connection, **engine_args)
 
