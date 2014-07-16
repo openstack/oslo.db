@@ -542,7 +542,8 @@ def _change_deleted_column_type_to_boolean_sqlite(migrate_engine, table_name,
     migrate_engine.execute(ins)
 
     table.drop()
-    [index.create(migrate_engine) for index in indexes]
+    for index in indexes:
+        index.create(migrate_engine)
 
     new_table.rename(table_name)
     new_table.update().\
@@ -641,7 +642,8 @@ def _change_deleted_column_type_to_id_type_sqlite(migrate_engine, table_name,
     migrate_engine.execute(ins)
 
     table.drop()
-    [index.create(migrate_engine) for index in indexes]
+    for index in indexes:
+        index.create(migrate_engine)
 
     new_table.rename(table_name)
     deleted = True  # workaround for pyflakes
