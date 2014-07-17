@@ -54,3 +54,11 @@ class DbMigrationError(DBError):
 class DBConnectionError(DBError):
     """Wraps connection specific exception."""
     pass
+
+
+class InvalidSortKey(Exception):
+    message = _("Sort key supplied was not valid.")
+
+
+class ColumnError(Exception):
+    """Error raised when no column or an invalid column is found."""

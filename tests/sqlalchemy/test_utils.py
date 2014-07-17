@@ -133,7 +133,7 @@ class TestPaginateQuery(test_base.BaseTestCase):
         sqlalchemy.asc('user').AndReturn('asc')
         self.query.order_by('asc').AndReturn(self.query)
         self.mox.ReplayAll()
-        self.assertRaises(utils.InvalidSortKey,
+        self.assertRaises(exception.InvalidSortKey,
                           utils.paginate_query, self.query,
                           self.model, 5, ['user_id', 'non-existent key'])
 
@@ -364,7 +364,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
 
         # reflection of custom types has been fixed upstream
         if SA_VERSION < (0, 9, 0):
-            self.assertRaises(utils.ColumnError,
+            self.assertRaises(exception.ColumnError,
                               utils.change_deleted_column_type_to_id_type,
                               engine, table_name)
 
@@ -434,7 +434,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
 
         # reflection of custom types has been fixed upstream
         if SA_VERSION < (0, 9, 0):
-            self.assertRaises(utils.ColumnError,
+            self.assertRaises(exception.ColumnError,
                               utils.change_deleted_column_type_to_boolean,
                               engine, table_name)
 
@@ -539,13 +539,13 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         if SA_VERSION < (0, 9, 0):
             # NOTE(boris-42): Missing info about column `foo` that has
             #                 unsupported type CustomType.
-            self.assertRaises(utils.ColumnError,
+            self.assertRaises(exception.ColumnError,
                               utils.drop_unique_constraint,
                               engine, table_name, uc_name, 'foo')
 
             # NOTE(boris-42): Wrong type of foo instance. it should be
             #                 instance of sqlalchemy.Column.
-            self.assertRaises(utils.ColumnError,
+            self.assertRaises(exception.ColumnError,
                               utils.drop_unique_constraint,
                               engine, table_name, uc_name, 'foo',
                               foo=Integer())
