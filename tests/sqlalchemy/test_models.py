@@ -26,6 +26,10 @@ BASE = declarative_base()
 
 
 class ModelBaseTest(test_base.DbTestCase):
+    def setUp(self):
+        super(ModelBaseTest, self).setUp()
+        self.mb = models.ModelBase()
+        self.ekm = ExtraKeysModel()
 
     def test_modelbase_has_dict_methods(self):
         dict_methods = ('__getitem__',
@@ -41,16 +45,14 @@ class ModelBaseTest(test_base.DbTestCase):
             self.assertTrue(hasattr(models.ModelBase, method))
 
     def test_modelbase_set(self):
-        mb = models.ModelBase()
-        mb['world'] = 'hello'
-        self.assertEqual(mb['world'], 'hello')
+        self.mb['world'] = 'hello'
+        self.assertEqual(self.mb['world'], 'hello')
 
     def test_modelbase_update(self):
-        mb = models.ModelBase()
         h = {'a': '1', 'b': '2'}
-        mb.update(h)
+        self.mb.update(h)
         for key in h.keys():
-            self.assertEqual(mb[key], h[key])
+            self.assertEqual(self.mb[key], h[key])
 
     def test_modelbase_contains(self):
         mb = models.ModelBase()
@@ -63,31 +65,33 @@ class ModelBaseTest(test_base.DbTestCase):
         self.assertFalse('non-existent-key' in mb)
 
     def test_modelbase_iteritems(self):
-        self.skipTest("Requires DB")
-        mb = models.ModelBase()
         h = {'a': '1', 'b': '2'}
-        mb.update(h)
-        for key, value in mb.iteritems():
-            self.assertEqual(h[key], value)
+        expected = {
+            'id': None,
+            'smth': None,
+            'name': 'NAME',
+            'a': '1',
+            'b': '2',
+        }
+        self.ekm.update(h)
+        self.assertEqual(dict(self.ekm.iteritems()), expected)
 
     def test_modelbase_iter(self):
-        self.skipTest("Requires DB")
-        mb = models.ModelBase()
-        h = {'a': '1', 'b': '2'}
-        mb.update(h)
-        i = iter(mb)
-
-        min_items = len(h)
+        expected = {
+            'id': None,
+            'smth': None,
+            'name': 'NAME',
+        }
+        i = iter(self.ekm)
         found_items = 0
         while True:
             r = next(i, None)
             if r is None:
                 break
-
-            self.assertTrue(r in h)
+            self.assertEqual(expected[r[0]], r[1])
             found_items += 1
 
-        self.assertEqual(min_items, found_items)
+        self.assertEqual(len(expected), found_items)
 
     def test_modelbase_several_iters(self):
         mb = ExtraKeysModel()
@@ -100,17 +104,14 @@ class ModelBaseTest(test_base.DbTestCase):
 
     def test_extra_keys_empty(self):
         """Test verifies that by default extra_keys return empty list."""
-        mb = models.ModelBase()
-        self.assertEqual(mb._extra_keys, [])
+        self.assertEqual(self.mb._extra_keys, [])
 
     def test_extra_keys_defined(self):
         """Property _extra_keys will return list with attributes names."""
-        ekm = ExtraKeysModel()
-        self.assertEqual(ekm._extra_keys, ['name'])
+        self.assertEqual(self.ekm._extra_keys, ['name'])
 
     def test_model_with_extra_keys(self):
-        item = ExtraKeysModel()
-        data = dict(item)
+        data = dict(self.ekm)
         self.assertEqual(data, {'smth': None,
                                 'id': None,
                                 'name': 'NAME'})
