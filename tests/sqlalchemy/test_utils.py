@@ -20,6 +20,7 @@ import warnings
 from migrate.changeset import UniqueConstraint
 import mock
 from oslotest import base as test_base
+from oslotest import moxstubout
 import six
 from six import moves
 from six.moves.urllib import parse
@@ -34,7 +35,6 @@ from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
 from oslo.db import exception
-from oslo.db.openstack.common.fixture import moxstubout
 from oslo.db.sqlalchemy import models
 from oslo.db.sqlalchemy import session
 from oslo.db.sqlalchemy import test_base as db_test_base
