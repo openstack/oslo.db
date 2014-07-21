@@ -67,16 +67,11 @@ def create_database(engine):
         'passwd': engine.url.password,
     }
 
-    sqls = [
-        "drop database if exists %(database)s;",
-        "create database %(database)s;"
-    ]
-
     if driver == 'sqlite':
         return 'sqlite:////tmp/%s' % auth['database']
     elif driver in ['mysql', 'postgresql']:
-        sql_query = map(lambda x: x % auth, sqls)
-        _execute_sql(engine, sql_query, driver)
+        sql = 'create database %s;' % auth['database']
+        _execute_sql(engine, [sql], driver)
     else:
         raise ValueError('Unsupported RDBMS %s' % driver)
 
@@ -90,16 +85,15 @@ def drop_database(admin_engine, current_uri):
 
     engine = get_engine(current_uri)
     driver = engine.name
-    auth = {'database': engine.url.database, 'user': engine.url.username}
 
     if driver == 'sqlite':
         try:
-            os.remove(auth['database'])
+            os.remove(engine.url.database)
         except OSError:
             pass
     elif driver in ['mysql', 'postgresql']:
-        sql = "drop database if exists %(database)s;"
-        _execute_sql(admin_engine, [sql % auth], driver)
+        sql = 'drop database %s;' % engine.url.database
+        _execute_sql(admin_engine, [sql], driver)
     else:
         raise ValueError('Unsupported RDBMS %s' % driver)
 
