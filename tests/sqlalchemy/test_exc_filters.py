@@ -267,13 +267,14 @@ class TestRaiseReferenceError(TestsExceptionFilter):
 class TestDuplicate(TestsExceptionFilter):
 
     def _run_dupe_constraint_test(self, dialect_name, message,
-        expected_columns=['a', 'b']):
+        expected_columns=['a', 'b'], expected_value=None):
         matched = self._run_test(
             dialect_name, "insert into table some_values",
             self.IntegrityError(message),
             exception.DBDuplicateEntry
         )
         self.assertEqual(expected_columns, matched.columns)
+        self.assertEqual(expected_value, matched.value)
 
     def _not_dupe_constraint_test(self, dialect_name, statement, message,
         expected_cls, expected_message):
@@ -294,19 +295,36 @@ class TestDuplicate(TestsExceptionFilter):
     def test_mysql_mysqldb(self):
         self._run_dupe_constraint_test("mysql",
             '(1062, "Duplicate entry '
-            '\'2-3\' for key \'uniq_tbl0a0b\'")')
+            '\'2-3\' for key \'uniq_tbl0a0b\'")', expected_value='2-3')
 
     def test_mysql_mysqlconnector(self):
         self._run_dupe_constraint_test("mysql",
             '1062 (23000): Duplicate entry '
-            '\'2-3\' for key \'uniq_tbl0a0b\'")')
+            '\'2-3\' for key \'uniq_tbl0a0b\'")', expected_value='2-3')
 
     def test_postgresql(self):
         self._run_dupe_constraint_test(
             'postgresql',
             'duplicate key value violates unique constraint'
             '"uniq_tbl0a0b"'
-            '\nDETAIL:  Key (a, b)=(2, 3) already exists.\n'
+            '\nDETAIL:  Key (a, b)=(2, 3) already exists.\n',
+            expected_value='2, 3'
+        )
+
+    def test_mysql_single(self):
+        self._run_dupe_constraint_test("mysql",
+            "1062 (23000): Duplicate entry '2' for key 'b'",
+            expected_columns=['b'],
+            expected_value='2'
+        )
+
+    def test_postgresql_single(self):
+        self._run_dupe_constraint_test(
+            'postgresql',
+            'duplicate key value violates unique constraint "uniq_tbl0b"\n'
+            'DETAIL:  Key (b)=(2) already exists.\n',
+            expected_columns=['b'],
+            expected_value='2'
         )
 
     def test_unsupported_backend(self):

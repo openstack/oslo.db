@@ -89,9 +89,14 @@ def _deadlock_error(operational_error, match, engine_name, is_disconnect):
 
 
 @filters("mysql", sqla_exc.IntegrityError,
-    r"^.*\b1062\b.*Duplicate entry '[^']+' for key '([^']+)'.*$")
+    r"^.*\b1062\b.*Duplicate entry '(?P<value>[^']+)'"
+    r" for key '(?P<columns>[^']+)'.*$")
+# NOTE(pkholkin): the first regex is suitable only for PostgreSQL 9.x versions
+#                 the second regex is suitable for PostgreSQL 8.x versions
 @filters("postgresql", sqla_exc.IntegrityError,
-    r"^.*duplicate\s+key.*\"([^\"]+)\"\s*\n.*$")
+    (r'^.*duplicate\s+key.*"(?P<columns>[^"]+)"\s*\n.*'
+    r'Key\s+\((?P<key>.*)\)=\((?P<value>.*)\)\s+already\s+exists.*$',
+    r"^.*duplicate\s+key.*\"(?P<columns>[^\"]+)\"\s*\n.*$"))
 def _default_dupe_key_error(integrity_error, match, engine_name,
     is_disconnect):
     """Filter for MySQL or Postgresql duplicate key error.
@@ -121,7 +126,7 @@ def _default_dupe_key_error(integrity_error, match, engine_name,
 
     """
 
-    columns = match.group(1)
+    columns = match.group('columns')
 
     # note(vsergeyev): UniqueConstraint name convention: "uniq_t0c10c2"
     #                  where `t` it is table name and columns `c1`, `c2`
@@ -135,12 +140,14 @@ def _default_dupe_key_error(integrity_error, match, engine_name,
     else:
         columns = columns[len(uniqbase):].split("0")[1:]
 
-    raise exception.DBDuplicateEntry(columns, integrity_error)
+    value = match.groupdict().get('value')
+
+    raise exception.DBDuplicateEntry(columns, integrity_error, value)
 
 
 @filters("sqlite", sqla_exc.IntegrityError,
-    (r"^.*columns?([^)]+)(is|are)\s+not\s+unique$",
-    r"^.*UNIQUE\s+constraint\s+failed:\s+(.+)$"))
+    (r"^.*columns?(?P<columns>[^)]+)(is|are)\s+not\s+unique$",
+    r"^.*UNIQUE\s+constraint\s+failed:\s+(?P<columns>.+)$"))
 def _sqlite_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
     """Filter for SQLite duplicate key error.
 
@@ -156,7 +163,7 @@ def _sqlite_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
     N columns - (IntegrityError) UNIQUE constraint failed: tbl.k1, tbl.k2
 
     """
-    columns = match.group(1)
+    columns = match.group('columns')
     columns = [c.split('.')[-1] for c in columns.strip().split(", ")]
     raise exception.DBDuplicateEntry(columns, integrity_error)
 
