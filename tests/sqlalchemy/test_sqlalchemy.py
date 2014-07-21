@@ -24,13 +24,11 @@ import fixtures
 import mock
 from oslotest import base as oslo_test
 import sqlalchemy
-from sqlalchemy import Column, MetaData, Table, UniqueConstraint
-from sqlalchemy import DateTime, Integer, String
-from sqlalchemy import exc as sqla_exc
-from sqlalchemy.exc import DataError
+from sqlalchemy import Column, MetaData, Table
+from sqlalchemy import Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
-from oslo.db import exception as db_exc
+from oslo.db import exception
 from oslo.db import options as db_options
 from oslo.db.sqlalchemy import models
 from oslo.db.sqlalchemy import session
@@ -39,90 +37,6 @@ from oslo.db.sqlalchemy import test_base
 
 BASE = declarative_base()
 _TABLE_NAME = '__tmp__test__tmp__'
-
-
-class TmpTable(BASE, models.ModelBase):
-    __tablename__ = _TABLE_NAME
-    id = Column(Integer, primary_key=True)
-    foo = Column(Integer)
-
-
-class SessionErrorWrapperTestCase(test_base.DbTestCase):
-    def setUp(self):
-        super(SessionErrorWrapperTestCase, self).setUp()
-        meta = MetaData()
-        meta.bind = self.engine
-        test_table = Table(_TABLE_NAME, meta,
-                           Column('id', Integer, primary_key=True,
-                                  nullable=False),
-                           Column('deleted', Integer, default=0),
-                           Column('deleted_at', DateTime),
-                           Column('updated_at', DateTime),
-                           Column('created_at', DateTime),
-                           Column('foo', Integer),
-                           UniqueConstraint('foo', name='uniq_foo'))
-        test_table.create()
-        self.addCleanup(test_table.drop)
-
-    def test_flush_wrapper(self):
-        _session = self.sessionmaker()
-
-        tbl = TmpTable()
-        tbl.update({'foo': 10})
-        tbl.save(_session)
-
-        tbl2 = TmpTable()
-        tbl2.update({'foo': 10})
-        self.assertRaises(db_exc.DBDuplicateEntry, tbl2.save, _session)
-
-    def test_execute_wrapper(self):
-        _session = self.sessionmaker()
-        with _session.begin():
-            for i in [10, 20]:
-                tbl = TmpTable()
-                tbl.update({'foo': i})
-                tbl.save(session=_session)
-
-            method = _session.query(TmpTable).\
-                filter_by(foo=10).\
-                update
-            self.assertRaises(db_exc.DBDuplicateEntry,
-                              method, {'foo': 20})
-
-    def test_ibm_db_sa_raise_if_duplicate_entry_error_duplicate(self):
-        # Tests that the session._raise_if_duplicate_entry_error method
-        # translates the duplicate entry integrity error for the DB2 engine.
-        statement = ('INSERT INTO key_pairs (created_at, updated_at, '
-                     'deleted_at, deleted, name, user_id, fingerprint) VALUES '
-                     '(?, ?, ?, ?, ?, ?, ?)')
-        params = ['20130918001123627099', None, None, 0, 'keypair-23474772',
-                  '974a7c9ffde6419f9811fcf94a917f47',
-                  '7d:2c:58:7f:97:66:14:3f:27:c7:09:3c:26:95:66:4d']
-        orig = sqla_exc.SQLAlchemyError(
-            'SQL0803N  One or more values in the INSERT statement, UPDATE '
-            'statement, or foreign key update caused by a DELETE statement are'
-            ' not valid because the primary key, unique constraint or unique '
-            'index identified by "2" constrains table "NOVA.KEY_PAIRS" from '
-            'having duplicate values for the index key.')
-        integrity_error = sqla_exc.IntegrityError(statement, params, orig)
-        self.assertRaises(db_exc.DBDuplicateEntry,
-                          session._raise_if_duplicate_entry_error,
-                          integrity_error, 'ibm_db_sa')
-
-    def test_ibm_db_sa_raise_if_duplicate_entry_error_no_match(self):
-        # Tests that the session._raise_if_duplicate_entry_error method
-        # does not raise a DBDuplicateEntry exception when it's not a matching
-        # integrity error.
-        statement = ('ALTER TABLE instance_types ADD CONSTRAINT '
-                     'uniq_name_x_deleted UNIQUE (name, deleted)')
-        params = None
-        orig = sqla_exc.SQLAlchemyError(
-            'SQL0542N  The column named "NAME" cannot be a column of a '
-            'primary key or unique key constraint because it can contain null '
-            'values.')
-        integrity_error = sqla_exc.IntegrityError(statement, params, orig)
-        session._raise_if_duplicate_entry_error(integrity_error, 'ibm_db_sa')
-
 
 _REGEXP_TABLE_NAME = _TABLE_NAME + "regexp"
 
@@ -260,84 +174,6 @@ class TestDBDisconnected(oslo_test.BaseTestCase):
                 self._test_ping_listener_disconnected(connection)
 
 
-class TestDBDeadlocked(test_base.DbTestCase):
-
-    def _test_db_deadlock(self, engine_key, error_msg):
-        statement = ('SELECT quota_usages.created_at AS '
-                     'quota_usages_created_at, quota_usages.updated_at AS '
-                     'quota_usages_updated_at, quota_usages.deleted_at AS '
-                     'quota_usages_deleted_at, quota_usages.deleted AS '
-                     'quota_usages_deleted, quota_usages.id AS '
-                     'quota_usages_id, quota_usages.project_id AS '
-                     'quota_usages_project_id, quota_usages.user_id AS '
-                     'quota_usages_user_id, quota_usages.resource AS '
-                     'quota_usages_resource, quota_usages.in_use AS '
-                     'quota_usages_in_use, quota_usages.reserved AS '
-                     'quota_usages_reserved, quota_usages.until_refresh AS '
-                     'quota_usages_until_refresh \nFROM quota_usages \n'
-                     'WHERE quota_usages.deleted = %(deleted_1)s AND '
-                     'quota_usages.project_id = %(project_id_1)s AND '
-                     '(quota_usages.user_id = %(user_id_1)s OR '
-                     'quota_usages.user_id IS NULL) FOR UPDATE')
-        params = {'project_id_1': u'8891d4478bbf48ad992f050cdf55e9b5',
-                  'user_id_1': u'22b6a9fe91b349639ce39146274a25ba',
-                  'deleted_1': 0}
-        orig = sqla_exc.SQLAlchemyError(error_msg)
-        deadlock_error = sqla_exc.OperationalError(statement, params, orig)
-        self.assertRaises(db_exc.DBDeadlock,
-                          session._raise_if_deadlock_error,
-                          deadlock_error,
-                          engine_key)
-
-    def test_mysql_deadlock(self):
-        self._test_db_deadlock("mysql",
-                               "(1213, 'Deadlock found when trying to get "
-                               " lock; try restarting transaction')")
-
-    def test_postgresql_deadlock(self):
-        self._test_db_deadlock("postgresql",
-                               "(TransactionRollbackError) deadlock detected")
-
-    def test_ibm_db_sa_deadlock(self):
-        self._test_db_deadlock("ibm_db_sa",
-                               "SQL0911N The current transaction has been "
-                               "rolled back because of a deadlock or timeout")
-
-    def _test_db_fail_without_deadlock(self, engine_key):
-        statement = ('SELECT quota_usages.created_at AS '
-                     'quota_usages_created_at, quota_usages.updated_at AS '
-                     'quota_usages_updated_at, quota_usages.deleted_at AS '
-                     'quota_usages_deleted_at, quota_usages.deleted AS '
-                     'quota_usages_deleted, quota_usages.id AS '
-                     'quota_usages_id, quota_usages.project_id AS '
-                     'quota_usages_project_id, quota_usages.user_id AS '
-                     'quota_usages_user_id, quota_usages.resource AS '
-                     'quota_usages_resource, quota_usages.in_use AS '
-                     'quota_usages_in_use, quota_usages.reserved AS '
-                     'quota_usages_reserved, quota_usages.until_refresh AS '
-                     'quota_usages_until_refresh \nFROM quota_usages \n'
-                     'WHERE quota_usages.deleted = %(deleted_1)s AND '
-                     'quota_usages.project_id = %(project_id_1)s AND '
-                     '(quota_usages.user_id = %(user_id_1)s OR '
-                     'quota_usages.user_id IS NULL) FOR UPDATE')
-        params = {'project_id_1': u'8891d4478bbf48ad992f050cdf55e9b5',
-                  'user_id_1': u'22b6a9fe91b349639ce39146274a25ba',
-                  'deleted_1': 0}
-        orig = sqla_exc.SQLAlchemyError('Other error occurred.')
-        dbapi_error = sqla_exc.DBAPIError(statement, params, orig)
-        self.assertIsNone(session._raise_if_deadlock_error(dbapi_error,
-                                                           engine_key))
-
-    def test_mysql_fail_without_deadlock(self):
-        self._test_db_fail_without_deadlock('mysql')
-
-    def test_postgresql_fail_without_deadlock(self):
-        self._test_db_fail_without_deadlock('postgresql')
-
-    def test_ibm_db_sa_fail_without_deadlock(self):
-        self._test_db_fail_without_deadlock('ibm_db_sa')
-
-
 class MySQLModeTestCase(test_base.MySQLOpportunisticTestCase):
 
     def __init__(self, *args, **kwargs):
@@ -389,7 +225,7 @@ class MySQLStrictAllTablesModeTestCase(MySQLModeTestCase):
         value = 'a' * 512
         # String is too long.
         # With STRICT_ALL_TABLES or TRADITIONAL mode set, this is an error.
-        self.assertRaises(DataError,
+        self.assertRaises(exception.DBError,
                           self._test_string_too_long, value)
 
 
