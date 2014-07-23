@@ -1094,3 +1094,47 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
             "Return value not allowed for multiple filtered function",
             str(exc)
         )
+
+
+class TestGetInnoDBTables(db_test_base.MySQLOpportunisticTestCase):
+
+    def test_all_tables_use_innodb(self):
+        self.engine.execute("CREATE TABLE customers "
+                            "(a INT, b CHAR (20), INDEX (a)) ENGINE=InnoDB")
+        self.assertEqual([], utils.get_non_innodb_tables(self.engine))
+
+    def test_all_tables_use_innodb_false(self):
+        self.engine.execute("CREATE TABLE employee "
+                            "(i INT) ENGINE=MEMORY")
+        self.assertEqual(['employee'],
+                         utils.get_non_innodb_tables(self.engine))
+
+    def test_skip_tables_use_default_value(self):
+        self.engine.execute("CREATE TABLE migrate_version "
+                            "(i INT) ENGINE=MEMORY")
+        self.assertEqual([],
+                         utils.get_non_innodb_tables(self.engine))
+
+    def test_skip_tables_use_passed_value(self):
+        self.engine.execute("CREATE TABLE some_table "
+                            "(i INT) ENGINE=MEMORY")
+        self.assertEqual([],
+                         utils.get_non_innodb_tables(
+                             self.engine, skip_tables=('some_table',)))
+
+    def test_skip_tables_use_empty_list(self):
+        self.engine.execute("CREATE TABLE some_table_3 "
+                            "(i INT) ENGINE=MEMORY")
+        self.assertEqual(['some_table_3'],
+                         utils.get_non_innodb_tables(
+                         self.engine, skip_tables=()))
+
+    def test_skip_tables_use_several_values(self):
+        self.engine.execute("CREATE TABLE some_table_1 "
+                            "(i INT) ENGINE=MEMORY")
+        self.engine.execute("CREATE TABLE some_table_2 "
+                            "(i INT) ENGINE=MEMORY")
+        self.assertEqual([],
+                         utils.get_non_innodb_tables(
+                             self.engine,
+                             skip_tables=('some_table_1', 'some_table_2')))

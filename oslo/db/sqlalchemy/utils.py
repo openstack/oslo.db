@@ -36,6 +36,7 @@ from sqlalchemy import Integer
 from sqlalchemy import MetaData
 from sqlalchemy.sql.expression import literal_column
 from sqlalchemy.sql.expression import UpdateBase
+from sqlalchemy.sql import text
 from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy.types import NullType
@@ -983,3 +984,35 @@ class DialectMultiFunctionDispatcher(DialectFunctionDispatcher):
                     "multiple filtered function")
 
 dispatch_for_dialect = DialectFunctionDispatcher.dispatch_for_dialect
+
+
+def get_non_innodb_tables(connectable, skip_tables=('migrate_version',
+                                                    'alembic_version')):
+    """Get a list of tables which don't use InnoDB storage engine.
+
+     :param connectable: a SQLAlchemy Engine or a Connection instance
+     :param skip_tables: a list of tables which might have a different
+                         storage engine
+     """
+
+    query_str = """
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = :database AND
+              engine != 'InnoDB'
+    """
+
+    params = {}
+    if skip_tables:
+        params = dict(
+            ('skip_%s' % i, table_name)
+            for i, table_name in enumerate(skip_tables)
+        )
+
+        placeholders = ', '.join(':' + p for p in params)
+        query_str += ' AND table_name NOT IN (%s)' % placeholders
+
+    params['database'] = connectable.engine.url.database
+    query = text(query_str)
+    noninnodb = connectable.execute(query, **params)
+    return [i[0] for i in noninnodb]
