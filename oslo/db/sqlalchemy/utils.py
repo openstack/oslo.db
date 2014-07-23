@@ -656,7 +656,8 @@ def _change_deleted_column_type_to_id_type_sqlite(migrate_engine, table_name,
         execute()
 
 
-def get_connect_string(backend, database, user=None, passwd=None):
+def get_connect_string(backend, database, user=None, passwd=None,
+                       host='localhost'):
     """Get database connection
 
     Try to get a connection with a very specific set of values, if we get
@@ -665,11 +666,12 @@ def get_connect_string(backend, database, user=None, passwd=None):
     args = {'backend': backend,
             'user': user,
             'passwd': passwd,
+            'host': host,
             'database': database}
     if backend == 'sqlite':
         template = '%(backend)s:///%(database)s'
     else:
-        template = "%(backend)s://%(user)s:%(passwd)s@localhost/%(database)s"
+        template = "%(backend)s://%(user)s:%(passwd)s@%(host)s/%(database)s"
     return template % args
 
 
