@@ -119,18 +119,20 @@ database_opts = [
                      'on connection lost.'),
     cfg.IntOpt('db_retry_interval',
                default=1,
-               help='Seconds between database connection retries.'),
+               help='Seconds between retries of a database transaction.'),
     cfg.BoolOpt('db_inc_retry_interval',
                 default=True,
-                help='If True, increases the interval between database '
-                     'connection retries up to db_max_retry_interval.'),
+                help='If True, increases the interval between retries '
+                     'of a database operation up to db_max_retry_interval.'),
     cfg.IntOpt('db_max_retry_interval',
                default=10,
                help='If db_inc_retry_interval is set, the '
-                    'maximum seconds between database connection retries.'),
+                    'maximum seconds between retries of a '
+                    'database operation.'),
     cfg.IntOpt('db_max_retries',
                default=20,
-               help='Maximum database connection retries before error is '
+               help='Maximum retries in case of connection error or deadlock '
+                    'error before error is '
                     'raised. Set to -1 to specify an infinite retry '
                     'count.'),
 ]
