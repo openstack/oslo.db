@@ -451,3 +451,19 @@ class MysqlSetCallbackTest(oslo_test.BaseTestCase):
             "SELECT * FROM bar",
         ]
         self.assertEqual(exp_calls, engine._execs)
+
+
+class PatchStacktraceTest(test_base.DbTestCase):
+
+    def test_trace(self):
+        engine = self.engine
+        engine.connect()
+        with mock.patch.object(engine.dialect, "do_execute") as mock_exec:
+            session._add_trace_comments(engine)
+
+            engine.execute("select * from table")
+
+        call = mock_exec.mock_calls[0]
+
+        # we're the caller, see that we're in there
+        self.assertTrue("tests/sqlalchemy/test_sqlalchemy.py" in call[1][1])
