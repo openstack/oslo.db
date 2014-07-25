@@ -78,7 +78,8 @@ def handle_error(engine, listener):
                         sqla_exc.StatementError):
                         sqlalchemy_exception = reraised_exception
                         original_exception = sqlalchemy_exception.orig
-                        is_disconnect = isinstance(sqlalchemy_exception,
+                        self._is_disconnect = is_disconnect = \
+                            isinstance(sqlalchemy_exception,
                             sqla_exc.DBAPIError) and sqlalchemy_exception.\
                             connection_invalidated
                     else:
@@ -104,11 +105,38 @@ def handle_error(engine, listener):
                             newraise = _raised
                             break
 
+                    if sqlalchemy_exception and \
+                            self._is_disconnect != ctx.is_disconnect:
+
+                        if not ctx.is_disconnect:
+                            raise NotImplementedError(
+                                "Can't reset 'disconnect' status of exception "
+                                "once it is set with this version of "
+                                "SQLAlchemy")
+
+                        sqlalchemy_exception.connection_invalidated = \
+                            self._is_disconnect = ctx.is_disconnect
+                        if self._is_disconnect:
+                            self._do_disconnect(e)
+
                 if newraise:
                     six.reraise(type(newraise), newraise, sys.exc_info()[2])
                 else:
                     six.reraise(type(reraised_exception),
                         reraised_exception, sys.exc_info()[2])
+
+            def _do_disconnect(self, e):
+                del self._is_disconnect
+                if utils.sqla_094:
+                    dbapi_conn_wrapper = self.connection
+                    self.engine.pool._invalidate(dbapi_conn_wrapper, e)
+                    self.invalidate(e)
+                else:
+                    dbapi_conn_wrapper = self.connection
+                    self.invalidate(e)
+                    if not hasattr(dbapi_conn_wrapper, '_pool') or \
+                            dbapi_conn_wrapper._pool is self.engine.pool:
+                        self.engine.dispose()
 
         engine._connection_cls = Connection
     engine._oslo_handle_error_events.append(listener)

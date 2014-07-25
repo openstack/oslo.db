@@ -20,4 +20,5 @@ _SQLA_VERSION = tuple(
 )
 
 sqla_097 = _SQLA_VERSION >= (0, 9, 7)
+sqla_094 = _SQLA_VERSION >= (0, 9, 4)
 sqla_08 = _SQLA_VERSION >= (0, 8)
