@@ -289,7 +289,9 @@ from sqlalchemy.interfaces import PoolListener
 import sqlalchemy.orm
 from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
+from sqlalchemy.sql.expression import select
 
+from oslo.db import exception
 from oslo.db.openstack.common.gettextutils import _LW
 from oslo.db.openstack.common import timeutils
 from oslo.db import options
@@ -335,34 +337,23 @@ def _thread_yield(dbapi_con, con_record):
     time.sleep(0)
 
 
-def _ping_listener(engine, dbapi_conn, connection_rec, connection_proxy):
-    """Ensures that MySQL, PostgreSQL or DB2 connections are alive.
+def _begin_ping_listener(connection):
+    """Ping the server at transaction begin and transparently reconnect
+    if a disconnect exception occurs.
 
-    Borrowed from:
-    http://groups.google.com/group/sqlalchemy/msg/a4ce563d802c929f
     """
-    cursor = dbapi_conn.cursor()
     try:
-        ping_sql = 'select 1'
-        if engine.name == 'ibm_db_sa':
-            # DB2 requires a table expression
-            ping_sql = 'select 1 from (values (1)) AS t1'
-        cursor.execute(ping_sql)
-    except Exception as ex:
-        if engine.dialect.is_disconnect(ex, dbapi_conn, cursor):
-            msg = _LW('Database server has gone away: %s') % ex
-            LOG.warning(msg)
-
-            # if the database server has gone away, all connections in the pool
-            # have become invalid and we can safely close all of them here,
-            # rather than waste time on checking of every single connection
-            engine.dispose()
-
-            # this will be handled by SQLAlchemy and will force it to create
-            # a new connection and retry the original action
-            raise sqla_exc.DisconnectionError(msg)
-        else:
-            raise
+        # run a SELECT 1.   use a core select() so that
+        # any details like that needed by Oracle, DB2 etc. are handled.
+        connection.scalar(select([1]))
+    except exception.DBConnectionError:
+        # catch DBConnectionError, which is raised by the filter
+        # system.
+        # disconnect detected.  The connection is now
+        # "invalid", but the pool should be ready to return
+        # new connections assuming they are good now.
+        # run the select again to re-validate the Connection.
+        connection.scalar(select([1]))
 
 
 def _set_session_sql_mode(dbapi_con, connection_rec, sql_mode=None):
@@ -482,12 +473,9 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     if thread_checkin:
         sqlalchemy.event.listen(engine, 'checkin', _thread_yield)
 
-    if engine.name in ('ibm_db_sa', 'mysql', 'postgresql'):
-        ping_callback = functools.partial(_ping_listener, engine)
-        sqlalchemy.event.listen(engine, 'checkout', ping_callback)
-        if engine.name == 'mysql':
-            if mysql_sql_mode is not None:
-                _mysql_set_mode_callback(engine, mysql_sql_mode)
+    if engine.name == 'mysql':
+        if mysql_sql_mode is not None:
+            _mysql_set_mode_callback(engine, mysql_sql_mode)
     elif 'sqlite' in connection_dict.drivername:
         if not sqlite_synchronous:
             sqlalchemy.event.listen(engine, 'connect',
@@ -522,6 +510,10 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
 
     # register alternate exception handler
     exc_filters.register_engine(engine)
+
+    # register on begin handler
+    sqlalchemy.event.listen(engine, "begin", _begin_ping_listener)
+
     return engine
 
 

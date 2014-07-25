@@ -17,9 +17,7 @@
 
 """Unit tests for SQLAlchemy specific code."""
 import logging
-from oslo.config import cfg
 
-import _mysql_exceptions
 import fixtures
 import mock
 from oslotest import base as oslo_test
@@ -28,6 +26,7 @@ from sqlalchemy import Column, MetaData, Table
 from sqlalchemy import Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
+from oslo.config import cfg
 from oslo.db import exception
 from oslo.db import options as db_options
 from oslo.db.sqlalchemy import models
@@ -125,53 +124,6 @@ class FakeDB2Engine(object):
 
     def dispose(self):
         pass
-
-
-class TestDBDisconnected(oslo_test.BaseTestCase):
-
-    def _test_ping_listener_disconnected(self, connection):
-        engine_args = {
-            'pool_recycle': 3600,
-            'echo': False,
-            'convert_unicode': True}
-
-        engine = sqlalchemy.create_engine(connection, **engine_args)
-        with mock.patch.object(engine, 'dispose') as dispose_mock:
-            self.assertRaises(sqlalchemy.exc.DisconnectionError,
-                              session._ping_listener, engine,
-                              FakeDBAPIConnection(), FakeConnectionRec(),
-                              FakeConnectionProxy())
-            dispose_mock.assert_called_once_with()
-
-    def test_mysql_ping_listener_disconnected(self):
-        def fake_execute(sql):
-            raise _mysql_exceptions.OperationalError(self.mysql_error,
-                                                     ('MySQL server has '
-                                                      'gone away'))
-        with mock.patch.object(FakeCursor, 'execute',
-                               side_effect=fake_execute):
-            connection = 'mysql://root:password@fakehost/fakedb?charset=utf8'
-            for code in [2006, 2013, 2014, 2045, 2055]:
-                self.mysql_error = code
-                self._test_ping_listener_disconnected(connection)
-
-    def test_db2_ping_listener_disconnected(self):
-
-        def fake_execute(sql):
-            raise OperationalError('SQL30081N: DB2 Server '
-                                   'connection is no longer active')
-        with mock.patch.object(FakeCursor, 'execute',
-                               side_effect=fake_execute):
-            # TODO(dperaza): Need a fake engine for db2 since ibm_db_sa is not
-            # in global requirements. Change this code to use real IBM db2
-            # engine as soon as ibm_db_sa is included in global-requirements
-            # under openstack/requirements project.
-            fake_create_engine = lambda *args, **kargs: FakeDB2Engine()
-            with mock.patch.object(sqlalchemy, 'create_engine',
-                                   side_effect=fake_create_engine):
-                connection = ('ibm_db_sa://db2inst1:openstack@fakehost:50000'
-                              '/fakedab')
-                self._test_ping_listener_disconnected(connection)
 
 
 class MySQLModeTestCase(test_base.MySQLOpportunisticTestCase):

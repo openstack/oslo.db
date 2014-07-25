@@ -13,6 +13,7 @@
 """Test exception filters applied to engines."""
 
 import contextlib
+import itertools
 
 import mock
 import six
@@ -58,6 +59,16 @@ class TestsExceptionFilter(test_base.DbTestCase):
         https://bitbucket.org/zzzeek/sqlalchemy/issue/3075/
 
         """
+
+    @contextlib.contextmanager
+    def _dbapi_fixture(self, dialect_name):
+        engine = self.engine
+        with contextlib.nested(
+            mock.patch.object(engine.dialect.dbapi, "Error",
+                self.Error),
+            mock.patch.object(engine.dialect, "name", dialect_name),
+        ):
+            yield
 
     @contextlib.contextmanager
     def _fixture(self, dialect_name, exception, is_disconnect=False):
@@ -451,3 +462,61 @@ class IntegrationTest(test_base.DbTestCase):
             self.Foo.counter == sqla.func.imfake(123))
         matched = self.assertRaises(sqla.exc.OperationalError, q.all)
         self.assertTrue("no such function" in str(matched))
+
+
+class TestDBDisconnected(TestsExceptionFilter):
+
+    @contextlib.contextmanager
+    def _fixture(self, dialect_name, exception, num_disconnects):
+        engine = self.engine
+
+        real_do_execute = engine.dialect.do_execute
+        counter = itertools.count(1)
+
+        def fake_do_execute(self, *arg, **kw):
+            if next(counter) > num_disconnects:
+                return real_do_execute(self, *arg, **kw)
+            else:
+                raise exception
+
+        with self._dbapi_fixture(dialect_name):
+            with contextlib.nested(
+                mock.patch.object(engine.dialect,
+                    "do_execute", fake_do_execute),
+                mock.patch.object(engine.dialect, "is_disconnect",
+                    mock.Mock(return_value=True))
+            ):
+                yield
+
+    def _test_ping_listener_disconnected(self, dialect_name, exc_obj):
+        with self._fixture(dialect_name, exc_obj, 1):
+            conn = self.engine.connect()
+            with conn.begin():
+                self.assertEqual(conn.scalar(sqla.select([1])), 1)
+                self.assertFalse(conn.closed)
+                self.assertFalse(conn.invalidated)
+                self.assertTrue(conn.in_transaction())
+
+        with self._fixture(dialect_name, exc_obj, 2):
+            conn = self.engine.connect()
+            self.assertRaises(
+                exception.DBConnectionError,
+                conn.begin
+            )
+            self.assertFalse(conn.closed)
+            self.assertFalse(conn.in_transaction())
+            self.assertTrue(conn.invalidated)
+
+    def test_mysql_ping_listener_disconnected(self):
+        for code in [2006, 2013, 2014, 2045, 2055]:
+            self._test_ping_listener_disconnected(
+                "mysql",
+                self.OperationalError('%d MySQL server has gone away' % code)
+            )
+
+    def test_db2_ping_listener_disconnected(self):
+        self._test_ping_listener_disconnected(
+            "ibm_db_sa",
+            self.OperationalError(
+                'SQL30081N: DB2 Server connection is no longer active')
+        )
