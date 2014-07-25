@@ -16,10 +16,11 @@ added at some point but for which oslo.db provides a compatible versions
 for previous SQLAlchemy versions.
 
 """
-from oslo.db.sqlalchemy.compat import handle_error
+from oslo.db.sqlalchemy.compat import handle_error as _h_err
 
 # trying to get: "from oslo.db.sqlalchemy import compat; compat.handle_error"
 # flake8 won't let me import handle_error directly
-handle_error = handle_error.handle_error
+handle_error = _h_err.handle_error
+ExceptionContextImpl = _h_err.ExceptionContextImpl
 
-__all__ = ['handle_error']
+__all__ = ['handle_error', 'ExceptionContextImpl']
