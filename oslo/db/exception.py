@@ -30,8 +30,9 @@ class DBError(Exception):
 
 class DBDuplicateEntry(DBError):
     """Wraps an implementation specific exception."""
-    def __init__(self, columns=None, inner_exception=None):
+    def __init__(self, columns=None, inner_exception=None, value=None):
         self.columns = columns or []
+        self.value = value
         super(DBDuplicateEntry, self).__init__(inner_exception)
 
 
