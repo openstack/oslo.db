@@ -16,6 +16,7 @@
 #    under the License.
 
 """Unit tests for SQLAlchemy specific code."""
+import contextlib
 import logging
 
 import fixtures
@@ -452,6 +453,165 @@ class MysqlSetCallbackTest(oslo_test.BaseTestCase):
             "SELECT * FROM bar",
         ]
         self.assertEqual(exp_calls, engine._execs)
+
+
+class CreateEngineTest(oslo_test.BaseTestCase):
+    """Test that dialect-specific arguments/ listeners are set up correctly.
+
+    """
+
+    @contextlib.contextmanager
+    def _fixture(self):
+        # use a SQLite engine so that the tests don't rely on
+        # specific DBAPIs being installed...
+        real_engine = sqlalchemy.create_engine("sqlite://")
+
+        def muck_real_engine(url, **kw):
+            # ...but alter the URL on the engine so that the dispatch
+            # system goes off the fake URL we are using.
+            real_engine.url = url
+            return real_engine
+
+        with contextlib.nested(
+            mock.patch.object(
+                session.sqlalchemy, "create_engine",
+                mock.Mock(side_effect=muck_real_engine)),
+            mock.patch.object(session.sqlalchemy.event, "listen")
+        ) as (create_engine, listen_evt):
+            yield create_engine, listen_evt
+
+    def _assert_event_listened(self, listen_evt, evt_name, listen_fn):
+        call_set = set([
+            call[1][1:] for call in listen_evt.mock_calls
+        ])
+        self.assertTrue(
+            (evt_name, listen_fn) in call_set
+        )
+
+    def _assert_event_not_listened(self, listen_evt, evt_name, listen_fn):
+        call_set = set([
+            call[1][1:] for call in listen_evt.mock_calls
+        ])
+        self.assertTrue(
+            (evt_name, listen_fn) not in call_set
+        )
+
+    def test_queuepool_args(self):
+        with self._fixture() as (create_engine, listen_evt):
+            session.create_engine(
+                "mysql://u:p@host/test",
+                max_pool_size=10, max_overflow=10)
+            self.assertEqual(create_engine.mock_calls[0][2]['pool_size'], 10)
+            self.assertEqual(create_engine.mock_calls[0][2][
+                'max_overflow'], 10)
+
+    def test_sqlite_memory_pool_args(self):
+        for url in ("sqlite://", "sqlite:///:memory:"):
+            with self._fixture() as (create_engine, listen_evt):
+                session.create_engine(
+                    url,
+                    max_pool_size=10, max_overflow=10)
+
+                # queuepool arguments are not peresnet
+                self.assertTrue(
+                    'pool_size' not in create_engine.mock_calls[0][2])
+                self.assertTrue(
+                    'max_overflow' not in create_engine.mock_calls[0][2])
+
+                self.assertEqual(
+                    create_engine.mock_calls[0][2]['connect_args'],
+                    {'check_same_thread': False}
+                )
+
+                # due to memory connection
+                self.assertTrue('poolclass' in create_engine.mock_calls[0][2])
+
+    def test_sqlite_file_pool_args(self):
+        with self._fixture() as (create_engine, listen_evt):
+            session.create_engine(
+                "sqlite:///somefile.db",
+                max_pool_size=10, max_overflow=10)
+
+            # queuepool arguments are not peresnet
+            self.assertTrue('pool_size' not in create_engine.mock_calls[0][2])
+            self.assertTrue(
+                'max_overflow' not in create_engine.mock_calls[0][2])
+
+            self.assertTrue(
+                'connect_args' not in create_engine.mock_calls[0][2]
+            )
+
+            # NullPool is the default for file based connections,
+            # no need to specify this
+            self.assertTrue('poolclass' not in create_engine.mock_calls[0][2])
+
+    def test_mysql_connect_args_default(self):
+        with self._fixture() as (create_engine, listen_evt):
+            session.create_engine("mysql+mysqldb://u:p@host/test")
+            self.assertTrue(
+                'connect_args' not in create_engine.mock_calls[0][2]
+            )
+
+    def test_mysqlconnector_raise_on_warnings_default(self):
+        with self._fixture() as (create_engine, listen_evt):
+            session.create_engine("mysql+mysqlconnector://u:p@host/test")
+            self.assertEqual(
+                create_engine.mock_calls[0][2]['connect_args'],
+                {'raise_on_warnings': False}
+            )
+
+    def test_mysqlconnector_raise_on_warnings_override(self):
+        with self._fixture() as (create_engine, listen_evt):
+            session.create_engine(
+                "mysql+mysqlconnector://u:p@host/test?raise_on_warnings=true")
+            self.assertTrue(
+                'connect_args' not in create_engine.mock_calls[0][2]
+            )
+
+    def test_thread_checkin(self):
+        with self._fixture() as (create_engine, listen_evt):
+            session.create_engine("mysql+mysqldb://u:p@host/test")
+
+            self._assert_event_listened(
+                listen_evt, "checkin", session._thread_yield)
+
+    def test_sqlite_fk_listener(self):
+        with self._fixture() as (create_engine, listen_evt):
+            session.create_engine("sqlite://", sqlite_fk=True)
+
+            self._assert_event_listened(
+                listen_evt, "connect", session._sqlite_foreign_keys_listener)
+
+        with self._fixture() as (create_engine, listen_evt):
+            session.create_engine("mysql://", sqlite_fk=True)
+
+            self._assert_event_not_listened(
+                listen_evt, "connect", session._sqlite_foreign_keys_listener)
+
+        with self._fixture() as (create_engine, listen_evt):
+            session.create_engine("sqlite://", sqlite_fk=False)
+
+            self._assert_event_not_listened(
+                listen_evt, "connect", session._sqlite_foreign_keys_listener)
+
+    def test_sqlite_synchronous_listener(self):
+        with self._fixture() as (create_engine, listen_evt):
+            session.create_engine("sqlite://")
+
+            self._assert_event_not_listened(
+                listen_evt, "connect", session._synchronous_switch_listener)
+
+        with self._fixture() as (create_engine, listen_evt):
+            session.create_engine("mysql://", sqlite_synchronous=True)
+
+            self._assert_event_not_listened(
+                listen_evt, "connect", session._synchronous_switch_listener)
+
+        with self._fixture() as (create_engine, listen_evt):
+            session.create_engine("sqlite://", sqlite_synchronous=False)
+
+            self._assert_event_listened(
+                listen_evt, "connect", session._synchronous_switch_listener)
 
 
 class PatchStacktraceTest(test_base.DbTestCase):

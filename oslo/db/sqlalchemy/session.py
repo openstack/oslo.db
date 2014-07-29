@@ -286,9 +286,8 @@ import time
 
 from oslo.utils import timeutils
 import six
-from sqlalchemy.interfaces import PoolListener
 import sqlalchemy.orm
-from sqlalchemy.pool import NullPool, StaticPool
+from sqlalchemy import pool
 from sqlalchemy.sql.expression import literal_column
 from sqlalchemy.sql.expression import select
 
@@ -296,19 +295,19 @@ from oslo.db import exception
 from oslo.db.openstack.common.gettextutils import _LW
 from oslo.db import options
 from oslo.db.sqlalchemy import exc_filters
+from oslo.db.sqlalchemy import utils
 
 LOG = logging.getLogger(__name__)
 
 
-class SqliteForeignKeysListener(PoolListener):
+def _sqlite_foreign_keys_listener(dbapi_con, con_record):
     """Ensures that the foreign key constraints are enforced in SQLite.
 
     The foreign key constraints are disabled by default in SQLite,
     so the foreign key constraints will be enabled here for every
     database connection
     """
-    def connect(self, dbapi_con, con_record):
-        dbapi_con.execute('pragma foreign_keys=ON')
+    dbapi_con.execute('pragma foreign_keys=ON')
 
 
 def _synchronous_switch_listener(dbapi_conn, connection_rec):
@@ -424,7 +423,7 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                   thread_checkin=True):
     """Return a new SQLAlchemy engine."""
 
-    connection_dict = sqlalchemy.engine.url.make_url(sql_connection)
+    url = sqlalchemy.engine.url.make_url(sql_connection)
 
     engine_args = {
         "pool_recycle": idle_timeout,
@@ -441,43 +440,24 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
         else:
             logger.setLevel(logging.WARNING)
 
-    if "sqlite" in connection_dict.drivername:
-        if sqlite_fk:
-            engine_args["listeners"] = [SqliteForeignKeysListener()]
-        engine_args["poolclass"] = NullPool
+    _init_connection_args(
+        url, engine_args,
+        sqlite_fk=sqlite_fk,
+        max_pool_size=max_pool_size,
+        max_overflow=max_overflow,
+        pool_timeout=pool_timeout
+    )
 
-        if sql_connection == "sqlite://":
-            engine_args["poolclass"] = StaticPool
-            engine_args["connect_args"] = {'check_same_thread': False}
-    else:
-        if max_pool_size is not None:
-            engine_args['pool_size'] = max_pool_size
-        if max_overflow is not None:
-            engine_args['max_overflow'] = max_overflow
-        if pool_timeout is not None:
-            engine_args['pool_timeout'] = pool_timeout
-        if connection_dict.get_dialect().driver == 'mysqlconnector':
-            # mysqlconnector engine (<1.0) incorrectly defaults to
-            # raise_on_warnings=True
-            #  https://bitbucket.org/zzzeek/sqlalchemy/issue/2515
-            engine_args['connect_args'] = {'raise_on_warnings': False}
+    engine = sqlalchemy.create_engine(url, **engine_args)
 
-    engine = sqlalchemy.create_engine(sql_connection, **engine_args)
-
-    if thread_checkin:
-        sqlalchemy.event.listen(engine, 'checkin', _thread_yield)
-
-    if engine.name == 'mysql':
-        if mysql_sql_mode is not None:
-            _mysql_set_mode_callback(engine, mysql_sql_mode)
-    elif 'sqlite' in connection_dict.drivername:
-        if not sqlite_synchronous:
-            sqlalchemy.event.listen(engine, 'connect',
-                                    _synchronous_switch_listener)
-        sqlalchemy.event.listen(engine, 'connect', _add_regexp_listener)
-
-    if connection_trace:
-        _add_trace_comments(engine)
+    _init_events(
+        engine,
+        mysql_sql_mode=mysql_sql_mode,
+        sqlite_synchronous=sqlite_synchronous,
+        sqlite_fk=sqlite_fk,
+        thread_checkin=thread_checkin,
+        connection_trace=connection_trace
+    )
 
     # register alternate exception handler
     exc_filters.register_engine(engine)
@@ -489,6 +469,68 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     _test_connection(engine, max_retries, retry_interval)
 
     return engine
+
+
+@utils.dispatch_for_dialect('*', multiple=True)
+def _init_connection_args(
+    url, engine_args,
+    max_pool_size=None, max_overflow=None, pool_timeout=None, **kw):
+
+    pool_class = url.get_dialect().get_pool_class(url)
+    if issubclass(pool_class, pool.QueuePool):
+        if max_pool_size is not None:
+            engine_args['pool_size'] = max_pool_size
+        if max_overflow is not None:
+            engine_args['max_overflow'] = max_overflow
+        if pool_timeout is not None:
+            engine_args['pool_timeout'] = pool_timeout
+
+
+@_init_connection_args.dispatch_for("sqlite")
+def _init_connection_args(url, engine_args, **kw):
+    pool_class = url.get_dialect().get_pool_class(url)
+    # singletonthreadpool is used for :memory: connections;
+    # replace it with StaticPool.
+    if issubclass(pool_class, pool.SingletonThreadPool):
+        engine_args["poolclass"] = pool.StaticPool
+        engine_args["connect_args"] = {'check_same_thread': False}
+
+
+@_init_connection_args.dispatch_for("mysql+mysqlconnector")
+def _init_connection_args(url, engine_args, **kw):
+    # mysqlconnector engine (<1.0) incorrectly defaults to
+    # raise_on_warnings=True
+    #  https://bitbucket.org/zzzeek/sqlalchemy/issue/2515
+    if "raise_on_warnings" not in url.query:
+        engine_args['connect_args'] = {'raise_on_warnings': False}
+
+
+@utils.dispatch_for_dialect('*', multiple=True)
+def _init_events(engine, thread_checkin=True, connection_trace=False, **kw):
+    if connection_trace:
+        _add_trace_comments(engine)
+
+    if thread_checkin:
+        sqlalchemy.event.listen(engine, 'checkin', _thread_yield)
+
+
+@_init_events.dispatch_for("mysql")
+def _init_events(engine, mysql_sql_mode=None, **kw):
+    if mysql_sql_mode is not None:
+        _mysql_set_mode_callback(engine, mysql_sql_mode)
+
+
+@_init_events.dispatch_for("sqlite")
+def _init_events(engine, sqlite_synchronous=True, sqlite_fk=False, **kw):
+    if not sqlite_synchronous:
+        sqlalchemy.event.listen(engine, 'connect',
+                                _synchronous_switch_listener)
+    sqlalchemy.event.listen(engine, 'connect', _add_regexp_listener)
+
+    if sqlite_fk:
+        sqlalchemy.event.listen(
+            engine, 'connect',
+            _sqlite_foreign_keys_listener)
 
 
 def _test_connection(engine, max_retries, retry_interval):
