@@ -649,6 +649,11 @@ def get_connect_string(backend, database, user=None, passwd=None,
 
     Try to get a connection with a very specific set of values, if we get
     these then we'll run the tests, otherwise they are skipped
+
+    DEPRECATED: this function is deprecated and will be removed from oslo.db
+    in a few releases. Please use the provisioning system for dealing
+    with URLs and database provisioning.
+
     """
     args = {'backend': backend,
             'user': user,
@@ -663,22 +668,25 @@ def get_connect_string(backend, database, user=None, passwd=None,
 
 
 def is_backend_avail(backend, database, user=None, passwd=None):
+    """Return True if the given backend is available.
+
+
+    DEPRECATED: this function is deprecated and will be removed from oslo.db
+    in a few releases. Please use the provisioning system to access
+    databases based on backend availability.
+
+    """
+    from oslo.db.sqlalchemy import provision
+
+    connect_uri = get_connect_string(backend=backend,
+                                     database=database,
+                                     user=user,
+                                     passwd=passwd)
     try:
-        connect_uri = get_connect_string(backend=backend,
-                                         database=database,
-                                         user=user,
-                                         passwd=passwd)
-        engine = sqlalchemy.create_engine(connect_uri)
-        connection = engine.connect()
-    except Exception as e:
-        # intentionally catch all to handle exceptions even if we don't
-        # have any backend code loaded.
-        msg = _LI("The %(backend)s backend is unavailable: %(exception)s")
-        LOG.info(msg, {"backend": backend, "exception": e})
+        provision.Backend._ensure_backend_available(connect_uri)
+    except exception.BackendNotAvailable:
         return False
     else:
-        connection.close()
-        engine.dispose()
         return True
 
 

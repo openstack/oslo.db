@@ -13,9 +13,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import abc
-import os
-
 import fixtures
 
 try:
@@ -24,9 +21,10 @@ except ImportError:
     raise NameError('Oslotest is not installed. Please add oslotest in your'
                     ' test-requirements')
 
-import six
-import testtools
 
+import six
+
+from oslo.db import exception
 from oslo.db.sqlalchemy import provision
 from oslo.db.sqlalchemy import session
 from oslo.db.sqlalchemy import utils
@@ -41,8 +39,12 @@ class DbFixture(fixtures.Fixture):
     credentials for specific backend.
     """
 
-    def _get_uri(self):
-        return os.getenv('OS_TEST_DBAPI_CONNECTION', 'sqlite://')
+    DRIVER = "sqlite"
+
+    # these names are deprecated, and are not used by DbFixture.
+    # they are here for backwards compatibility with test suites that
+    # are referring to them directly.
+    DBNAME = PASSWORD = USERNAME = 'openstack_citest'
 
     def __init__(self, test):
         super(DbFixture, self).__init__()
@@ -52,9 +54,17 @@ class DbFixture(fixtures.Fixture):
     def setUp(self):
         super(DbFixture, self).setUp()
 
-        self.test.engine = session.create_engine(self._get_uri())
-        self.addCleanup(self.test.engine.dispose)
-        self.test.sessionmaker = session.get_maker(self.test.engine)
+        try:
+            self.provision = provision.ProvisionedDatabase(self.DRIVER)
+            self.addCleanup(self.provision.dispose)
+        except exception.BackendNotAvailable:
+            msg = '%s backend is not available.' % self.DRIVER
+            return self.test.skip(msg)
+        else:
+            self.test.engine = self.provision.engine
+            self.addCleanup(setattr, self.test, 'engine', None)
+            self.test.sessionmaker = session.get_maker(self.test.engine)
+            self.addCleanup(setattr, self.test, 'sessionmaker', None)
 
 
 class DbTestCase(test_base.BaseTestCase):
@@ -71,6 +81,9 @@ class DbTestCase(test_base.BaseTestCase):
         super(DbTestCase, self).setUp()
         self.useFixture(self.FIXTURE(self))
 
+
+class OpportunisticTestCase(DbTestCase):
+    """Placeholder for backwards compatibility."""
 
 ALLOWED_DIALECTS = ['sqlite', 'mysql', 'postgresql']
 
@@ -98,64 +111,12 @@ def backend_specific(*dialects):
     return wrap
 
 
-@six.add_metaclass(abc.ABCMeta)
-class OpportunisticFixture(DbFixture):
-    """Base fixture to use default CI databases.
-
-    The databases exist in OpenStack CI infrastructure. But for the
-    correct functioning in local environment the databases must be
-    created manually.
-    """
-
-    DRIVER = abc.abstractproperty(lambda: None)
-    DBNAME = PASSWORD = USERNAME = 'openstack_citest'
-    _uri = None
-
-    def _get_uri(self):
-        if self._uri is not None:
-            return self._uri
-
-        credentials = {
-            'backend': self.DRIVER,
-            'user': self.USERNAME,
-            'passwd': self.PASSWORD,
-            'database': self.DBNAME}
-        if self.DRIVER and not utils.is_backend_avail(**credentials):
-            msg = '%s backend is not available.' % self.DRIVER
-            raise testtools.testcase.TestSkipped(msg)
-
-        self._provisioning_engine = provision.get_engine(
-            utils.get_connect_string(backend=self.DRIVER,
-                                     user=self.USERNAME,
-                                     passwd=self.PASSWORD,
-                                     database=self.DBNAME)
-        )
-        self._uri = provision.create_database(self._provisioning_engine)
-        self.addCleanup(
-            provision.drop_database, self._provisioning_engine, self._uri)
-        self.addCleanup(setattr, self, '_uri', None)
-        return self._uri
-
-
-@six.add_metaclass(abc.ABCMeta)
-class OpportunisticTestCase(DbTestCase):
-    """Base test case to use default CI databases.
-
-    The subclasses of the test case are running only when openstack_citest
-    database is available otherwise tests will be skipped.
-    """
-
-    FIXTURE = abc.abstractproperty(lambda: None)
-
-
-class MySQLOpportunisticFixture(OpportunisticFixture):
+class MySQLOpportunisticFixture(DbFixture):
     DRIVER = 'mysql'
-    DBNAME = ''  # connect to MySQL server, but not to the openstack_citest db
 
 
-class PostgreSQLOpportunisticFixture(OpportunisticFixture):
+class PostgreSQLOpportunisticFixture(DbFixture):
     DRIVER = 'postgresql'
-    DBNAME = 'postgres'  # PostgreSQL requires the db name here,use service one
 
 
 class MySQLOpportunisticTestCase(OpportunisticTestCase):

@@ -368,7 +368,7 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                   connection_debug=0, max_pool_size=None, max_overflow=None,
                   pool_timeout=None, sqlite_synchronous=True,
                   connection_trace=False, max_retries=10, retry_interval=10,
-                  thread_checkin=True):
+                  thread_checkin=True, logging_name=None):
     """Return a new SQLAlchemy engine."""
 
     url = sqlalchemy.engine.url.make_url(sql_connection)
@@ -377,6 +377,7 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
         "pool_recycle": idle_timeout,
         'convert_unicode': True,
         'connect_args': {},
+        'logging_name': logging_name
     }
 
     _setup_logging(connection_debug)

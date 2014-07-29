@@ -163,3 +163,11 @@ class InvalidSortKey(Exception):
 
 class ColumnError(Exception):
     """Error raised when no column or an invalid column is found."""
+
+
+class BackendNotAvailable(Exception):
+    """Error raised when a particular database backend is not available
+
+    within a test suite.
+
+    """
