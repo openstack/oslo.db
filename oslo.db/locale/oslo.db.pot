@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: oslo.db 0.3.0.19.g91d554a\n"
+"Project-Id-Version: oslo.db 0.3.0.63.g3b17365\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-07-21 06:03+0000\n"
+"POT-Creation-Date: 2014-07-31 06:03+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,11 +17,11 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 1.3\n"
 
-#: oslo/db/exception.py:44
-msgid "Invalid Parameter: Unicode is not supported by the current database."
+#: oslo/db/exception.py:133
+msgid "Invalid Parameter: Encoding directive wasn't provided."
 msgstr ""
 
-#: oslo/db/exception.py:60
+#: oslo/db/exception.py:161
 msgid "Sort key supplied was not valid."
 msgstr ""
 
@@ -35,18 +35,18 @@ msgid ""
 "characters. Please use unicode() or translate() instead."
 msgstr ""
 
-#: oslo/db/sqlalchemy/migration.py:72
+#: oslo/db/sqlalchemy/migration.py:70
 msgid "version should be an integer"
 msgstr ""
 
-#: oslo/db/sqlalchemy/migration.py:108
+#: oslo/db/sqlalchemy/migration.py:106
 #, python-format
 msgid ""
 "Tables \"%s\" have non utf8 collation, please make sure all tables are "
 "CHARSET=utf8"
 msgstr ""
 
-#: oslo/db/sqlalchemy/migration.py:132
+#: oslo/db/sqlalchemy/migration.py:130
 msgid ""
 "The database is not under version control, but has tables. Please stamp "
 "the current version of the schema manually."
