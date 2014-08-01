@@ -376,6 +376,7 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     engine_args = {
         "pool_recycle": idle_timeout,
         'convert_unicode': True,
+        'connect_args': {},
     }
 
     _setup_logging(connection_debug)
@@ -433,7 +434,22 @@ def _init_connection_args(url, engine_args, **kw):
     # replace it with StaticPool.
     if issubclass(pool_class, pool.SingletonThreadPool):
         engine_args["poolclass"] = pool.StaticPool
-        engine_args["connect_args"] = {'check_same_thread': False}
+        engine_args['connect_args']['check_same_thread'] = False
+
+
+@_init_connection_args.dispatch_for("postgresql")
+def _init_connection_args(url, engine_args, **kw):
+    if 'client_encoding' not in url.query:
+        # Set encoding using engine_args instead of connect_args since
+        # it's supported for PostgreSQL 8.*. More details at:
+        # http://docs.sqlalchemy.org/en/rel_0_9/dialects/postgresql.html
+        engine_args['client_encoding'] = 'utf8'
+
+
+@_init_connection_args.dispatch_for("mysql")
+def _init_connection_args(url, engine_args, **kw):
+    if 'charset' not in url.query:
+        engine_args['connect_args']['charset'] = 'utf8'
 
 
 @_init_connection_args.dispatch_for("mysql+mysqlconnector")
@@ -441,8 +457,18 @@ def _init_connection_args(url, engine_args, **kw):
     # mysqlconnector engine (<1.0) incorrectly defaults to
     # raise_on_warnings=True
     #  https://bitbucket.org/zzzeek/sqlalchemy/issue/2515
-    if "raise_on_warnings" not in url.query:
-        engine_args['connect_args'] = {'raise_on_warnings': False}
+    if 'raise_on_warnings' not in url.query:
+        engine_args['connect_args']['raise_on_warnings'] = False
+
+
+@_init_connection_args.dispatch_for("mysql+mysqldb")
+@_init_connection_args.dispatch_for("mysql+oursql")
+def _init_connection_args(url, engine_args, **kw):
+    # Those drivers require use_unicode=0 to avoid performance drop due
+    # to internal usage of Python unicode objects in the driver
+    #  http://docs.sqlalchemy.org/en/rel_0_9/dialects/mysql.html
+    if 'use_unicode' not in url.query:
+        engine_args['connect_args']['use_unicode'] = 0
 
 
 @utils.dispatch_for_dialect('*', multiple=True)
