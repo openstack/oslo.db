@@ -117,7 +117,7 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
         self.assertEqual(
             "(ProgrammingError) Error 123, you made a "
             "mistake 'select you_made_a_programming_error' ()",
-            matched.message)
+            matched.args[0])
 
     def test_generic_dbapi_disconnect(self):
         matched = self._run_test(
@@ -129,7 +129,7 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
         self.assertEqual(
             "(InterfaceError) connection lost "
             "'select the_db_disconnected' ()",
-            matched.message)
+            matched.args[0])
 
     def test_operational_dbapi_disconnect(self):
         matched = self._run_test(
@@ -141,7 +141,7 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
         self.assertEqual(
             "(OperationalError) connection lost "
             "'select the_db_disconnected' ()",
-            matched.message)
+            matched.args[0])
 
     def test_operational_error_asis(self):
         """test that SQLAlchemy OperationalErrors that aren't disconnects
@@ -155,7 +155,7 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
         )
         self.assertEqual(
             "(OperationalError) some op error",
-            matched.message)
+            matched.args[0])
 
     def test_unicode_encode(self):
         # intentionally generate a UnicodeEncodeError, as its
@@ -178,7 +178,7 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
             AttributeError("mysqldb has an attribute error"),
             exception.DBError
         )
-        self.assertEqual("mysqldb has an attribute error", matched.message)
+        self.assertEqual("mysqldb has an attribute error", matched.args[0])
 
 
 class TestRaiseReferenceError(TestsExceptionFilter):
@@ -283,7 +283,7 @@ class TestDuplicate(TestsExceptionFilter):
             self.IntegrityError(message),
             expected_cls
         )
-        self.assertEqual(expected_message, matched.message)
+        self.assertEqual(expected_message, matched.args[0])
 
     def test_sqlite(self):
         self._run_dupe_constraint_test("sqlite", 'column a, b are not unique')

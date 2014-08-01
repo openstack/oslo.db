@@ -62,7 +62,7 @@ class ExceptionReraiseTest(test_base.BaseTestCase):
                 self.engine.execute, "SELECT 'ERROR ONE' FROM I_DONT_EXIST"
             )
             self.assertEqual(1, patched.call_count)
-            self.assertEqual("my exception", matchee.message)
+            self.assertEqual("my exception", matchee.args[0])
 
     def test_exception_event_non_altered(self):
         self._fixture()

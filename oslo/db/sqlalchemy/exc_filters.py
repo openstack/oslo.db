@@ -309,7 +309,7 @@ def handler(context):
                 if super_ in per_dialect:
                     regexp_reg = per_dialect[super_]
                     for fn, regexp in regexp_reg:
-                        match = regexp.match(exc.message)
+                        match = regexp.match(exc.args[0])
                         if match:
                             try:
                                 fn(
