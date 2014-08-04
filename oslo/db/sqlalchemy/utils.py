@@ -19,6 +19,7 @@
 import logging
 import re
 
+from oslo.utils import timeutils
 import sqlalchemy
 from sqlalchemy import Boolean
 from sqlalchemy import CheckConstraint
@@ -37,7 +38,6 @@ from sqlalchemy.types import NullType
 
 from oslo.db import exception
 from oslo.db.openstack.common.gettextutils import _, _LI, _LW
-from oslo.db.openstack.common import timeutils
 from oslo.db.sqlalchemy import models
 
 # NOTE(ochuprykov): Add references for backwards compatibility
