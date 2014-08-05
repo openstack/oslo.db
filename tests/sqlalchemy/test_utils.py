@@ -26,7 +26,7 @@ from six import moves
 from six.moves.urllib import parse
 import sqlalchemy
 from sqlalchemy.dialects import mysql
-from sqlalchemy import Boolean, Index, Integer, DateTime, String
+from sqlalchemy import Boolean, Index, Integer, DateTime, String, SmallInteger
 from sqlalchemy import MetaData, Table, Column, ForeignKey
 from sqlalchemy.engine import reflection
 from sqlalchemy.exc import SAWarning, ResourceClosedError
@@ -373,6 +373,8 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         self.assertTrue(isinstance(table.c.deleted.type, Integer))
 
     def test_change_deleted_column_type_to_boolean(self):
+        expected_types = {'mysql': mysql.TINYINT,
+                          'ibm_db_sa': SmallInteger}
         table_name = 'abc'
         table = Table(table_name, self.meta,
                       Column('id', Integer, primary_key=True),
@@ -382,14 +384,12 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         utils.change_deleted_column_type_to_boolean(self.engine, table_name)
 
         table = utils.get_table(self.engine, table_name)
-        if self.engine.name != "mysql":
-            expected_type = Boolean
-        else:
-            expected_type = mysql.TINYINT
-
-        self.assertTrue(isinstance(table.c.deleted.type, expected_type))
+        self.assertIsInstance(table.c.deleted.type,
+                              expected_types.get(self.engine.name, Boolean))
 
     def test_change_deleted_column_type_to_boolean_with_fc(self):
+        expected_types = {'mysql': mysql.TINYINT,
+                          'ibm_db_sa': SmallInteger}
         table_name_1 = 'abc'
         table_name_2 = 'bcd'
 
@@ -408,12 +408,8 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         utils.change_deleted_column_type_to_boolean(self.engine, table_name_2)
 
         table = utils.get_table(self.engine, table_name_2)
-        if self.engine.name != "mysql":
-            expected_type = Boolean
-        else:
-            expected_type = mysql.TINYINT
-
-        self.assertTrue(isinstance(table.c.deleted.type, expected_type))
+        self.assertIsInstance(table.c.deleted.type,
+                              expected_types.get(self.engine.name, Boolean))
 
     @db_test_base.backend_specific('sqlite')
     def test_change_deleted_column_type_to_boolean_type_custom(self):
