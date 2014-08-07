@@ -1,4 +1,4 @@
-# encoding=UTF8
+# coding=utf-8
 
 # Copyright (c) 2012 Rackspace Hosting
 # All Rights Reserved.
