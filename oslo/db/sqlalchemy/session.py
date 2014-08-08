@@ -331,6 +331,25 @@ def _begin_ping_listener(connection):
         connection.scalar(select([1]))
 
 
+def _setup_logging(connection_debug=0):
+    """setup_logging function maps SQL debug level to Python log level.
+
+    Connection_debug is a verbosity of SQL debugging information.
+    0=None(default value),
+    1=Processed only messages with WARNING level or higher
+    50=Processed only messages with INFO level or higher
+    100=Processed only messages with DEBUG level
+    """
+    if connection_debug >= 0:
+        logger = logging.getLogger('sqlalchemy.engine')
+        if connection_debug >= 100:
+            logger.setLevel(logging.DEBUG)
+        elif connection_debug >= 50:
+            logger.setLevel(logging.INFO)
+        else:
+            logger.setLevel(logging.WARNING)
+
+
 def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                   idle_timeout=3600,
                   connection_debug=0, max_pool_size=None, max_overflow=None,
@@ -346,15 +365,7 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
         'convert_unicode': True,
     }
 
-    if connection_debug >= 0:
-        # Map SQL debug level to Python log level
-        logger = logging.getLogger('sqlalchemy.engine')
-        if connection_debug >= 100:
-            logger.setLevel(logging.DEBUG)
-        elif connection_debug >= 50:
-            logger.setLevel(logging.INFO)
-        else:
-            logger.setLevel(logging.WARNING)
+    _setup_logging(connection_debug)
 
     _init_connection_args(
         url, engine_args,
