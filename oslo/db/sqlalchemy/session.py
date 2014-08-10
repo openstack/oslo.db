@@ -491,9 +491,21 @@ def _init_events(engine, sqlite_synchronous=True, sqlite_fk=False, **kw):
             # Switch sqlite connections to non-synchronous mode
             dbapi_con.execute("PRAGMA synchronous = OFF")
 
+        # Disable pysqlite's emitting of the BEGIN statement entirely.
+        # Also stops it from emitting COMMIT before any DDL.
+        # below, we emit BEGIN ourselves.
+        # see http://docs.sqlalchemy.org/en/rel_0_9/dialects/\
+        # sqlite.html#serializable-isolation-savepoints-transactional-ddl
+        dbapi_con.isolation_level = None
+
         if sqlite_fk:
             # Ensures that the foreign key constraints are enforced in SQLite.
             dbapi_con.execute('pragma foreign_keys=ON')
+
+    @sqlalchemy.event.listens_for(engine, "begin")
+    def _sqlite_emit_begin(conn):
+        # emit our own BEGIN
+        conn.execute("BEGIN")
 
 
 def _test_connection(engine, max_retries, retry_interval):

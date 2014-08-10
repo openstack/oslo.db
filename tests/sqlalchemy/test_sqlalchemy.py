@@ -86,6 +86,87 @@ class RegexpFilterTestCase(test_base.DbTestCase):
         self._test_regexp_filter(u'♦', [])
 
 
+class SQLiteSavepointTest(test_base.DbTestCase):
+    def setUp(self):
+        super(SQLiteSavepointTest, self).setUp()
+        meta = MetaData()
+        self.test_table = Table(
+            "test_table", meta,
+            Column('id', Integer, primary_key=True),
+            Column('data', String(10)))
+        self.test_table.create(self.engine)
+        self.addCleanup(self.test_table.drop, self.engine)
+
+    def test_plain_transaction(self):
+        conn = self.engine.connect()
+        trans = conn.begin()
+        conn.execute(
+            self.test_table.insert(),
+            {'data': 'data 1'}
+        )
+        self.assertEqual(
+            [(1, 'data 1')],
+            self.engine.execute(
+                self.test_table.select().
+                order_by(self.test_table.c.id)
+            ).fetchall()
+        )
+        trans.rollback()
+        self.assertEqual(
+            0,
+            self.engine.scalar(self.test_table.count())
+        )
+
+    def test_savepoint_middle(self):
+        with self.engine.begin() as conn:
+            conn.execute(
+                self.test_table.insert(),
+                {'data': 'data 1'}
+            )
+
+            savepoint = conn.begin_nested()
+            conn.execute(
+                self.test_table.insert(),
+                {'data': 'data 2'}
+            )
+            savepoint.rollback()
+
+            conn.execute(
+                self.test_table.insert(),
+                {'data': 'data 3'}
+            )
+
+        self.assertEqual(
+            [(1, 'data 1'), (2, 'data 3')],
+            self.engine.execute(
+                self.test_table.select().
+                order_by(self.test_table.c.id)
+            ).fetchall()
+        )
+
+    def test_savepoint_beginning(self):
+        with self.engine.begin() as conn:
+            savepoint = conn.begin_nested()
+            conn.execute(
+                self.test_table.insert(),
+                {'data': 'data 1'}
+            )
+            savepoint.rollback()
+
+            conn.execute(
+                self.test_table.insert(),
+                {'data': 'data 2'}
+            )
+
+        self.assertEqual(
+            [(1, 'data 2')],
+            self.engine.execute(
+                self.test_table.select().
+                order_by(self.test_table.c.id)
+            ).fetchall()
+        )
+
+
 class FakeDBAPIConnection():
     def cursor(self):
         return FakeCursor()
