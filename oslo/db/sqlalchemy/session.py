@@ -284,6 +284,7 @@ import logging
 import re
 import time
 
+from oslo.utils import timeutils
 import six
 from sqlalchemy.interfaces import PoolListener
 import sqlalchemy.orm
@@ -293,7 +294,6 @@ from sqlalchemy.sql.expression import select
 
 from oslo.db import exception
 from oslo.db.openstack.common.gettextutils import _LW
-from oslo.db.openstack.common import timeutils
 from oslo.db import options
 from oslo.db.sqlalchemy import exc_filters
 

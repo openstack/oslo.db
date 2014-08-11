@@ -28,9 +28,10 @@ import logging
 import threading
 import time
 
+from oslo.utils import importutils
+
 from oslo.db import exception
 from oslo.db.openstack.common.gettextutils import _LE
-from oslo.db.openstack.common import importutils
 from oslo.db import options
 
 
@@ -176,7 +177,10 @@ class DBAPI(object):
                 # Import the untranslated name if we don't have a mapping
                 backend_path = self._backend_mapping.get(self._backend_name,
                                                          self._backend_name)
-                backend_mod = importutils.import_module(backend_path)
+                backend_mod = importutils.try_import(backend_path)
+                if not backend_mod:
+                    raise ImportError("Unable to import backend '%s'" %
+                                      self._backend_name)
                 self._backend = backend_mod.get_backend()
 
     def __getattr__(self, key):

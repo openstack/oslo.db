@@ -17,13 +17,15 @@
 
 import mock
 from oslo.config import cfg
+from oslo.utils import importutils
 
 from oslo.db import api
 from oslo.db import exception
-from oslo.db.openstack.common import importutils
 from tests import utils as test_utils
 
-sqla = importutils.import_module('sqlalchemy')
+sqla = importutils.try_import('sqlalchemy')
+if not sqla:
+    raise ImportError("Unable to import module 'sqlalchemy'.")
 
 
 def get_backend():
