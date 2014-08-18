@@ -32,6 +32,7 @@ import sqlalchemy.types as types
 
 from oslo.db._i18n import _LE
 from oslo.db import exception as exc
+from oslo.db.sqlalchemy import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -346,19 +347,34 @@ class ModelsMigrationsSync(object):
         :param rendered_meta_def: rendered column default value (from model)
 
         """
+        return self._compare_server_default(ctxt.bind, meta_col, insp_def,
+                                            meta_def)
 
-        if (ctxt.dialect.name == 'mysql' and
-                issubclass(type(meta_col.type), sqlalchemy.Boolean)):
+    @utils.DialectFunctionDispatcher.dispatch_for_dialect("*")
+    def _compare_server_default(bind, meta_col, insp_def, meta_def):
+        pass
 
+    @_compare_server_default.dispatch_for('mysql')
+    def _compare_server_default(bind, meta_col, insp_def, meta_def):
+        if isinstance(meta_col.type, sqlalchemy.Boolean):
             if meta_def is None or insp_def is None:
                 return meta_def != insp_def
-
             return not (
                 isinstance(meta_def.arg, expr.True_) and insp_def == "'1'" or
                 isinstance(meta_def.arg, expr.False_) and insp_def == "'0'"
             )
 
-        return None  # tells alembic to use the default comparison method
+        if isinstance(meta_col.type, sqlalchemy.Integer):
+            if meta_def is None or insp_def is None:
+                return meta_def != insp_def
+            return meta_def.arg != insp_def.split("'")[1]
+
+    @_compare_server_default.dispatch_for('postgresql')
+    def _compare_server_default(bind, meta_col, insp_def, meta_def):
+        if isinstance(meta_col.type, sqlalchemy.String):
+            if meta_def is None or insp_def is None:
+                return meta_def != insp_def
+            return insp_def != "'%s'::character varying" % meta_def.arg
 
     def _cleanup(self):
         engine = self.get_engine()

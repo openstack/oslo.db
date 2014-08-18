@@ -188,6 +188,9 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
                       server_default=sa.sql.expression.true()),
             sa.Column('bool_wo_default', sa.Boolean),
             sa.Column('bar', sa.Numeric(10, 5)),
+            sa.Column('defaulttest', sa.Integer, server_default='5'),
+            sa.Column('defaulttest2', sa.String(8), server_default=''),
+            sa.Column('defaulttest3', sa.String(5), server_default="test"),
             sa.UniqueConstraint('spam', 'eggs', name='uniq_cons'),
         )
 
@@ -205,6 +208,12 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
             foo = sa.Column('foo', sa.Boolean,
                             server_default=sa.sql.expression.true())
             bool_wo_default = sa.Column('bool_wo_default', sa.Boolean)
+            defaulttest = sa.Column('defaulttest',
+                                    sa.Integer, server_default='5')
+            defaulttest2 = sa.Column('defaulttest2', sa.String(8),
+                                     server_default='')
+            defaulttest3 = sa.Column('defaulttest3', sa.String(5),
+                                     server_default="test")
             bar = sa.Column('bar', sa.Numeric(10, 5))
 
         class ModelThatShouldNotBeCompared(BASE):
@@ -236,6 +245,9 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
                       server_default=sa.sql.expression.false()),
             sa.Column('bool_wo_default', sa.Boolean, unique=True),
             sa.Column('bar', sa.BigInteger),
+            sa.Column('defaulttest', sa.Integer, server_default='7'),
+            sa.Column('defaulttest2', sa.String(8), server_default=''),
+            sa.Column('defaulttest3', sa.String(5), server_default="fake"),
             sa.UniqueConstraint('spam', 'foo', name='uniq_cons'),
         )
 
@@ -253,6 +265,8 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
         self.assertIn('foo', msg)
         self.assertIn('bar', msg)
         self.assertIn('bool_wo_default', msg)
+        self.assertIn('defaulttest', msg)
+        self.assertIn('defaulttest3', msg)
 
 
 class ModelsMigrationsSyncMysql(ModelsMigrationSyncMixin,
