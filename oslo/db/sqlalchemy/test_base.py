@@ -18,7 +18,13 @@ import functools
 import os
 
 import fixtures
-from oslotest import base as test_base
+
+try:
+    from oslotest import base as test_base
+except ImportError:
+    raise NameError('Oslotest is not installed. Please add oslotest in your'
+                    ' test-requirements')
+
 import six
 
 from oslo.db.sqlalchemy import provision
