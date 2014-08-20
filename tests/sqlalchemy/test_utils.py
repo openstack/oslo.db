@@ -849,3 +849,248 @@ class TestUtilsMysqlOpportunistically(
 class TestUtilsPostgresqlOpportunistically(
         TestUtils, db_test_base.PostgreSQLOpportunisticTestCase):
     pass
+
+
+class TestDialectFunctionDispatcher(test_base.BaseTestCase):
+    def _single_fixture(self):
+        callable_fn = mock.Mock()
+
+        dispatcher = orig = utils.dispatch_for_dialect("*")(
+            callable_fn.default)
+        dispatcher = dispatcher.dispatch_for("sqlite")(callable_fn.sqlite)
+        dispatcher = dispatcher.dispatch_for("mysql+mysqldb")(
+            callable_fn.mysql_mysqldb)
+        dispatcher = dispatcher.dispatch_for("postgresql")(
+            callable_fn.postgresql)
+
+        self.assertTrue(dispatcher is orig)
+
+        return dispatcher, callable_fn
+
+    def _multiple_fixture(self):
+        callable_fn = mock.Mock()
+
+        for targ in [
+            callable_fn.default,
+            callable_fn.sqlite,
+            callable_fn.mysql_mysqldb,
+            callable_fn.postgresql,
+            callable_fn.postgresql_psycopg2,
+            callable_fn.pyodbc
+        ]:
+            targ.return_value = None
+
+        dispatcher = orig = utils.dispatch_for_dialect("*", multiple=True)(
+            callable_fn.default)
+        dispatcher = dispatcher.dispatch_for("sqlite")(callable_fn.sqlite)
+        dispatcher = dispatcher.dispatch_for("mysql+mysqldb")(
+            callable_fn.mysql_mysqldb)
+        dispatcher = dispatcher.dispatch_for("postgresql+*")(
+            callable_fn.postgresql)
+        dispatcher = dispatcher.dispatch_for("postgresql+psycopg2")(
+            callable_fn.postgresql_psycopg2)
+        dispatcher = dispatcher.dispatch_for("*+pyodbc")(
+            callable_fn.pyodbc)
+
+        self.assertTrue(dispatcher is orig)
+
+        return dispatcher, callable_fn
+
+    def test_single(self):
+
+        dispatcher, callable_fn = self._single_fixture()
+        dispatcher("sqlite://", 1)
+        dispatcher("postgresql+psycopg2://u:p@h/t", 2)
+        dispatcher("mysql://u:p@h/t", 3)
+        dispatcher("mysql+mysqlconnector://u:p@h/t", 4)
+
+        self.assertEqual(
+            [
+                mock.call.sqlite('sqlite://', 1),
+                mock.call.postgresql("postgresql+psycopg2://u:p@h/t", 2),
+                mock.call.mysql_mysqldb("mysql://u:p@h/t", 3),
+                mock.call.default("mysql+mysqlconnector://u:p@h/t", 4)
+            ],
+            callable_fn.mock_calls)
+
+    def test_single_kwarg(self):
+        dispatcher, callable_fn = self._single_fixture()
+        dispatcher("sqlite://", foo='bar')
+        dispatcher("postgresql+psycopg2://u:p@h/t", 1, x='y')
+
+        self.assertEqual(
+            [
+                mock.call.sqlite('sqlite://', foo='bar'),
+                mock.call.postgresql(
+                    "postgresql+psycopg2://u:p@h/t",
+                    1, x='y'),
+            ],
+            callable_fn.mock_calls)
+
+    def test_dispatch_on_target(self):
+        callable_fn = mock.Mock()
+
+        @utils.dispatch_for_dialect("*")
+        def default_fn(url, x, y):
+            callable_fn.default(url, x, y)
+
+        @default_fn.dispatch_for("sqlite")
+        def sqlite_fn(url, x, y):
+            callable_fn.sqlite(url, x, y)
+            default_fn.dispatch_on_drivername("*")(url, x, y)
+
+        default_fn("sqlite://", 4, 5)
+        self.assertEqual(
+            [
+                mock.call.sqlite("sqlite://", 4, 5),
+                mock.call.default("sqlite://", 4, 5)
+            ],
+            callable_fn.mock_calls
+        )
+
+    def test_single_no_dispatcher(self):
+        callable_fn = mock.Mock()
+
+        dispatcher = utils.dispatch_for_dialect("sqlite")(callable_fn.sqlite)
+        dispatcher = dispatcher.dispatch_for("mysql")(callable_fn.mysql)
+        exc = self.assertRaises(
+            ValueError,
+            dispatcher, "postgresql://s:t@localhost/test"
+        )
+        self.assertEqual(
+            "No default function found for driver: 'postgresql+psycopg2'",
+            str(exc)
+        )
+
+    def test_multiple_no_dispatcher(self):
+        callable_fn = mock.Mock()
+
+        dispatcher = utils.dispatch_for_dialect("sqlite", multiple=True)(
+            callable_fn.sqlite)
+        dispatcher = dispatcher.dispatch_for("mysql")(callable_fn.mysql)
+        dispatcher("postgresql://s:t@localhost/test")
+        self.assertEqual(
+            [], callable_fn.mock_calls
+        )
+
+    def test_multiple_no_driver(self):
+        callable_fn = mock.Mock(
+            default=mock.Mock(return_value=None),
+            sqlite=mock.Mock(return_value=None)
+        )
+
+        dispatcher = utils.dispatch_for_dialect("*", multiple=True)(
+            callable_fn.default)
+        dispatcher = dispatcher.dispatch_for("sqlite")(
+            callable_fn.sqlite)
+
+        dispatcher.dispatch_on_drivername("sqlite")("foo")
+        self.assertEqual(
+            [mock.call.sqlite("foo"), mock.call.default("foo")],
+            callable_fn.mock_calls
+        )
+
+    def test_single_retval(self):
+        dispatcher, callable_fn = self._single_fixture()
+        callable_fn.mysql_mysqldb.return_value = 5
+
+        self.assertEqual(
+            dispatcher("mysql://u:p@h/t", 3), 5
+        )
+
+    def test_engine(self):
+        eng = sqlalchemy.create_engine("sqlite:///path/to/my/db.db")
+        dispatcher, callable_fn = self._single_fixture()
+
+        dispatcher(eng)
+        self.assertEqual(
+            [mock.call.sqlite(eng)],
+            callable_fn.mock_calls
+        )
+
+    def test_url(self):
+        url = sqlalchemy.engine.url.make_url(
+            "mysql+mysqldb://scott:tiger@localhost/test")
+        dispatcher, callable_fn = self._single_fixture()
+
+        dispatcher(url, 15)
+        self.assertEqual(
+            [mock.call.mysql_mysqldb(url, 15)],
+            callable_fn.mock_calls
+        )
+
+    def test_invalid_target(self):
+        dispatcher, callable_fn = self._single_fixture()
+
+        exc = self.assertRaises(
+            ValueError,
+            dispatcher, 20
+        )
+        self.assertEqual("Invalid target type: 20", str(exc))
+
+    def test_invalid_dispatch(self):
+        callable_fn = mock.Mock()
+
+        dispatcher = utils.dispatch_for_dialect("*")(callable_fn.default)
+
+        exc = self.assertRaises(
+            ValueError,
+            dispatcher.dispatch_for("+pyodbc"), callable_fn.pyodbc
+        )
+        self.assertEqual(
+            "Couldn't parse database[+driver]: '+pyodbc'",
+            str(exc)
+        )
+
+    def test_single_only_one_target(self):
+        callable_fn = mock.Mock()
+
+        dispatcher = utils.dispatch_for_dialect("*")(callable_fn.default)
+        dispatcher = dispatcher.dispatch_for("sqlite")(callable_fn.sqlite)
+
+        exc = self.assertRaises(
+            TypeError,
+            dispatcher.dispatch_for("sqlite"), callable_fn.sqlite2
+        )
+        self.assertEqual(
+            "Multiple functions for expression 'sqlite'", str(exc)
+        )
+
+    def test_multiple(self):
+        dispatcher, callable_fn = self._multiple_fixture()
+
+        dispatcher("postgresql+pyodbc://", 1)
+        dispatcher("mysql://", 2)
+        dispatcher("ibm_db_sa+db2://", 3)
+        dispatcher("postgresql+psycopg2://", 4)
+
+        # TODO(zzzeek): there is a deterministic order here, but we might
+        # want to tweak it, or maybe provide options.  default first?
+        # most specific first?  is *+pyodbc or postgresql+* more specific?
+        self.assertEqual(
+            [
+                mock.call.postgresql('postgresql+pyodbc://', 1),
+                mock.call.pyodbc('postgresql+pyodbc://', 1),
+                mock.call.default('postgresql+pyodbc://', 1),
+                mock.call.mysql_mysqldb('mysql://', 2),
+                mock.call.default('mysql://', 2),
+                mock.call.default('ibm_db_sa+db2://', 3),
+                mock.call.postgresql_psycopg2('postgresql+psycopg2://', 4),
+                mock.call.postgresql('postgresql+psycopg2://', 4),
+                mock.call.default('postgresql+psycopg2://', 4),
+            ],
+            callable_fn.mock_calls
+        )
+
+    def test_multiple_no_return_value(self):
+        dispatcher, callable_fn = self._multiple_fixture()
+        callable_fn.sqlite.return_value = 5
+
+        exc = self.assertRaises(
+            TypeError,
+            dispatcher, "sqlite://"
+        )
+        self.assertEqual(
+            "Return value not allowed for multiple filtered function",
+            str(exc)
+        )
