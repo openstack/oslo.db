@@ -194,6 +194,7 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
             sa.Column('defaulttest4', sa.Enum('first', 'second',
                                               name='testenum'),
                       server_default="first"),
+            sa.Column('fk_check', sa.String(36), nullable=False),
             sa.UniqueConstraint('spam', 'eggs', name='uniq_cons'),
         )
 
@@ -210,6 +211,7 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
             eggs = sa.Column('eggs', sa.DateTime)
             foo = sa.Column('foo', sa.Boolean,
                             server_default=sa.sql.expression.true())
+            fk_check = sa.Column('fk_check', sa.String(36), nullable=False)
             bool_wo_default = sa.Column('bool_wo_default', sa.Boolean)
             defaulttest = sa.Column('defaulttest',
                                     sa.Integer, server_default='5')
@@ -243,6 +245,12 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
     def _test_models_not_sync(self):
         self.metadata_migrations.clear()
         sa.Table(
+            'table', self.metadata_migrations,
+            sa.Column('fk_check', sa.String(36), nullable=False),
+            sa.PrimaryKeyConstraint('fk_check'),
+            mysql_engine='InnoDB'
+        )
+        sa.Table(
             'testtbl', self.metadata_migrations,
             sa.Column('id', sa.Integer, primary_key=True),
             sa.Column('spam', sa.String(8), nullable=True),
@@ -257,7 +265,10 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
             sa.Column('defaulttest4',
                       sa.Enum('first', 'second', name='testenum'),
                       server_default="first"),
+            sa.Column('fk_check', sa.String(36), nullable=False),
             sa.UniqueConstraint('spam', 'foo', name='uniq_cons'),
+            sa.ForeignKeyConstraint(['fk_check'], ['table.fk_check']),
+            mysql_engine='InnoDB'
         )
 
         msg = six.text_type(self.assertRaises(AssertionError,
@@ -276,6 +287,7 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
         self.assertIn('bool_wo_default', msg)
         self.assertIn('defaulttest', msg)
         self.assertIn('defaulttest3', msg)
+        self.assertIn('drop_key', msg)
 
 
 class ModelsMigrationsSyncMysql(ModelsMigrationSyncMixin,
