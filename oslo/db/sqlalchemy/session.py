@@ -278,7 +278,6 @@ Efficient use of soft deletes:
 
 """
 
-import functools
 import itertools
 import logging
 import re
@@ -298,30 +297,6 @@ from oslo.db.sqlalchemy import exc_filters
 from oslo.db.sqlalchemy import utils
 
 LOG = logging.getLogger(__name__)
-
-
-def _sqlite_foreign_keys_listener(dbapi_con, con_record):
-    """Ensures that the foreign key constraints are enforced in SQLite.
-
-    The foreign key constraints are disabled by default in SQLite,
-    so the foreign key constraints will be enabled here for every
-    database connection
-    """
-    dbapi_con.execute('pragma foreign_keys=ON')
-
-
-def _synchronous_switch_listener(dbapi_conn, connection_rec):
-    """Switch sqlite connections to non-synchronous mode."""
-    dbapi_conn.execute("PRAGMA synchronous = OFF")
-
-
-def _add_regexp_listener(dbapi_con, con_record):
-    """Add REGEXP function to sqlite connections."""
-
-    def regexp(expr, item):
-        reg = re.compile(expr)
-        return reg.search(six.text_type(item)) is not None
-    dbapi_con.create_function('regexp', 2, regexp)
 
 
 def _thread_yield(dbapi_con, con_record):
@@ -354,65 +329,6 @@ def _begin_ping_listener(connection):
         # new connections assuming they are good now.
         # run the select again to re-validate the Connection.
         connection.scalar(select([1]))
-
-
-def _set_session_sql_mode(dbapi_con, connection_rec, sql_mode=None):
-    """Set the sql_mode session variable.
-
-    MySQL supports several server modes. The default is None, but sessions
-    may choose to enable server modes like TRADITIONAL, ANSI,
-    several STRICT_* modes and others.
-
-    Note: passing in '' (empty string) for sql_mode clears
-    the SQL mode for the session, overriding a potentially set
-    server default.
-    """
-
-    cursor = dbapi_con.cursor()
-    cursor.execute("SET SESSION sql_mode = %s", [sql_mode])
-
-
-def _mysql_get_effective_sql_mode(engine):
-    """Returns the effective SQL mode for connections from the engine pool.
-
-    Returns ``None`` if the mode isn't available, otherwise returns the mode.
-
-    """
-    # Get the real effective SQL mode. Even when unset by
-    # our own config, the server may still be operating in a specific
-    # SQL mode as set by the server configuration.
-    # Also note that the checkout listener will be called on execute to
-    # set the mode if it's registered.
-    row = engine.execute("SHOW VARIABLES LIKE 'sql_mode'").fetchone()
-    if row is None:
-        return
-    return row[1]
-
-
-def _mysql_check_effective_sql_mode(engine):
-    """Logs a message based on the effective SQL mode for MySQL connections."""
-    realmode = _mysql_get_effective_sql_mode(engine)
-
-    if realmode is None:
-        LOG.warning(_LW('Unable to detect effective SQL mode'))
-        return
-
-    LOG.debug('MySQL server mode set to %s', realmode)
-    # 'TRADITIONAL' mode enables several other modes, so
-    # we need a substring match here
-    if not ('TRADITIONAL' in realmode.upper() or
-            'STRICT_ALL_TABLES' in realmode.upper()):
-        LOG.warning(_LW("MySQL SQL mode is '%s', "
-                        "consider enabling TRADITIONAL or STRICT_ALL_TABLES"),
-                    realmode)
-
-
-def _mysql_set_mode_callback(engine, sql_mode):
-    if sql_mode is not None:
-        mode_callback = functools.partial(_set_session_sql_mode,
-                                          sql_mode=sql_mode)
-        sqlalchemy.event.listen(engine, 'connect', mode_callback)
-    _mysql_check_effective_sql_mode(engine)
 
 
 def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
@@ -507,6 +423,8 @@ def _init_connection_args(url, engine_args, **kw):
 
 @utils.dispatch_for_dialect('*', multiple=True)
 def _init_events(engine, thread_checkin=True, connection_trace=False, **kw):
+    """Set up event listeners for all database backends."""
+
     if connection_trace:
         _add_trace_comments(engine)
 
@@ -516,21 +434,55 @@ def _init_events(engine, thread_checkin=True, connection_trace=False, **kw):
 
 @_init_events.dispatch_for("mysql")
 def _init_events(engine, mysql_sql_mode=None, **kw):
+    """Set up event listeners for MySQL."""
+
     if mysql_sql_mode is not None:
-        _mysql_set_mode_callback(engine, mysql_sql_mode)
+        @sqlalchemy.event.listens_for(engine, "connect")
+        def _set_session_sql_mode(dbapi_con, connection_rec):
+            cursor = dbapi_con.cursor()
+            cursor.execute("SET SESSION sql_mode = %s", [mysql_sql_mode])
+
+    realmode = engine.execute("SHOW VARIABLES LIKE 'sql_mode'").fetchone()
+    if realmode is None:
+        LOG.warning(_LW('Unable to detect effective SQL mode'))
+    else:
+        realmode = realmode[1]
+        LOG.debug('MySQL server mode set to %s', realmode)
+        if 'TRADITIONAL' not in realmode.upper() and \
+            'STRICT_ALL_TABLES' not in realmode.upper():
+            LOG.warning(
+                _LW(
+                    "MySQL SQL mode is '%s', "
+                    "consider enabling TRADITIONAL or STRICT_ALL_TABLES"),
+                realmode)
 
 
 @_init_events.dispatch_for("sqlite")
 def _init_events(engine, sqlite_synchronous=True, sqlite_fk=False, **kw):
-    if not sqlite_synchronous:
-        sqlalchemy.event.listen(engine, 'connect',
-                                _synchronous_switch_listener)
-    sqlalchemy.event.listen(engine, 'connect', _add_regexp_listener)
+    """Set up event listeners for SQLite.
 
-    if sqlite_fk:
-        sqlalchemy.event.listen(
-            engine, 'connect',
-            _sqlite_foreign_keys_listener)
+    This includes several settings made on connections as they are
+    created, as well as transactional control extensions.
+
+    """
+
+    def regexp(expr, item):
+        reg = re.compile(expr)
+        return reg.search(six.text_type(item)) is not None
+
+    @sqlalchemy.event.listens_for(engine, "connect")
+    def _sqlite_connect_events(dbapi_con, con_record):
+
+        # Add REGEXP functionality on SQLite connections
+        dbapi_con.create_function('regexp', 2, regexp)
+
+        if not sqlite_synchronous:
+            # Switch sqlite connections to non-synchronous mode
+            dbapi_con.execute("PRAGMA synchronous = OFF")
+
+        if sqlite_fk:
+            # Ensures that the foreign key constraints are enforced in SQLite.
+            dbapi_con.execute('pragma foreign_keys=ON')
 
 
 def _test_connection(engine, max_retries, retry_interval):
