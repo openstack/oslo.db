@@ -16,18 +16,20 @@ import contextlib
 import itertools
 
 import mock
+from oslotest import base as oslo_test_base
 import six
 import sqlalchemy as sqla
 from sqlalchemy.orm import mapper
 
 from oslo.db import exception
+from oslo.db.sqlalchemy import exc_filters
 from oslo.db.sqlalchemy import session
 from oslo.db.sqlalchemy import test_base
 
 _TABLE_NAME = '__tmp__test__tmp__'
 
 
-class TestsExceptionFilter(test_base.DbTestCase):
+class TestsExceptionFilter(oslo_test_base.BaseTestCase):
 
     class Error(Exception):
         """DBAPI base error.
@@ -60,6 +62,13 @@ class TestsExceptionFilter(test_base.DbTestCase):
         https://bitbucket.org/zzzeek/sqlalchemy/issue/3075/
 
         """
+
+    def setUp(self):
+        super(TestsExceptionFilter, self).setUp()
+        self.engine = sqla.create_engine("sqlite://")
+        exc_filters.register_engine(self.engine)
+        sqla.event.listen(self.engine, "begin", session._begin_ping_listener)
+        self.engine.connect().close()  # initialize
 
     @contextlib.contextmanager
     def _dbapi_fixture(self, dialect_name):
