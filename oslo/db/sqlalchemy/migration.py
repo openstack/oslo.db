@@ -46,8 +46,8 @@ from migrate.versioning import api as versioning_api
 from migrate.versioning.repository import Repository
 import sqlalchemy
 
+from oslo.db._i18n import _
 from oslo.db import exception
-from oslo.db.openstack.common.gettextutils import _
 
 
 def db_sync(engine, abs_path, version=None, init_version=0, sanity_check=True):

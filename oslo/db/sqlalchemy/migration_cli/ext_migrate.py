@@ -13,7 +13,7 @@
 import logging
 import os
 
-from oslo.db.openstack.common.gettextutils import _LE
+from oslo.db._i18n import _LE
 from oslo.db.sqlalchemy import migration
 from oslo.db.sqlalchemy.migration_cli import ext_base
 from oslo.db.sqlalchemy import session as db_session

@@ -45,7 +45,7 @@ database errors.
 
 import six
 
-from oslo.db.openstack.common.gettextutils import _
+from oslo.db._i18n import _
 
 
 class DBError(Exception):

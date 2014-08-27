@@ -17,8 +17,8 @@ import re
 
 from sqlalchemy import exc as sqla_exc
 
+from oslo.db._i18n import _LE
 from oslo.db import exception
-from oslo.db.openstack.common.gettextutils import _LE
 from oslo.db.sqlalchemy import compat
 
 
