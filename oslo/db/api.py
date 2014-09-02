@@ -30,8 +30,8 @@ import time
 
 from oslo.utils import importutils
 
+from oslo.db._i18n import _LE
 from oslo.db import exception
-from oslo.db.openstack.common.gettextutils import _LE
 from oslo.db import options
 
 

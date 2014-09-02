@@ -30,8 +30,8 @@ from sqlalchemy import schema
 import sqlalchemy.sql.expression as expr
 import sqlalchemy.types as types
 
+from oslo.db._i18n import _LE
 from oslo.db import exception as exc
-from oslo.db.openstack.common.gettextutils import _LE
 
 LOG = logging.getLogger(__name__)
 

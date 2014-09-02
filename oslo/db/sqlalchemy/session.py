@@ -290,8 +290,8 @@ from sqlalchemy import pool
 from sqlalchemy.sql.expression import literal_column
 from sqlalchemy.sql.expression import select
 
+from oslo.db._i18n import _LW
 from oslo.db import exception
-from oslo.db.openstack.common.gettextutils import _LW
 from oslo.db import options
 from oslo.db.sqlalchemy import exc_filters
 from oslo.db.sqlalchemy import utils

@@ -42,7 +42,7 @@ from sqlalchemy import Table
 from sqlalchemy.types import NullType
 
 from oslo.db import exception
-from oslo.db.openstack.common.gettextutils import _, _LI, _LW
+from oslo.db._i18n import _, _LI, _LW
 from oslo.db.sqlalchemy import models
 
 # NOTE(ochuprykov): Add references for backwards compatibility

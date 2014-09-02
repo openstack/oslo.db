@@ -19,8 +19,8 @@ import threading
 
 from oslo.config import cfg
 
+from oslo.db._i18n import _LE
 from oslo.db import api
-from oslo.db.openstack.common.gettextutils import _LE
 
 
 LOG = logging.getLogger(__name__)
