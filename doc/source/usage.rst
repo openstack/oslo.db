@@ -5,7 +5,7 @@ Usage
 To use oslo.db in a project::
 
 * Session Handling
-  
+
   .. code:: python
 
     from oslo.config import cfg
@@ -32,7 +32,7 @@ To use oslo.db in a project::
 
   .. code:: python
 
-	from oslo.db import models
+    from oslo.db import models
 
 
     class ProjectSomething(models.TimestampMixin,
@@ -41,7 +41,7 @@ To use oslo.db in a project::
         ...
 
 
-* DB API backend support 
+* DB API backend support
 
   .. code:: python
 
