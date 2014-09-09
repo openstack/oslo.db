@@ -50,7 +50,7 @@ class WalkVersionsMixin(object):
     Auxiliary methods
     -----------------
 
-    `_migrate_up` and `_migrate_down` instance methods of the class can be
+    `migrate_up` and `migrate_down` instance methods of the class can be
     used with auxiliary methods named `_pre_upgrade_<revision_id>`,
     `_check_<revision_id>`, `_post_downgrade_<revision_id>`. The methods
     intended to check applied changes for correctness of data operations.
@@ -127,14 +127,38 @@ class WalkVersionsMixin(object):
     def _walk_versions(self, snake_walk=False, downgrade=True):
         """Check if migration upgrades and downgrades successfully.
 
+        DEPRECATED: this function is deprecated and will be removed from
+        oslo.db in a few releases. Please use walk_versions() method instead.
+        """
+        self.walk_versions(snake_walk, downgrade)
+
+    def _migrate_down(self, version, with_data=False):
+        """Migrate down to a previous version of the db.
+
+        DEPRECATED: this function is deprecated and will be removed from
+        oslo.db in a few releases. Please use migrate_down() method instead.
+        """
+        return self.migrate_down(version, with_data)
+
+    def _migrate_up(self, version, with_data=False):
+        """Migrate up to a new version of the db.
+
+        DEPRECATED: this function is deprecated and will be removed from
+        oslo.db in a few releases. Please use migrate_up() method instead.
+        """
+        self.migrate_up(version, with_data)
+
+    def walk_versions(self, snake_walk=False, downgrade=True):
+        """Check if migration upgrades and downgrades successfully.
+
         Determine the latest version script from the repo, then
         upgrade from 1 through to the latest, with no data
         in the databases. This just checks that the schema itself
         upgrades successfully.
 
-        `_walk_versions` calls `_migrate_up` and `_migrate_down` with
+        `walk_versions` calls `migrate_up` and `migrate_down` with
         `with_data` argument to check changes with data, but these methods
-        can be called without any extra check outside of `_walk_versions`
+        can be called without any extra check outside of `walk_versions`
         method.
 
         :param snake_walk: enables checking that each individual migration can
@@ -165,24 +189,24 @@ class WalkVersionsMixin(object):
 
         for version in versions:
             # upgrade -> downgrade -> upgrade
-            self._migrate_up(version, with_data=True)
+            self.migrate_up(version, with_data=True)
             if snake_walk:
-                downgraded = self._migrate_down(version - 1, with_data=True)
+                downgraded = self.migrate_down(version - 1, with_data=True)
                 if downgraded:
-                    self._migrate_up(version)
+                    self.migrate_up(version)
 
         if downgrade:
             # Now walk it back down to 0 from the latest, testing
             # the downgrade paths.
             for version in reversed(versions):
                 # downgrade -> upgrade -> downgrade
-                downgraded = self._migrate_down(version - 1)
+                downgraded = self.migrate_down(version - 1)
 
                 if snake_walk and downgraded:
-                    self._migrate_up(version)
-                    self._migrate_down(version - 1)
+                    self.migrate_up(version)
+                    self.migrate_down(version - 1)
 
-    def _migrate_down(self, version, with_data=False):
+    def migrate_down(self, version, with_data=False):
         """Migrate down to a previous version of the db.
 
         :param version: id of revision to downgrade.
@@ -215,7 +239,7 @@ class WalkVersionsMixin(object):
 
         return True
 
-    def _migrate_up(self, version, with_data=False):
+    def migrate_up(self, version, with_data=False):
         """Migrate up to a new version of the db.
 
         :param version: id of revision to upgrade.
