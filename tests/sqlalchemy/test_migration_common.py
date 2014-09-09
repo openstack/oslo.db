@@ -14,7 +14,6 @@
 #    under the License.
 #
 
-import contextlib
 import os
 import tempfile
 
@@ -26,6 +25,7 @@ import sqlalchemy
 from oslo.db import exception as db_exception
 from oslo.db.sqlalchemy import migration
 from oslo.db.sqlalchemy import test_base
+from tests import utils as test_utils
 
 
 class TestMigrationCommon(test_base.DbTestCase):
@@ -73,7 +73,7 @@ class TestMigrationCommon(test_base.DbTestCase):
         self.assertNotEqual(repo1, repo2)
 
     def test_db_version_control(self):
-        with contextlib.nested(
+        with test_utils.nested(
             mock.patch.object(migration, '_find_migrate_repo'),
             mock.patch.object(versioning_api, 'version_control'),
         ) as (mock_find_repo, mock_version_control):
@@ -136,7 +136,7 @@ class TestMigrationCommon(test_base.DbTestCase):
 
     def test_db_sync_upgrade(self):
         init_ver = 55
-        with contextlib.nested(
+        with test_utils.nested(
             mock.patch.object(migration, '_find_migrate_repo'),
             mock.patch.object(versioning_api, 'upgrade')
         ) as (mock_find_repo, mock_upgrade):
@@ -151,7 +151,7 @@ class TestMigrationCommon(test_base.DbTestCase):
                 self.engine, self.return_value, self.test_version)
 
     def test_db_sync_downgrade(self):
-        with contextlib.nested(
+        with test_utils.nested(
             mock.patch.object(migration, '_find_migrate_repo'),
             mock.patch.object(versioning_api, 'downgrade')
         ) as (mock_find_repo, mock_downgrade):
@@ -165,7 +165,7 @@ class TestMigrationCommon(test_base.DbTestCase):
                 self.engine, self.return_value, self.test_version)
 
     def test_db_sync_sanity_called(self):
-        with contextlib.nested(
+        with test_utils.nested(
             mock.patch.object(migration, '_find_migrate_repo'),
             mock.patch.object(migration, '_db_schema_sanity_check'),
             mock.patch.object(versioning_api, 'downgrade')
@@ -177,7 +177,7 @@ class TestMigrationCommon(test_base.DbTestCase):
             mock_sanity.assert_called_once_with(self.engine)
 
     def test_db_sync_sanity_skipped(self):
-        with contextlib.nested(
+        with test_utils.nested(
             mock.patch.object(migration, '_find_migrate_repo'),
             mock.patch.object(migration, '_db_schema_sanity_check'),
             mock.patch.object(versioning_api, 'downgrade')

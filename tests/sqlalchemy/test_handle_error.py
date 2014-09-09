@@ -16,7 +16,6 @@ This event is added as of SQLAlchemy 0.9.7; oslo.db provides a compatibility
 layer for prior SQLAlchemy versions.
 
 """
-import contextlib
 
 import mock
 from oslotest import base as test_base
@@ -29,6 +28,7 @@ from sqlalchemy.types import TypeDecorator
 
 from oslo.db.sqlalchemy.compat import handle_error
 from oslo.db.sqlalchemy.compat import utils
+from tests import utils as test_utils
 
 
 class MyException(Exception):
@@ -79,7 +79,7 @@ class ExceptionReraiseTest(test_base.BaseTestCase):
     def test_is_disconnect_not_interrupted(self):
         self._fixture()
 
-        with contextlib.nested(
+        with test_utils.nested(
             mock.patch.object(
                 self.engine.dialect.execution_ctx_cls,
                 "handle_dbapi_exception"
@@ -100,7 +100,7 @@ class ExceptionReraiseTest(test_base.BaseTestCase):
     def test_no_is_disconnect_not_invalidated(self):
         self._fixture()
 
-        with contextlib.nested(
+        with test_utils.nested(
             mock.patch.object(
                 self.engine.dialect.execution_ctx_cls,
                 "handle_dbapi_exception"

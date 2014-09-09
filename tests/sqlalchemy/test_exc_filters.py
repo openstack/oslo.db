@@ -25,6 +25,7 @@ from oslo.db import exception
 from oslo.db.sqlalchemy import exc_filters
 from oslo.db.sqlalchemy import session
 from oslo.db.sqlalchemy import test_base
+from tests import utils as test_utils
 
 _TABLE_NAME = '__tmp__test__tmp__'
 
@@ -73,7 +74,7 @@ class TestsExceptionFilter(oslo_test_base.BaseTestCase):
     @contextlib.contextmanager
     def _dbapi_fixture(self, dialect_name):
         engine = self.engine
-        with contextlib.nested(
+        with test_utils.nested(
             mock.patch.object(engine.dialect.dbapi,
                               "Error",
                               self.Error),
@@ -94,7 +95,7 @@ class TestsExceptionFilter(oslo_test_base.BaseTestCase):
         # statement
         self.engine.connect().close()
 
-        with contextlib.nested(
+        with test_utils.nested(
             mock.patch.object(engine.dialect, "do_execute", do_execute),
             # replace the whole DBAPI rather than patching "Error"
             # as some DBAPIs might not be patchable (?)
@@ -630,7 +631,7 @@ class TestDBDisconnected(TestsExceptionFilter):
                 raise exception
 
         with self._dbapi_fixture(dialect_name):
-            with contextlib.nested(
+            with test_utils.nested(
                 mock.patch.object(engine.dialect,
                                   "do_execute",
                                   fake_do_execute),
