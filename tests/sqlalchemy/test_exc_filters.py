@@ -200,14 +200,17 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
         # intentionally generate a UnicodeEncodeError, as its
         # constructor is quite complicated and seems to be non-public
         # or at least not documented anywhere.
+        uee_ref = None
         try:
             six.u('\u2435').encode('ascii')
         except UnicodeEncodeError as uee:
-            pass
+            # Python3.x added new scoping rules here (sadly)
+            # http://legacy.python.org/dev/peps/pep-3110/#semantic-changes
+            uee_ref = uee
 
         self._run_test(
             "postgresql", six.u('select \u2435'),
-            uee,
+            uee_ref,
             exception.DBInvalidUnicodeParameter
             )
 
