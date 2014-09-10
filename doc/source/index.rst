@@ -14,6 +14,7 @@ Contents:
    installation
    usage
    contributing
+   history
 
 Indices and tables
 ------------------
