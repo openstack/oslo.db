@@ -195,87 +195,112 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
         self.assertEqual("mysqldb has an attribute error", matched.args[0])
 
 
-class TestRaiseReferenceError(TestsExceptionFilter):
-    def test_postgresql(self):
-        e = self._run_test(
-            "postgresql",
-            "INSERT SOMETHING",
-            self.IntegrityError(
-                "insert or update on table "
-                "\"resource_entity\" "
-                "violates foreign key constraint "
-                "\"resource_entity_entity_id_fkey\"\n"
-                "DETAIL:  Key "
-                "(entity_id)=(74b5da71-5a9c-4f89-a8e9-4a2d856e6c29) "
-                "is not present in table \"entity\".\n"
-                "'INSERT INTO resource_entity (resource_id, entity_id, name) "
-                "VALUES (%(resource_id)s, "
-                "%(entity_id)s, %(name)s)' "
-                "{'entity_id': '74b5da71-5a9c-4f89-a8e9-4a2d856e6c29', "
-                "'name': u'foo', "
-                "'resource_id': 'ffb12cb4-d955-4d96-a315-5f48ea161eef'}"),
-            exception.DBReferenceError,
-        )
-        self.assertEqual("resource_entity", e.table)
-        self.assertEqual("resource_entity_entity_id_fkey", e.constraint)
-        self.assertEqual("entity_id", e.key)
-        self.assertEqual("entity", e.key_table)
-        self.assertEqual(
-            "(IntegrityError) insert or update on table "
-            "\"resource_entity\" violates foreign key constraint "
-            "\"resource_entity_entity_id_fkey\"\n"
-            "DETAIL:  Key (entity_id)=(74b5da71-5a9c-4f89-a8e9-4a2d856e6c29) "
-            "is not present in table \"entity\".\n"
-            "'INSERT INTO resource_entity (resource_id, entity_id, name) "
-            "VALUES (%(resource_id)s, %(entity_id)s, %(name)s)' "
-            "{'entity_id': '74b5da71-5a9c-4f89-a8e9-4a2d856e6c29', "
-            "'name': u'foo', "
-            "'resource_id': 'ffb12cb4-d955-4d96-a315-5f48ea161eef'} "
-            "'INSERT SOMETHING' ()",
-            str(e))
+class TestReferenceErrorSQLite(test_base.DbTestCase):
 
-    def test_mysql(self):
-        e = self._run_test(
-            "mysql",
-            "INSERT SOMETHING",
-            self.IntegrityError(
-                "Cannot add or update a child row: "
-                "a foreign key constraint fails "
-                "(resource_entity, CONSTRAINT resource_entity_entity_id_fkey "
-                "FOREIGN KEY (entity_id) "
-                "REFERENCES entity (entity_id))"
-            ),
-            exception.DBReferenceError,
-        )
-        self.assertEqual("resource_entity", e.table)
-        self.assertEqual("resource_entity_entity_id_fkey", e.constraint)
-        self.assertEqual("entity_id", e.key)
-        self.assertEqual("entity", e.key_table)
-        self.assertEqual(
-            "(IntegrityError) Cannot add or update a child row: "
-            "a foreign key constraint fails "
-            "(resource_entity, CONSTRAINT resource_entity_entity_id_fkey "
-            "FOREIGN KEY (entity_id) REFERENCES entity (entity_id)) "
-            "'INSERT SOMETHING' ()",
-            str(e))
+    def setUp(self):
+        super(TestReferenceErrorSQLite, self).setUp()
 
-    def test_sqlite(self):
-        e = self._run_test(
-            "sqlite",
-            "INSERT SOMETHING",
-            self.IntegrityError(
-                "SQL error: foreign key constraint failed"
-            ),
-            exception.DBReferenceError,
+        meta = sqla.MetaData(bind=self.engine)
+
+        table_1 = sqla.Table(
+            "resource_foo", meta,
+            sqla.Column("id", sqla.Integer, primary_key=True),
+            sqla.Column("foo", sqla.Integer),
+            mysql_engine='InnoDB',
+            mysql_charset='utf8',
         )
+        table_1.create()
+
+        self.table_2 = sqla.Table(
+            "resource_entity", meta,
+            sqla.Column("id", sqla.Integer, primary_key=True),
+            sqla.Column("foo_id", sqla.Integer,
+                        sqla.ForeignKey("resource_foo.id", name="foo_fkey")),
+            mysql_engine='InnoDB',
+            mysql_charset='utf8',
+        )
+        self.table_2.create()
+
+    def test_raise(self):
+        self.engine.execute("PRAGMA foreign_keys = ON;")
+
+        e = self.assertRaises(
+            exception.DBReferenceError,
+            self.engine.execute,
+            self.table_2.insert({'id': 1, 'foo_id': 2})
+        )
+
+        self.assertEqual(
+            "(IntegrityError) FOREIGN KEY constraint failed u'INSERT INTO "
+            "resource_entity (id, foo_id) VALUES (?, ?)' (1, 2)".lower(),
+            str(e).lower())
         self.assertIsNone(e.table)
         self.assertIsNone(e.constraint)
         self.assertIsNone(e.key)
         self.assertIsNone(e.key_table)
+
+
+class TestReferenceErrorPostgreSQL(TestReferenceErrorSQLite,
+                                   test_base.PostgreSQLOpportunisticTestCase):
+    def test_raise(self):
+        e = self.assertRaises(
+            exception.DBReferenceError,
+            self.engine.execute,
+            self.table_2.insert({'id': 1, 'foo_id': 2})
+        )
+
+        self.assertIn(
+            "(IntegrityError) insert or update on table \"resource_entity\" "
+            "violates foreign key constraint \"foo_fkey\"\nDETAIL:  Key "
+            "(foo_id)=(2) is not present in table \"resource_foo\".\n"
+            " 'INSERT INTO resource_entity (id, foo_id) VALUES (%(id)s, "
+            "%(foo_id)s)'", str(e))
+        self.assertEqual("resource_entity", e.table)
+        self.assertEqual("foo_fkey", e.constraint)
+        self.assertEqual("foo_id", e.key)
+        self.assertEqual("resource_foo", e.key_table)
+
+
+class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
+                              test_base.MySQLOpportunisticTestCase):
+    def test_raise(self):
+        e = self.assertRaises(
+            exception.DBReferenceError,
+            self.engine.execute,
+            self.table_2.insert({'id': 1, 'foo_id': 2})
+        )
+
         self.assertEqual(
-            "(IntegrityError) SQL error: foreign key "
-            "constraint failed 'INSERT SOMETHING' ()",
+            "(IntegrityError) (1452, 'Cannot add or update a child row: a "
+            "foreign key constraint fails (`{0}`.`resource_entity`, "
+            "CONSTRAINT `foo_fkey` FOREIGN KEY (`foo_id`) REFERENCES "
+            "`resource_foo` (`id`))') 'INSERT INTO resource_entity (id, foo_id"
+            ") VALUES (%s, %s)' (1, 2)".format(self.engine.url.database),
             str(e))
+        self.assertEqual("resource_entity", e.table)
+        self.assertEqual("foo_fkey", e.constraint)
+        self.assertEqual("foo_id", e.key)
+        self.assertEqual("resource_foo", e.key_table)
+
+    def test_raise_ansi_quotes(self):
+        self.engine.execute("SET SESSION sql_mode = 'ANSI';")
+        e = self.assertRaises(
+            exception.DBReferenceError,
+            self.engine.execute,
+            self.table_2.insert({'id': 1, 'foo_id': 2})
+        )
+
+        self.assertEqual(
+            "(IntegrityError) (1452, 'Cannot add or update a child row: a "
+            'foreign key constraint fails ("{0}"."resource_entity", '
+            'CONSTRAINT "foo_fkey" FOREIGN KEY ("foo_id") REFERENCES '
+            '"resource_foo" ("id"))\') \'INSERT INTO resource_entity (id, '
+            "foo_id) VALUES (%s, %s)' (1, 2)".format(self.engine.url.database),
+            str(e))
+        self.assertEqual("resource_entity", e.table)
+        self.assertEqual("foo_fkey", e.constraint)
+        self.assertEqual("foo_id", e.key)
+        self.assertEqual("resource_foo", e.key_table)
 
 
 class TestDuplicate(TestsExceptionFilter):
