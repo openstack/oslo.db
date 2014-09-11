@@ -93,7 +93,7 @@ def _db_schema_sanity_check(engine):
         onlyutf8_sql = ('SELECT TABLE_NAME,TABLE_COLLATION '
                         'from information_schema.TABLES '
                         'where TABLE_SCHEMA=%s and '
-                        'TABLE_COLLATION NOT LIKE "%%utf8%%"')
+                        'TABLE_COLLATION NOT LIKE \'%%utf8%%\'')
 
         # NOTE(morganfainberg): exclude the sqlalchemy-migrate and alembic
         # versioning tables from the tables we need to verify utf8 status on.
