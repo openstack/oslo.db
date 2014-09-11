@@ -191,6 +191,9 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
             sa.Column('defaulttest', sa.Integer, server_default='5'),
             sa.Column('defaulttest2', sa.String(8), server_default=''),
             sa.Column('defaulttest3', sa.String(5), server_default="test"),
+            sa.Column('defaulttest4', sa.Enum('first', 'second',
+                                              name='testenum'),
+                      server_default="first"),
             sa.UniqueConstraint('spam', 'eggs', name='uniq_cons'),
         )
 
@@ -214,6 +217,9 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
                                      server_default='')
             defaulttest3 = sa.Column('defaulttest3', sa.String(5),
                                      server_default="test")
+            defaulttest4 = sa.Column('defaulttest4', sa.Enum('first', 'second',
+                                                             name='testenum'),
+                                     server_default="first")
             bar = sa.Column('bar', sa.Numeric(10, 5))
 
         class ModelThatShouldNotBeCompared(BASE):
@@ -248,6 +254,9 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
             sa.Column('defaulttest', sa.Integer, server_default='7'),
             sa.Column('defaulttest2', sa.String(8), server_default=''),
             sa.Column('defaulttest3', sa.String(5), server_default="fake"),
+            sa.Column('defaulttest4',
+                      sa.Enum('first', 'second', name='testenum'),
+                      server_default="first"),
             sa.UniqueConstraint('spam', 'foo', name='uniq_cons'),
         )
 
