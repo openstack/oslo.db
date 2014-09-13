@@ -6,11 +6,6 @@ At the command line::
 
     $ pip install oslo.db
 
-Or, if you have virtualenvwrapper installed::
-
-    $ mkvirtualenv
-    $ pip install oslo.db
-
 You will also need to install at least one SQL backend::
 
     $ pip install MySQL-python

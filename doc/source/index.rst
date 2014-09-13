@@ -1,19 +1,21 @@
-Welcome to oslo.db documentation!
-=================================
+=========
+ oslo.db
+=========
 
 The Oslo database handling library. Provides database connectivity
 to the different backends and helper utils.
 
-Contents:
----------
+Contents
+--------
 
 .. toctree::
    :maxdepth: 2
 
-   readme
    installation
    usage
+   api/index
    contributing
+   history
 
 Indices and tables
 ------------------

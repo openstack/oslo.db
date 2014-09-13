@@ -10,7 +10,6 @@ cover/
 skeleton.egg-info/
 build/
 dist/
-doc/source/api
 AUTHORS
 .update-venv/
 ChangeLog

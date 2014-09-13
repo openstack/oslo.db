@@ -45,10 +45,9 @@ class WalkVersionsMixin(object):
     abstract class mixin. `INIT_VERSION`, `REPOSITORY` and `migration_api`
     attributes must be implemented in subclasses.
 
-    .. _auxiliary-dynamic-methods:
+    .. _auxiliary-dynamic-methods: Auxiliary Methods
 
-    Auxiliary methods
-    -----------------
+    Auxiliary Methods:
 
     `migrate_up` and `migrate_down` instance methods of the class can be
     used with auxiliary methods named `_pre_upgrade_<revision_id>`,
@@ -59,16 +58,16 @@ class WalkVersionsMixin(object):
     `_pre_upgrade_<revision_id>`, `_check_<revision_id>`,
     `_post_downgrade_<revision_id>` implementation:
 
-        * `_pre_upgrade_<revision_id>`: provide a data appropriate to a
-        next revision. Should be used an id of revision which going to be
-        applied.
+        * `_pre_upgrade_<revision_id>`: provide a data appropriate to
+           a next revision. Should be used an id of revision which
+           going to be applied.
 
-        * `_check_<revision_id>`: Insert, select, delete operations with
-        newly applied changes. The data provided by
-        `_pre_upgrade_<revision_id>` will be used.
+        * `_check_<revision_id>`: Insert, select, delete operations
+           with newly applied changes. The data provided by
+           `_pre_upgrade_<revision_id>` will be used.
 
-        *`_post_downgrade_<revision_id>`: check for absence (inability to
-        use) changes provided by reverted revision.
+        * `_post_downgrade_<revision_id>`: check for absence
+          (inability to use) changes provided by reverted revision.
 
     Execution order of auxiliary methods when revision is upgrading:
 
@@ -79,6 +78,7 @@ class WalkVersionsMixin(object):
         `downgrade` => `_post_downgrade_###`
 
     .. _migrate: https://sqlalchemy-migrate.readthedocs.org/en/latest/
+
     """
 
     @abc.abstractproperty
@@ -213,7 +213,7 @@ class WalkVersionsMixin(object):
         :type version: str
         :keyword with_data: Whether to verify the absence of changes from
             migration(s) being downgraded, see
-            :ref:`auxiliary-dynamic-methods`.
+            :ref:`auxiliary-dynamic-methods <Auxiliary Methods>`.
         :type with_data: Bool
         """
 
@@ -245,7 +245,7 @@ class WalkVersionsMixin(object):
         :param version: id of revision to upgrade.
         :type version: str
         :keyword with_data: Whether to verify the applied changes with data,
-            see :ref:`auxiliary-dynamic-methods`.
+            see :ref:`auxiliary-dynamic-methods <Auxiliary Methods>`.
         :type with_data: Bool
         """
         # NOTE(sdague): try block is here because it's impossible to debug
