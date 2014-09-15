@@ -504,8 +504,17 @@ def _init_events(engine, sqlite_synchronous=True, sqlite_fk=False, **kw):
 
     @sqlalchemy.event.listens_for(engine, "begin")
     def _sqlite_emit_begin(conn):
-        # emit our own BEGIN
-        conn.execute("BEGIN")
+        # emit our own BEGIN, checking for existing
+        # transactional state
+        if 'in_transaction' not in conn.info:
+            conn.execute("BEGIN")
+            conn.info['in_transaction'] = True
+
+    @sqlalchemy.event.listens_for(engine, "rollback")
+    @sqlalchemy.event.listens_for(engine, "commit")
+    def _sqlite_end_transaction(conn):
+        # remove transactional marker
+        conn.info.pop('in_transaction', None)
 
 
 def _test_connection(engine, max_retries, retry_interval):
