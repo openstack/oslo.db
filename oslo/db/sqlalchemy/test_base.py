@@ -91,7 +91,8 @@ def backend_specific(*dialects):
             if self.engine.name not in dialects:
                 msg = ('The test "%s" can be run '
                        'only on %s. Current engine is %s.')
-                args = (f.__name__, ' '.join(dialects), self.engine.name)
+                args = (utils.get_callable_name(f), ' '.join(dialects),
+                        self.engine.name)
                 self.skip(msg % args)
             else:
                 return f(self)
