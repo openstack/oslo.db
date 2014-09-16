@@ -97,7 +97,7 @@ class ModelBase(six.Iterator):
         return six.iteritems(local)
 
 
-class ModelIterator(ModelBase):
+class ModelIterator(ModelBase, six.Iterator):
 
     def __init__(self, model, columns):
         self.model = model
@@ -110,9 +110,6 @@ class ModelIterator(ModelBase):
     def __next__(self):
         n = six.advance_iterator(self.i)
         return n, getattr(self.model, n)
-
-    def next(self):
-        return self.__next__()
 
 
 class TimestampMixin(object):
