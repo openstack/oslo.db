@@ -54,6 +54,31 @@ LOG = logging.getLogger(__name__)
 _DBURL_REGEX = re.compile(r"[^:]+://([^:]+):([^@]+)@.+")
 
 
+def get_callable_name(function):
+    # TODO(harlowja): Replace this once
+    # it is possible to use https://review.openstack.org/#/c/122495/ which is
+    # a more complete and expansive module that does a similar thing...
+    try:
+        method_self = six.get_method_self(function)
+    except AttributeError:
+        method_self = None
+    if method_self is not None:
+        if isinstance(method_self, six.class_types):
+            im_class = method_self
+        else:
+            im_class = type(method_self)
+        try:
+            parts = (im_class.__module__, function.__qualname__)
+        except AttributeError:
+            parts = (im_class.__module__, im_class.__name__, function.__name__)
+    else:
+        try:
+            parts = (function.__module__, function.__qualname__)
+        except AttributeError:
+            parts = (function.__module__, function.__name__)
+    return '.'.join(parts)
+
+
 def sanitize_db_url(url):
     match = _DBURL_REGEX.match(url)
     if match:
