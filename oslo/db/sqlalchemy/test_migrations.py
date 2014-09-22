@@ -284,7 +284,87 @@ class ModelsMigrationsSync(object):
     test_model_sync() will run migration scripts for the engine provided and
     then compare the given metadata to the one reflected from the database.
     The difference between MODELS and MIGRATION scripts will be printed and
-    the test will fail, if the difference is not empty.
+    the test will fail, if the difference is not empty. The return value is
+    really a list of actions, that should be performed in order to make the
+    current database schema state (i.e. migration scripts) consistent with
+    models definitions. It's left up to developers to analyze the output and
+    decide whether the models definitions or the migration scripts should be
+    modified to make them consistent.
+
+    Output::
+
+        [(
+            'add_table',
+            description of the table from models
+        ),
+        (
+            'remove_table',
+            description of the table from database
+        ),
+        (
+            'add_column',
+            schema,
+            table name,
+            column description from models
+        ),
+        (
+            'remove_column',
+            schema,
+            table name,
+            column description from database
+        ),
+        (
+            'add_index',
+            description of the index from models
+        ),
+        (
+            'remove_index',
+            description of the index from database
+        ),
+        (
+            'add_constraint',
+            description of constraint from models
+        ),
+        (
+            'remove_constraint,
+            description of constraint from database
+        ),
+        (
+            'modify_nullable',
+            schema,
+            table name,
+            column name,
+            {
+                'existing_type': type of the column from database,
+                'existing_server_default': default value from database
+            },
+            nullable from database,
+            nullable from models
+        ),
+        (
+            'modify_type',
+            schema,
+            table name,
+            column name,
+            {
+                'existing_nullable': database nullable,
+                'existing_server_default': default value from database
+            },
+            database column type,
+            type of the column from models
+        ),
+        (
+            'modify_default',
+            schema,
+            table name,
+            column name,
+            {
+                'existing_nullable': database nullable,
+                'existing_type': type of the column from database
+            },
+            connection column default value,
+            default from models
+        )]
 
     Method include_object() can be overridden to exclude some tables from
     comparison (e.g. migrate_repo).
