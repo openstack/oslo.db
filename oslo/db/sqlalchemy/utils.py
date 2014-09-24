@@ -899,6 +899,9 @@ class DialectFunctionDispatcher(object):
     def dispatch_for(self, expr):
         def decorate(fn):
             dbname, driver = self._parse_dispatch(expr)
+            if fn is self:
+                fn = fn._last
+            self._last = fn
             self._register(expr, dbname, driver, fn)
             return self
         return decorate
