@@ -80,8 +80,9 @@ database_opts = [
                                                   group='DEFAULT'),
                                 cfg.DeprecatedOpt('sql_max_retries',
                                                   group='DATABASE')],
-               help='Maximum db connection retries during startup. '
-                    'Set to -1 to specify an infinite retry count.'),
+               help='Maximum number of database connection retries '
+                    'during startup. Set to -1 to specify an infinite '
+                    'retry count.'),
     cfg.IntOpt('retry_interval',
                default=10,
                deprecated_opts=[cfg.DeprecatedOpt('sql_retry_interval',
