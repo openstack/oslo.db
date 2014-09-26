@@ -12,8 +12,8 @@
 #    under the License.
 
 from oslo.config import cfg
+from oslo.config import fixture as config
 
-from oslo.db.openstack.common.fixture import config
 from oslo.db import options
 from tests import utils as test_utils
 
