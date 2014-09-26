@@ -22,6 +22,7 @@ import sqlalchemy as sqla
 from sqlalchemy.orm import mapper
 
 from oslo.db import exception
+from oslo.db.sqlalchemy import compat
 from oslo.db.sqlalchemy import exc_filters
 from oslo.db.sqlalchemy import session
 from oslo.db.sqlalchemy import test_base
@@ -67,7 +68,6 @@ class TestsExceptionFilter(oslo_test_base.BaseTestCase):
         super(TestsExceptionFilter, self).setUp()
         self.engine = sqla.create_engine("sqlite://")
         exc_filters.register_engine(self.engine)
-        sqla.event.listen(self.engine, "begin", session._begin_ping_listener)
         self.engine.connect().close()  # initialize
 
     @contextlib.contextmanager
@@ -620,6 +620,8 @@ class TestDBDisconnected(TestsExceptionFilter):
     def _fixture(self, dialect_name, exception, num_disconnects):
         engine = self.engine
 
+        compat.engine_connect(engine, session._connect_ping_listener)
+
         real_do_execute = engine.dialect.do_execute
         counter = itertools.count(1)
 
@@ -650,14 +652,14 @@ class TestDBDisconnected(TestsExceptionFilter):
                 self.assertTrue(conn.in_transaction())
 
         with self._fixture(dialect_name, exc_obj, 2):
-            conn = self.engine.connect()
             self.assertRaises(
                 exception.DBConnectionError,
-                conn.begin
+                self.engine.connect
             )
-            self.assertFalse(conn.closed)
-            self.assertFalse(conn.in_transaction())
-            self.assertTrue(conn.invalidated)
+
+        # test implicit execution
+        with self._fixture(dialect_name, exc_obj, 1):
+            self.assertEqual(self.engine.scalar(sqla.select([1])), 1)
 
     def test_mysql_ping_listener_disconnected(self):
         for code in [2006, 2013, 2014, 2045, 2055]:
