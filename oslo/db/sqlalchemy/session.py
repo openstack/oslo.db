@@ -293,6 +293,7 @@ from sqlalchemy.sql.expression import select
 from oslo.db._i18n import _LW
 from oslo.db import exception
 from oslo.db import options
+from oslo.db.sqlalchemy import compat
 from oslo.db.sqlalchemy import exc_filters
 from oslo.db.sqlalchemy import utils
 
@@ -311,12 +312,22 @@ def _thread_yield(dbapi_con, con_record):
     time.sleep(0)
 
 
-def _begin_ping_listener(connection):
-    """Ping the server at transaction begin.
+def _connect_ping_listener(connection, branch):
+    """Ping the server at connection startup.
 
     Ping the server at transaction begin and transparently reconnect
     if a disconnect exception occurs.
     """
+    if branch:
+        return
+
+    # turn off "close with result".  This can also be accomplished
+    # by branching the connection, however just setting the flag is
+    # more performant and also doesn't get involved with some
+    # connection-invalidation awkardness that occurs (see
+    # https://bitbucket.org/zzzeek/sqlalchemy/issue/3215/)
+    save_should_close_with_result = connection.should_close_with_result
+    connection.should_close_with_result = False
     try:
         # run a SELECT 1.   use a core select() so that
         # any details like that needed by Oracle, DB2 etc. are handled.
@@ -329,6 +340,8 @@ def _begin_ping_listener(connection):
         # new connections assuming they are good now.
         # run the select again to re-validate the Connection.
         connection.scalar(select([1]))
+    finally:
+        connection.should_close_with_result = save_should_close_with_result
 
 
 def _setup_logging(connection_debug=0):
@@ -389,8 +402,8 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     # register alternate exception handler
     exc_filters.register_engine(engine)
 
-    # register on begin handler
-    sqlalchemy.event.listen(engine, "begin", _begin_ping_listener)
+    # register engine connect handler
+    compat.engine_connect(engine, _connect_ping_listener)
 
     # initial connect + test
     _test_connection(engine, max_retries, retry_interval)
