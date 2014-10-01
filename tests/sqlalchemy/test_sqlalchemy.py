@@ -453,19 +453,36 @@ class MysqlConnectTest(test_base.MySQLOpportunisticTestCase):
 
         log = self.useFixture(fixtures.FakeLogger(level=logging.WARN))
 
-        engine = self._fixture(sql_mode=None)
+        mysql_conn = self.engine.raw_connection()
+        self.addCleanup(mysql_conn.close)
+        mysql_conn.detach()
+        mysql_cursor = mysql_conn.cursor()
 
-        @sqlalchemy.event.listens_for(
-            engine, "before_cursor_execute", retval=True)
-        def replace_stmt(
-            conn, cursor, statement, parameters,
-            context, executemany):
+        def execute(statement, parameters=()):
             if "SHOW VARIABLES LIKE 'sql_mode'" in statement:
                 statement = "SHOW VARIABLES LIKE 'i_dont_exist'"
-            return statement, parameters
+            return mysql_cursor.execute(statement, parameters)
 
-        session._init_events.dispatch_on_drivername("mysql")(engine)
+        test_engine = sqlalchemy.create_engine(self.engine.url,
+                                               _initialize=False)
 
+        with mock.patch.object(
+            test_engine.pool, '_creator',
+            mock.Mock(
+                return_value=mock.Mock(
+                    cursor=mock.Mock(
+                        return_value=mock.Mock(
+                            execute=execute,
+                            fetchone=mysql_cursor.fetchone,
+                            fetchall=mysql_cursor.fetchall
+                        )
+                    )
+                )
+            )
+        ):
+            session._init_events.dispatch_on_drivername("mysql")(test_engine)
+
+            test_engine.raw_connection()
         self.assertIn('Unable to detect effective SQL mode',
                       log.output)
 
