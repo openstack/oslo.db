@@ -466,19 +466,27 @@ def _init_events(engine, mysql_sql_mode=None, **kw):
             cursor = dbapi_con.cursor()
             cursor.execute("SET SESSION sql_mode = %s", [mysql_sql_mode])
 
-    realmode = engine.execute("SHOW VARIABLES LIKE 'sql_mode'").fetchone()
-    if realmode is None:
-        LOG.warning(_LW('Unable to detect effective SQL mode'))
-    else:
-        realmode = realmode[1]
-        LOG.debug('MySQL server mode set to %s', realmode)
-        if 'TRADITIONAL' not in realmode.upper() and \
-            'STRICT_ALL_TABLES' not in realmode.upper():
-            LOG.warning(
-                _LW(
-                    "MySQL SQL mode is '%s', "
-                    "consider enabling TRADITIONAL or STRICT_ALL_TABLES"),
-                realmode)
+    @sqlalchemy.event.listens_for(engine, "first_connect")
+    def _check_effective_sql_mode(dbapi_con, connection_rec):
+        if mysql_sql_mode is not None:
+            _set_session_sql_mode(dbapi_con, connection_rec)
+
+        cursor = dbapi_con.cursor()
+        cursor.execute("SHOW VARIABLES LIKE 'sql_mode'")
+        realmode = cursor.fetchone()
+
+        if realmode is None:
+            LOG.warning(_LW('Unable to detect effective SQL mode'))
+        else:
+            realmode = realmode[1]
+            LOG.debug('MySQL server mode set to %s', realmode)
+            if 'TRADITIONAL' not in realmode.upper() and \
+                'STRICT_ALL_TABLES' not in realmode.upper():
+                LOG.warning(
+                    _LW(
+                        "MySQL SQL mode is '%s', "
+                        "consider enabling TRADITIONAL or STRICT_ALL_TABLES"),
+                    realmode)
 
 
 @_init_events.dispatch_for("sqlite")
