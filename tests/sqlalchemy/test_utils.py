@@ -990,6 +990,41 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
             callable_fn.mock_calls
         )
 
+    def test_multiple_nesting(self):
+        callable_fn = mock.Mock(
+            default=mock.Mock(return_value=None),
+            mysql=mock.Mock(return_value=None)
+        )
+
+        dispatcher = utils.dispatch_for_dialect("*", multiple=True)(
+            callable_fn.default)
+
+        dispatcher = dispatcher.dispatch_for("mysql+mysqlconnector")(
+            dispatcher.dispatch_for("mysql+mysqldb")(
+                callable_fn.mysql
+            )
+        )
+
+        mysqldb_url = sqlalchemy.engine.url.make_url("mysql+mysqldb://")
+        mysqlconnector_url = sqlalchemy.engine.url.make_url(
+            "mysql+mysqlconnector://")
+        sqlite_url = sqlalchemy.engine.url.make_url("sqlite://")
+
+        dispatcher(mysqldb_url, 1)
+        dispatcher(mysqlconnector_url, 2)
+        dispatcher(sqlite_url, 3)
+
+        self.assertEqual(
+            [
+                mock.call.mysql(mysqldb_url, 1),
+                mock.call.default(mysqldb_url, 1),
+                mock.call.mysql(mysqlconnector_url, 2),
+                mock.call.default(mysqlconnector_url, 2),
+                mock.call.default(sqlite_url, 3)
+            ],
+            callable_fn.mock_calls
+        )
+
     def test_single_retval(self):
         dispatcher, callable_fn = self._single_fixture()
         callable_fn.mysql_mysqldb.return_value = 5
