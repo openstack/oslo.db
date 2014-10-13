@@ -177,10 +177,10 @@ class DBAPI(object):
                 # Import the untranslated name if we don't have a mapping
                 backend_path = self._backend_mapping.get(self._backend_name,
                                                          self._backend_name)
-                backend_mod = importutils.try_import(backend_path)
-                if not backend_mod:
-                    raise ImportError("Unable to import backend '%s'" %
-                                      self._backend_name)
+                LOG.debug('Loading backend %(name)r from %(path)r',
+                          {'name': self._backend_name,
+                           'path': backend_path})
+                backend_mod = importutils.import_module(backend_path)
                 self._backend = backend_mod.get_backend()
 
     def __getattr__(self, key):
