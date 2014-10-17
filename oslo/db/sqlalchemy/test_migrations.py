@@ -475,7 +475,11 @@ class ModelsMigrationsSync(object):
 
     @_compare_server_default.dispatch_for('postgresql')
     def _compare_server_default(bind, meta_col, insp_def, meta_def):
-        if isinstance(meta_col.type, sqlalchemy.String):
+        if isinstance(meta_col.type, sqlalchemy.Enum):
+            if meta_def is None or insp_def is None:
+                return meta_def != insp_def
+            return insp_def != "'%s'::%s" % (meta_def.arg, meta_col.type.name)
+        elif isinstance(meta_col.type, sqlalchemy.String):
             if meta_def is None or insp_def is None:
                 return meta_def != insp_def
             return insp_def != "'%s'::character varying" % meta_def.arg
