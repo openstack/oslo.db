@@ -569,7 +569,10 @@ def _test_connection(engine, max_retries, retry_interval):
         attempts = itertools.count()
     else:
         attempts = six.moves.range(max_retries)
-    de = None
+    # See: http://legacy.python.org/dev/peps/pep-3110/#semantic-changes for
+    # why we are not using 'de' directly (it can be removed from the local
+    # scope).
+    de_ref = None
     for attempt in attempts:
         try:
             return exc_filters.handle_connect_error(engine)
@@ -577,9 +580,10 @@ def _test_connection(engine, max_retries, retry_interval):
             msg = _LW('SQL connection failed. %s attempts left.')
             LOG.warning(msg, max_retries - attempt)
             time.sleep(retry_interval)
+            de_ref = de
     else:
-        if de is not None:
-            six.reraise(type(de), de)
+        if de_ref is not None:
+            six.reraise(type(de_ref), de_ref)
 
 
 class Query(sqlalchemy.orm.query.Query):
