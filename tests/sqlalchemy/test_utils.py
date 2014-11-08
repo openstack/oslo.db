@@ -26,13 +26,15 @@ from sqlalchemy.dialects import mysql
 from sqlalchemy import Boolean, Index, Integer, DateTime, String, SmallInteger
 from sqlalchemy import MetaData, Table, Column, ForeignKey
 from sqlalchemy.engine import reflection
-from sqlalchemy.exc import ResourceClosedError
+from sqlalchemy.engine import url as sa_url
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
 from oslo.db import exception
 from oslo.db.sqlalchemy import models
+from oslo.db.sqlalchemy import provision
 from oslo.db.sqlalchemy import session
 from oslo.db.sqlalchemy import test_base as db_test_base
 from oslo.db.sqlalchemy import utils
@@ -537,18 +539,57 @@ class TestConnectionUtils(test_utils.BaseTestCase):
 
     def test_is_backend_unavail(self):
         log = self.useFixture(fixtures.FakeLogger())
-        error_cause = ('This result object does not return rows. It has been'
-                       'closed automatically.')
-        error_msg = ("The %s backend is unavailable: %s\n" %
-                     ('mysql', error_cause))
-
+        err = OperationalError("Can't connect to database", None, None)
+        error_msg = "The mysql backend is unavailable: %s\n" % err
         self.mox.StubOutWithMock(sqlalchemy.engine.base.Engine, 'connect')
-        sqlalchemy.engine.base.Engine.connect().AndRaise(
-            ResourceClosedError(error_cause))
+        sqlalchemy.engine.base.Engine.connect().AndRaise(err)
         self.mox.ReplayAll()
-
         self.assertFalse(utils.is_backend_avail(**self.full_credentials))
         self.assertEqual(error_msg, log.output)
+
+    def test_ensure_backend_available(self):
+        self.mox.StubOutWithMock(sqlalchemy.engine.base.Engine, 'connect')
+        fake_connection = self.mox.CreateMockAnything()
+        fake_connection.close()
+        sqlalchemy.engine.base.Engine.connect().AndReturn(fake_connection)
+        self.mox.ReplayAll()
+
+        eng = provision.Backend._ensure_backend_available(self.connect_string)
+        self.assertIsInstance(eng, sqlalchemy.engine.base.Engine)
+        self.assertEqual(self.connect_string, str(eng.url))
+
+    def test_ensure_backend_available_no_connection_raises(self):
+        log = self.useFixture(fixtures.FakeLogger())
+        err = OperationalError("Can't connect to database", None, None)
+        self.mox.StubOutWithMock(sqlalchemy.engine.base.Engine, 'connect')
+        sqlalchemy.engine.base.Engine.connect().AndRaise(err)
+        self.mox.ReplayAll()
+
+        exc = self.assertRaises(
+            exception.BackendNotAvailable,
+            provision.Backend._ensure_backend_available, self.connect_string
+        )
+        self.assertEqual("Could not connect", str(exc))
+        self.assertEqual(
+            "The mysql backend is unavailable: %s" % err,
+            log.output.strip())
+
+    def test_ensure_backend_available_no_dbapi_raises(self):
+        log = self.useFixture(fixtures.FakeLogger())
+        self.mox.StubOutWithMock(sqlalchemy, 'create_engine')
+        sqlalchemy.create_engine(
+            sa_url.make_url(self.connect_string)).AndRaise(
+            ImportError("Can't import DBAPI module foobar"))
+        self.mox.ReplayAll()
+
+        exc = self.assertRaises(
+            exception.BackendNotAvailable,
+            provision.Backend._ensure_backend_available, self.connect_string
+        )
+        self.assertEqual("No DBAPI installed", str(exc))
+        self.assertEqual(
+            "The mysql backend is unavailable: Can't import "
+            "DBAPI module foobar", log.output.strip())
 
     def test_get_db_connection_info(self):
         conn_pieces = parse.urlparse(self.connect_string)
