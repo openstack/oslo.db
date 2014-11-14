@@ -31,7 +31,29 @@ from tests import utils as test_utils
 _TABLE_NAME = '__tmp__test__tmp__'
 
 
-class TestsExceptionFilter(oslo_test_base.BaseTestCase):
+class _SQLAExceptionMatcher(object):
+    def assertInnerException(
+            self,
+            matched, exception_type, message, sql=None, params=None):
+
+        exc = matched.inner_exception
+        self.assertSQLAException(exc, exception_type, message, sql, params)
+
+    def assertSQLAException(
+            self,
+            exc, exception_type, message, sql=None, params=None):
+        if isinstance(exception_type, (type, tuple)):
+            self.assertTrue(issubclass(exc.__class__, exception_type))
+        else:
+            self.assertEqual(exc.__class__.__name__, exception_type)
+        self.assertEqual(str(exc.orig).lower(), message.lower())
+        if sql is not None:
+            self.assertEqual(exc.statement, sql)
+        if params is not None:
+            self.assertEqual(exc.params, params)
+
+
+class TestsExceptionFilter(_SQLAExceptionMatcher, oslo_test_base.BaseTestCase):
 
     class Error(Exception):
         """DBAPI base error.
@@ -127,10 +149,11 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
             self.ProgrammingError("Error 123, you made a mistake"),
             exception.DBError
         )
-        self.assertEqual(
-            "(ProgrammingError) Error 123, you made a "
-            "mistake 'select you_made_a_programming_error' ()",
-            matched.args[0])
+        self.assertInnerException(
+            matched,
+            "ProgrammingError",
+            "Error 123, you made a mistake",
+            'select you_made_a_programming_error', ())
 
     def test_generic_dbapi_disconnect(self):
         matched = self._run_test(
@@ -139,10 +162,10 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
             exception.DBConnectionError,
             is_disconnect=True
         )
-        self.assertEqual(
-            "(InterfaceError) connection lost "
-            "'select the_db_disconnected' ()",
-            matched.args[0])
+        self.assertInnerException(
+            matched,
+            "InterfaceError", "connection lost",
+            "select the_db_disconnected", ()),
 
     def test_operational_dbapi_disconnect(self):
         matched = self._run_test(
@@ -151,10 +174,10 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
             exception.DBConnectionError,
             is_disconnect=True
         )
-        self.assertEqual(
-            "(OperationalError) connection lost "
-            "'select the_db_disconnected' ()",
-            matched.args[0])
+        self.assertInnerException(
+            matched,
+            "OperationalError", "connection lost",
+            "select the_db_disconnected", ()),
 
     def test_operational_error_asis(self):
         """Test operational errors.
@@ -168,9 +191,10 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
             self.OperationalError("some op error"),
             sqla.exc.OperationalError
         )
-        self.assertEqual(
-            "(OperationalError) some op error",
-            matched.args[0])
+        self.assertSQLAException(
+            matched,
+            "OperationalError", "some op error"
+        )
 
     def test_unicode_encode(self):
         # intentionally generate a UnicodeEncodeError, as its
@@ -196,7 +220,7 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
         self.assertEqual("mysqldb has an attribute error", matched.args[0])
 
 
-class TestReferenceErrorSQLite(test_base.DbTestCase):
+class TestReferenceErrorSQLite(_SQLAExceptionMatcher, test_base.DbTestCase):
 
     def setUp(self):
         super(TestReferenceErrorSQLite, self).setUp()
@@ -225,83 +249,98 @@ class TestReferenceErrorSQLite(test_base.DbTestCase):
     def test_raise(self):
         self.engine.execute("PRAGMA foreign_keys = ON;")
 
-        e = self.assertRaises(
+        matched = self.assertRaises(
             exception.DBReferenceError,
             self.engine.execute,
             self.table_2.insert({'id': 1, 'foo_id': 2})
         )
 
-        self.assertEqual(
-            "(IntegrityError) FOREIGN KEY constraint failed u'INSERT INTO "
-            "resource_entity (id, foo_id) VALUES (?, ?)' (1, 2)".lower(),
-            str(e).lower())
-        self.assertIsNone(e.table)
-        self.assertIsNone(e.constraint)
-        self.assertIsNone(e.key)
-        self.assertIsNone(e.key_table)
+        self.assertInnerException(
+            matched,
+            "IntegrityError",
+            "FOREIGN KEY constraint failed",
+            'INSERT INTO resource_entity (id, foo_id) VALUES (?, ?)',
+            (1, 2)
+        )
+
+        self.assertIsNone(matched.table)
+        self.assertIsNone(matched.constraint)
+        self.assertIsNone(matched.key)
+        self.assertIsNone(matched.key_table)
 
 
 class TestReferenceErrorPostgreSQL(TestReferenceErrorSQLite,
                                    test_base.PostgreSQLOpportunisticTestCase):
     def test_raise(self):
-        e = self.assertRaises(
+        params = {'id': 1, 'foo_id': 2}
+        matched = self.assertRaises(
             exception.DBReferenceError,
             self.engine.execute,
-            self.table_2.insert({'id': 1, 'foo_id': 2})
+            self.table_2.insert(params)
+        )
+        self.assertInnerException(
+            matched,
+            "IntegrityError",
+            "insert or update on table \"resource_entity\" "
+            "violates foreign key constraint \"foo_fkey\"\nDETAIL:  Key "
+            "(foo_id)=(2) is not present in table \"resource_foo\".\n",
+            "INSERT INTO resource_entity (id, foo_id) VALUES (%(id)s, "
+            "%(foo_id)s)",
+            params,
         )
 
-        self.assertIn(
-            "(IntegrityError) insert or update on table \"resource_entity\" "
-            "violates foreign key constraint \"foo_fkey\"\nDETAIL:  Key "
-            "(foo_id)=(2) is not present in table \"resource_foo\".\n"
-            " 'INSERT INTO resource_entity (id, foo_id) VALUES (%(id)s, "
-            "%(foo_id)s)'", str(e))
-        self.assertEqual("resource_entity", e.table)
-        self.assertEqual("foo_fkey", e.constraint)
-        self.assertEqual("foo_id", e.key)
-        self.assertEqual("resource_foo", e.key_table)
+        self.assertEqual("resource_entity", matched.table)
+        self.assertEqual("foo_fkey", matched.constraint)
+        self.assertEqual("foo_id", matched.key)
+        self.assertEqual("resource_foo", matched.key_table)
 
 
 class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
                               test_base.MySQLOpportunisticTestCase):
     def test_raise(self):
-        e = self.assertRaises(
+        matched = self.assertRaises(
             exception.DBReferenceError,
             self.engine.execute,
             self.table_2.insert({'id': 1, 'foo_id': 2})
         )
 
-        self.assertEqual(
-            "(IntegrityError) (1452, 'Cannot add or update a child row: a "
+        self.assertInnerException(
+            matched,
+            "IntegrityError",
+            "(1452, 'Cannot add or update a child row: a "
             "foreign key constraint fails (`{0}`.`resource_entity`, "
             "CONSTRAINT `foo_fkey` FOREIGN KEY (`foo_id`) REFERENCES "
-            "`resource_foo` (`id`))') 'INSERT INTO resource_entity (id, foo_id"
-            ") VALUES (%s, %s)' (1, 2)".format(self.engine.url.database),
-            str(e))
-        self.assertEqual("resource_entity", e.table)
-        self.assertEqual("foo_fkey", e.constraint)
-        self.assertEqual("foo_id", e.key)
-        self.assertEqual("resource_foo", e.key_table)
+            "`resource_foo` (`id`))')".format(self.engine.url.database),
+            "INSERT INTO resource_entity (id, foo_id) VALUES (%s, %s)",
+            (1, 2)
+        )
+        self.assertEqual("resource_entity", matched.table)
+        self.assertEqual("foo_fkey", matched.constraint)
+        self.assertEqual("foo_id", matched.key)
+        self.assertEqual("resource_foo", matched.key_table)
 
     def test_raise_ansi_quotes(self):
         self.engine.execute("SET SESSION sql_mode = 'ANSI';")
-        e = self.assertRaises(
+        matched = self.assertRaises(
             exception.DBReferenceError,
             self.engine.execute,
             self.table_2.insert({'id': 1, 'foo_id': 2})
         )
 
-        self.assertEqual(
-            "(IntegrityError) (1452, 'Cannot add or update a child row: a "
+        self.assertInnerException(
+            matched,
+            "IntegrityError",
+            '(1452, \'Cannot add or update a child row: a '
             'foreign key constraint fails ("{0}"."resource_entity", '
             'CONSTRAINT "foo_fkey" FOREIGN KEY ("foo_id") REFERENCES '
-            '"resource_foo" ("id"))\') \'INSERT INTO resource_entity (id, '
-            "foo_id) VALUES (%s, %s)' (1, 2)".format(self.engine.url.database),
-            str(e))
-        self.assertEqual("resource_entity", e.table)
-        self.assertEqual("foo_fkey", e.constraint)
-        self.assertEqual("foo_id", e.key)
-        self.assertEqual("resource_foo", e.key_table)
+            '"resource_foo" ("id"))\')'.format(self.engine.url.database),
+            "INSERT INTO resource_entity (id, foo_id) VALUES (%s, %s)",
+            (1, 2)
+        )
+        self.assertEqual("resource_entity", matched.table)
+        self.assertEqual("foo_fkey", matched.constraint)
+        self.assertEqual("foo_id", matched.key)
+        self.assertEqual("resource_foo", matched.key_table)
 
 
 class TestDuplicate(TestsExceptionFilter):
@@ -318,13 +357,18 @@ class TestDuplicate(TestsExceptionFilter):
         self.assertEqual(expected_value, matched.value)
 
     def _not_dupe_constraint_test(self, dialect_name, statement, message,
-                                  expected_cls, expected_message):
+                                  expected_cls):
         matched = self._run_test(
             dialect_name, statement,
             self.IntegrityError(message),
             expected_cls
         )
-        self.assertEqual(expected_message, matched.args[0])
+        self.assertInnerException(
+            matched,
+            "IntegrityError",
+            str(self.IntegrityError(message)),
+            statement
+        )
 
     def test_sqlite(self):
         self._run_dupe_constraint_test("sqlite", 'column a, b are not unique')
@@ -376,9 +420,7 @@ class TestDuplicate(TestsExceptionFilter):
         self._not_dupe_constraint_test(
             "nonexistent", "insert into table some_values",
             self.IntegrityError("constraint violation"),
-            exception.DBError,
-            "(IntegrityError) constraint violation "
-            "'insert into table some_values' ()"
+            exception.DBError
         )
 
     def test_ibm_db_sa(self):
@@ -400,55 +442,46 @@ class TestDuplicate(TestsExceptionFilter):
             'SQL0542N  The column named "NAME" cannot be a column of a '
             'primary key or unique key constraint because it can contain null '
             'values.',
-            exception.DBError,
-            '(IntegrityError) SQL0542N  The column named "NAME" cannot be a '
-            'column of a primary key or unique key constraint because it can '
-            'contain null values. \'ALTER TABLE instance_types ADD CONSTRAINT '
-            'uniq_name_x_deleted UNIQUE (name, deleted)\' ()'
+            exception.DBError
         )
 
 
 class TestDeadlock(TestsExceptionFilter):
+    statement = ('SELECT quota_usages.created_at AS '
+                 'quota_usages_created_at FROM quota_usages '
+                 'WHERE quota_usages.project_id = %(project_id_1)s '
+                 'AND quota_usages.deleted = %(deleted_1)s FOR UPDATE')
+    params = {
+        'project_id_1': '8891d4478bbf48ad992f050cdf55e9b5',
+        'deleted_1': 0
+    }
+
     def _run_deadlock_detect_test(
         self, dialect_name, message,
         orig_exception_cls=TestsExceptionFilter.OperationalError):
-        statement = ('SELECT quota_usages.created_at AS '
-                     'quota_usages_created_at FROM quota_usages \n'
-                     'WHERE quota_usages.project_id = %(project_id_1)s '
-                     'AND quota_usages.deleted = %(deleted_1)s FOR UPDATE')
-        params = {
-            'project_id_1': '8891d4478bbf48ad992f050cdf55e9b5',
-            'deleted_1': 0
-        }
         self._run_test(
-            dialect_name, statement,
+            dialect_name, self.statement,
             orig_exception_cls(message),
             exception.DBDeadlock,
-            params=params
+            params=self.params
         )
 
     def _not_deadlock_test(
         self, dialect_name, message,
-        expected_cls, expected_message,
+        expected_cls, expected_dbapi_cls,
         orig_exception_cls=TestsExceptionFilter.OperationalError):
-        statement = ('SELECT quota_usages.created_at AS '
-                     'quota_usages_created_at FROM quota_usages \n'
-                     'WHERE quota_usages.project_id = %%(project_id_1)s '
-                     'AND quota_usages.deleted = %%(deleted_1)s FOR UPDATE')
-        params = {
-            'project_id_1': '8891d4478bbf48ad992f050cdf55e9b5',
-            'deleted_1': 0
-        }
+
         matched = self._run_test(
-            dialect_name, statement,
+            dialect_name, self.statement,
             orig_exception_cls(message),
             expected_cls,
-            params=params
+            params=self.params
         )
-        self.assertEqual(
-            expected_message % {'statement': statement, 'params': params},
-            str(matched)
-        )
+
+        if isinstance(matched, exception.DBError):
+            matched = matched.inner_exception
+
+        self.assertEqual(matched.orig.__class__.__name__, expected_dbapi_cls)
 
     def test_mysql_mysqldb_deadlock(self):
         self._run_deadlock_detect_test(
@@ -471,8 +504,7 @@ class TestDeadlock(TestsExceptionFilter):
             "mysql",
             "(1005, 'some other error')",
             sqla.exc.OperationalError,  # note OperationalErrors are sent thru
-            "(OperationalError) (1005, 'some other error') "
-            "%(statement)r %(params)r"
+            "OperationalError",
         )
 
     def test_postgresql_deadlock(self):
@@ -488,8 +520,7 @@ class TestDeadlock(TestsExceptionFilter):
             'relation "fake" does not exist',
             # can be either depending on #3075
             (exception.DBError, sqla.exc.OperationalError),
-            '(TransactionRollbackError) '
-            'relation "fake" does not exist %(statement)r %(params)r',
+            "TransactionRollbackError",
             orig_exception_cls=self.TransactionRollbackError
         )
 
@@ -508,7 +539,7 @@ class TestDeadlock(TestsExceptionFilter):
             "ibm_db_sa",
             "SQL01234B Some other error.",
             exception.DBError,
-            "(Error) SQL01234B Some other error. %(statement)r %(params)r",
+            "Error",
             orig_exception_cls=self.Error
         )
 
