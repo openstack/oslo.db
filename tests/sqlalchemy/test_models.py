@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import collections
+
 from oslotest import base as oslo_test
 from sqlalchemy import Column
 from sqlalchemy import Integer, String
@@ -35,14 +37,16 @@ class ModelBaseTest(test_base.DbTestCase):
         dict_methods = ('__getitem__',
                         '__setitem__',
                         '__contains__',
-                        '__iter__',
                         'get',
-                        'next',
                         'update',
                         'save',
                         'iteritems')
         for method in dict_methods:
-            self.assertTrue(hasattr(models.ModelBase, method))
+            self.assertTrue(hasattr(models.ModelBase, method),
+                            "Method %s() is not found" % method)
+
+    def test_modelbase_is_iterable(self):
+        self.assertTrue(issubclass(models.ModelBase, collections.Iterable))
 
     def test_modelbase_set(self):
         self.mb['world'] = 'hello'
@@ -135,19 +139,8 @@ class ExtraKeysModel(BASE, models.ModelBase):
 class TimestampMixinTest(oslo_test.BaseTestCase):
 
     def test_timestampmixin_attr(self):
-
-        class TestModel(models.ModelBase, models.TimestampMixin):
-            pass
-
-        dict_methods = ('__getitem__',
-                        '__setitem__',
-                        '__iter__',
-                        'get',
-                        'next',
-                        'update',
-                        'save',
-                        'iteritems',
-                        'created_at',
-                        'updated_at')
-        for method in dict_methods:
-            self.assertTrue(hasattr(TestModel, method))
+        methods = ('created_at',
+                   'updated_at')
+        for method in methods:
+            self.assertTrue(hasattr(models.TimestampMixin, method),
+                            "Method %s() is not found" % method)
