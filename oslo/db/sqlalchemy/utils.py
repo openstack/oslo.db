@@ -683,7 +683,8 @@ def is_backend_avail(backend, database, user=None, passwd=None):
                                      user=user,
                                      passwd=passwd)
     try:
-        provision.Backend._ensure_backend_available(connect_uri)
+        eng = provision.Backend._ensure_backend_available(connect_uri)
+        eng.dispose()
     except exception.BackendNotAvailable:
         return False
     else:
