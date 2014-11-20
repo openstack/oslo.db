@@ -491,6 +491,13 @@ class TestDeadlock(TestsExceptionFilter):
             "transaction')"
         )
 
+    def test_mysql_mysqldb_galera_deadlock(self):
+        self._run_deadlock_detect_test(
+            "mysql",
+            "(1205, 'Lock wait timeout exceeded; "
+            "try restarting transaction')"
+        )
+
     def test_mysql_mysqlconnector_deadlock(self):
         self._run_deadlock_detect_test(
             "mysql",
