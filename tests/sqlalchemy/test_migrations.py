@@ -232,7 +232,10 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
         self.metadata_migrations.create_all(bind=engine)
 
     def include_object(self, object_, name, type_, reflected, compare_to):
-        return type_ == 'table' and name == 'testtbl' or type_ == 'column'
+        if type_ == 'table':
+            return name == 'testtbl'
+        else:
+            return True
 
     def _test_models_not_sync(self):
         self.metadata_migrations.clear()
@@ -261,7 +264,7 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
             'Models and migration scripts aren\'t in sync:'))
         self.assertIn('testtbl', msg)
         self.assertIn('spam', msg)
-        self.assertIn('eggs', msg)
+        self.assertIn('eggs', msg)  # test that the unique constraint is added
         self.assertIn('foo', msg)
         self.assertIn('bar', msg)
         self.assertIn('bool_wo_default', msg)
