@@ -149,7 +149,8 @@ def _default_dupe_key_error(integrity_error, match, engine_name,
 
 @filters("sqlite", sqla_exc.IntegrityError,
          (r"^.*columns?(?P<columns>[^)]+)(is|are)\s+not\s+unique$",
-          r"^.*UNIQUE\s+constraint\s+failed:\s+(?P<columns>.+)$"))
+          r"^.*UNIQUE\s+constraint\s+failed:\s+(?P<columns>.+)$",
+          r"^.*PRIMARY\s+KEY\s+must\s+be\s+unique.*$"))
 def _sqlite_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
     """Filter for SQLite duplicate key error.
 
@@ -164,9 +165,21 @@ def _sqlite_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
     1 column - (IntegrityError) UNIQUE constraint failed: tbl.k1
     N columns - (IntegrityError) UNIQUE constraint failed: tbl.k1, tbl.k2
 
+    sqlite since 3.8.2:
+    (IntegrityError) PRIMARY KEY must be unique
+
     """
-    columns = match.group('columns')
-    columns = [c.split('.')[-1] for c in columns.strip().split(", ")]
+    columns = []
+    # NOTE(ochuprykov): We can get here by last filter in which there are no
+    #                   groups. Trying to access the substring that matched by
+    #                   the group will lead to IndexError. In this case just
+    #                   pass empty list to exception.DBDuplicateEntry
+    try:
+        columns = match.group('columns')
+        columns = [c.split('.')[-1] for c in columns.strip().split(", ")]
+    except IndexError:
+        pass
+
     raise exception.DBDuplicateEntry(columns, integrity_error)
 
 

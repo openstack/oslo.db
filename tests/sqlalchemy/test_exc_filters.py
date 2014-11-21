@@ -378,6 +378,12 @@ class TestDuplicate(TestsExceptionFilter):
             "sqlite",
             'UNIQUE constraint failed: tbl.a, tbl.b')
 
+    def test_sqlite_dupe_primary_key(self):
+        self._run_dupe_constraint_test(
+            "sqlite",
+            "PRIMARY KEY must be unique 'insert into t values(10)'",
+            expected_columns=[])
+
     def test_mysql_mysqldb(self):
         self._run_dupe_constraint_test(
             "mysql",
