@@ -562,7 +562,7 @@ class ModelsMigrationsSync(object):
                           "table %(table)r"), {'fk': fk_db[key],
                                                'table': table})
             for key in (fk_models_set - fk_db_set):
-                diff.append(('add_key', fk_models[key], key))
+                diff.append(('add_key', fk_models[key], table, key))
                 LOG.info((
                     "Detected added foreign key for column %(fk)r on table "
                     "%(table)r"), {'fk': fk_models[key].column.name,
