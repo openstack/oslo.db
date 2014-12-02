@@ -31,6 +31,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from oslo_db import exception
 from oslo_db import options as db_options
+from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import models
 from oslo_db.sqlalchemy import session
 from oslo_db.sqlalchemy import test_base
@@ -312,8 +313,8 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
         self.assertFalse(ses.autocommit)
         self.assertTrue(ses.expire_on_commit)
 
-    @mock.patch('oslo_db.sqlalchemy.session.get_maker')
-    @mock.patch('oslo_db.sqlalchemy.session.create_engine')
+    @mock.patch('oslo_db.sqlalchemy.orm.get_maker')
+    @mock.patch('oslo_db.sqlalchemy.engines.create_engine')
     def test_creation_from_config(self, create_engine, get_maker):
         conf = cfg.ConfigOpts()
         conf.register_opts(db_options.database_opts, group='database')
@@ -495,7 +496,7 @@ class MysqlConnectTest(test_base.MySQLOpportunisticTestCase):
                 )
             )
         ):
-            session._init_events.dispatch_on_drivername("mysql")(test_engine)
+            engines._init_events.dispatch_on_drivername("mysql")(test_engine)
 
             test_engine.raw_connection()
         self.assertIn('Unable to detect effective SQL mode',
@@ -556,7 +557,7 @@ class CreateEngineTest(oslo_test.BaseTestCase):
         self.args = {'connect_args': {}}
 
     def test_queuepool_args(self):
-        session._init_connection_args(
+        engines._init_connection_args(
             url.make_url("mysql://u:p@host/test"), self.args,
             max_pool_size=10, max_overflow=10)
         self.assertEqual(self.args['pool_size'], 10)
@@ -564,7 +565,7 @@ class CreateEngineTest(oslo_test.BaseTestCase):
 
     def test_sqlite_memory_pool_args(self):
         for _url in ("sqlite://", "sqlite:///:memory:"):
-            session._init_connection_args(
+            engines._init_connection_args(
                 url.make_url(_url), self.args,
                 max_pool_size=10, max_overflow=10)
 
@@ -581,7 +582,7 @@ class CreateEngineTest(oslo_test.BaseTestCase):
             self.assertTrue('poolclass' in self.args)
 
     def test_sqlite_file_pool_args(self):
-        session._init_connection_args(
+        engines._init_connection_args(
             url.make_url("sqlite:///somefile.db"), self.args,
             max_pool_size=10, max_overflow=10)
 
@@ -597,37 +598,37 @@ class CreateEngineTest(oslo_test.BaseTestCase):
         self.assertTrue('poolclass' not in self.args)
 
     def test_mysql_connect_args_default(self):
-        session._init_connection_args(
+        engines._init_connection_args(
             url.make_url("mysql://u:p@host/test"), self.args)
         self.assertEqual(self.args['connect_args'],
                          {'charset': 'utf8', 'use_unicode': 0})
 
     def test_mysql_oursql_connect_args_default(self):
-        session._init_connection_args(
+        engines._init_connection_args(
             url.make_url("mysql+oursql://u:p@host/test"), self.args)
         self.assertEqual(self.args['connect_args'],
                          {'charset': 'utf8', 'use_unicode': 0})
 
     def test_mysql_mysqldb_connect_args_default(self):
-        session._init_connection_args(
+        engines._init_connection_args(
             url.make_url("mysql+mysqldb://u:p@host/test"), self.args)
         self.assertEqual(self.args['connect_args'],
                          {'charset': 'utf8', 'use_unicode': 0})
 
     def test_postgresql_connect_args_default(self):
-        session._init_connection_args(
+        engines._init_connection_args(
             url.make_url("postgresql://u:p@host/test"), self.args)
         self.assertEqual(self.args['client_encoding'], 'utf8')
         self.assertFalse(self.args['connect_args'])
 
     def test_mysqlconnector_raise_on_warnings_default(self):
-        session._init_connection_args(
+        engines._init_connection_args(
             url.make_url("mysql+mysqlconnector://u:p@host/test"),
             self.args)
         self.assertEqual(self.args['connect_args']['raise_on_warnings'], False)
 
     def test_mysqlconnector_raise_on_warnings_override(self):
-        session._init_connection_args(
+        engines._init_connection_args(
             url.make_url(
                 "mysql+mysqlconnector://u:p@host/test"
                 "?raise_on_warnings=true"),
@@ -639,12 +640,12 @@ class CreateEngineTest(oslo_test.BaseTestCase):
     def test_thread_checkin(self):
         with mock.patch("sqlalchemy.event.listens_for"):
             with mock.patch("sqlalchemy.event.listen") as listen_evt:
-                session._init_events.dispatch_on_drivername(
+                engines._init_events.dispatch_on_drivername(
                     "sqlite")(mock.Mock())
 
         self.assertEqual(
             listen_evt.mock_calls[0][1][-1],
-            session._thread_yield
+            engines._thread_yield
         )
 
 
@@ -693,7 +694,7 @@ class PatchStacktraceTest(test_base.DbTestCase):
 
         with mock.patch("traceback.extract_stack", side_effect=extract_stack):
 
-            session._add_trace_comments(engine)
+            engines._add_trace_comments(engine)
             conn = engine.connect()
             orig_do_exec = engine.dialect.do_execute
             with mock.patch.object(engine.dialect, "do_execute") as mock_exec:

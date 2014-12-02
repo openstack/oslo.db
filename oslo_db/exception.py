@@ -205,3 +205,46 @@ class RetryRequest(Exception):
     """
     def __init__(self, inner_exc):
         self.inner_exc = inner_exc
+
+
+class NoEngineContextEstablished(AttributeError):
+    """Error raised for non-present enginefacade attribute access.
+
+
+    This applies to the ``session`` and ``connection`` attributes
+    of a user-defined context and/or RequestContext object, when they
+    are accessed outside of the scope of an enginefacade decorator
+    or context manager.
+
+    The exception is a subclass of AttributeError so that
+    normal Python missing attribute behaviors are maintained, such
+    as support for ``getattr(context, 'session', None)``.
+
+
+    """
+
+
+class NotSupportedWarning(Warning):
+    """Warn that an argument or call that was passed is not supported.
+
+    This subclasses Warning so that it can be filtered as a distinct
+    category.
+
+    .. seealso::
+
+        https://docs.python.org/2/library/warnings.html
+
+    """
+
+
+class OsloDBDeprecationWarning(DeprecationWarning):
+    """Issued per usage of a deprecated API.
+
+    This subclasses DeprecationWarning so that it can be filtered as a distinct
+    category.
+
+    .. seealso::
+
+        https://docs.python.org/2/library/warnings.html
+
+    """

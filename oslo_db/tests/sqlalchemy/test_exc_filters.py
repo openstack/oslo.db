@@ -23,8 +23,8 @@ from sqlalchemy import event
 from sqlalchemy.orm import mapper
 
 from oslo_db import exception
+from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import exc_filters
-from oslo_db.sqlalchemy import session
 from oslo_db.sqlalchemy import test_base
 from oslo_db.tests import utils as test_utils
 
@@ -784,7 +784,7 @@ class TestDBDisconnected(TestsExceptionFilter):
             dialect_name, exception, num_disconnects, is_disconnect=True):
         engine = self.engine
 
-        event.listen(engine, "engine_connect", session._connect_ping_listener)
+        event.listen(engine, "engine_connect", engines._connect_ping_listener)
 
         real_do_execute = engine.dialect.do_execute
         counter = itertools.count(1)
@@ -895,7 +895,7 @@ class TestDBConnectRetry(TestsExceptionFilter):
 
         with self._dbapi_fixture(dialect_name):
             with mock.patch.object(engine.dialect, "connect", cant_connect):
-                return session._test_connection(engine, retries, .01)
+                return engines._test_connection(engine, retries, .01)
 
     def test_connect_no_retries(self):
         conn = self._run_test(
@@ -967,7 +967,7 @@ class TestDBConnectPingWrapping(TestsExceptionFilter):
     def setUp(self):
         super(TestDBConnectPingWrapping, self).setUp()
         event.listen(
-            self.engine, "engine_connect", session._connect_ping_listener)
+            self.engine, "engine_connect", engines._connect_ping_listener)
 
     @contextlib.contextmanager
     def _fixture(

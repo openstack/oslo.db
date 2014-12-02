@@ -25,8 +25,8 @@ from sqlalchemy.orm import mapper
 from oslo.db import exception
 from oslo.db.sqlalchemy import exc_filters
 from oslo.db.sqlalchemy import test_base
-from oslo_db.sqlalchemy import session as private_session
-from oslo_db.tests.old_import_api import utils as test_utils
+from oslo_db.sqlalchemy import engines
+from oslo_db.tests import utils as test_utils
 
 _TABLE_NAME = '__tmp__test__tmp__'
 
@@ -720,7 +720,7 @@ class TestDBDisconnected(TestsExceptionFilter):
         engine = self.engine
 
         event.listen(
-            engine, "engine_connect", private_session._connect_ping_listener)
+            engine, "engine_connect", engines._connect_ping_listener)
 
         real_do_execute = engine.dialect.do_execute
         counter = itertools.count(1)
@@ -816,7 +816,7 @@ class TestDBConnectRetry(TestsExceptionFilter):
 
         with self._dbapi_fixture(dialect_name):
             with mock.patch.object(engine.dialect, "connect", cant_connect):
-                return private_session._test_connection(engine, retries, .01)
+                return engines._test_connection(engine, retries, .01)
 
     def test_connect_no_retries(self):
         conn = self._run_test(
