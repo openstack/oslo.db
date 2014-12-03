@@ -665,9 +665,11 @@ class PatchStacktraceTest(test_base.DbTestCase):
 
             session._add_trace_comments(engine)
             conn = engine.connect()
+            orig_do_exec = engine.dialect.do_execute
             with mock.patch.object(engine.dialect, "do_execute") as mock_exec:
 
-                conn.execute("select * from table")
+                mock_exec.side_effect = orig_do_exec
+                conn.execute("select 1;")
 
             call = mock_exec.mock_calls[0]
 
