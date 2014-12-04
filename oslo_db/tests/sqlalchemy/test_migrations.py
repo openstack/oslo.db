@@ -290,7 +290,7 @@ class ModelsMigrationSyncMixin(test.BaseTestCase):
         self.assertIn('bool_wo_default', msg)
         self.assertIn('defaulttest', msg)
         self.assertIn('defaulttest3', msg)
-        self.assertIn('drop_key', msg)
+        self.assertIn('remove_fk', msg)
 
 
 class ModelsMigrationsSyncMysql(ModelsMigrationSyncMixin,

@@ -15,7 +15,6 @@
 #    under the License.
 
 import abc
-import collections
 import logging
 import pprint
 
@@ -511,73 +510,6 @@ class ModelsMigrationsSync(object):
             for table in tbs:
                 conn.execute(schema.DropTable(table))
 
-    FKInfo = collections.namedtuple('fk_info', ['constrained_columns',
-                                                'referred_table',
-                                                'referred_columns'])
-
-    def check_foreign_keys(self, metadata, bind):
-        """Compare foreign keys between model and db table.
-
-        :returns: a list that contains information about:
-
-         * should be a new key added or removed existing,
-         * name of that key,
-         * source table,
-         * referred table,
-         * constrained columns,
-         * referred columns
-
-         Output::
-
-             [('drop_key',
-               'testtbl_fk_check_fkey',
-               'testtbl',
-               fk_info(constrained_columns=(u'fk_check',),
-                       referred_table=u'table',
-                       referred_columns=(u'fk_check',)))]
-
-        """
-
-        diff = []
-        insp = sqlalchemy.engine.reflection.Inspector.from_engine(bind)
-        # Get all tables from db
-        db_tables = insp.get_table_names()
-        # Get all tables from models
-        model_tables = metadata.tables
-        for table in db_tables:
-            if table not in model_tables:
-                continue
-            # Get all necessary information about key of current table from db
-            fk_db = dict((self._get_fk_info_from_db(i), i['name'])
-                         for i in insp.get_foreign_keys(table))
-            fk_db_set = set(fk_db.keys())
-            # Get all necessary information about key of current table from
-            # models
-            fk_models = dict((self._get_fk_info_from_model(fk), fk)
-                             for fk in model_tables[table].foreign_keys)
-            fk_models_set = set(fk_models.keys())
-            for key in (fk_db_set - fk_models_set):
-                diff.append(('drop_key', fk_db[key], table, key))
-                LOG.info(("Detected removed foreign key %(fk)r on "
-                          "table %(table)r"), {'fk': fk_db[key],
-                                               'table': table})
-            for key in (fk_models_set - fk_db_set):
-                diff.append(('add_key', fk_models[key], table, key))
-                LOG.info((
-                    "Detected added foreign key for column %(fk)r on table "
-                    "%(table)r"), {'fk': fk_models[key].column.name,
-                                   'table': table})
-        return diff
-
-    def _get_fk_info_from_db(self, fk):
-        return self.FKInfo(tuple(fk['constrained_columns']),
-                           fk['referred_table'],
-                           tuple(fk['referred_columns']))
-
-    def _get_fk_info_from_model(self, fk):
-        return self.FKInfo((fk.parent.name,), fk.column.table.name,
-                           (fk.column.name,))
-
     def test_models_sync(self):
         # recent versions of sqlalchemy and alembic are needed for running of
         # this test, but we already have them in requirements
@@ -602,11 +534,8 @@ class ModelsMigrationsSync(object):
             mc = alembic.migration.MigrationContext.configure(conn, opts=opts)
 
             # compare schemas and fail with diff, if it's not empty
-            diff1 = alembic.autogenerate.compare_metadata(mc,
-                                                          self.get_metadata())
-            diff2 = self.check_foreign_keys(self.get_metadata(),
-                                            self.get_engine())
-            diff = diff1 + diff2
+            diff = alembic.autogenerate.compare_metadata(mc,
+                                                         self.get_metadata())
             if diff:
                 msg = pprint.pformat(diff, indent=2, width=20)
                 self.fail(
