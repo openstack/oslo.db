@@ -94,13 +94,16 @@ class TestsExceptionFilter(_SQLAExceptionMatcher, oslo_test_base.BaseTestCase):
         self.engine.connect().close()  # initialize
 
     @contextlib.contextmanager
-    def _dbapi_fixture(self, dialect_name):
+    def _dbapi_fixture(self, dialect_name, is_disconnect=False):
         engine = self.engine
         with test_utils.nested(
             mock.patch.object(engine.dialect.dbapi,
                               "Error",
                               self.Error),
             mock.patch.object(engine.dialect, "name", dialect_name),
+            mock.patch.object(engine.dialect,
+                              "is_disconnect",
+                              lambda *args: is_disconnect)
         ):
             yield
 
@@ -846,3 +849,94 @@ class TestDBConnectRetry(TestsExceptionFilter):
             self.OperationalError("blah blah -39981 blah blah"),
             2, 3
         )
+
+
+class TestDBConnectPingWrapping(TestsExceptionFilter):
+
+    def setUp(self):
+        super(TestDBConnectPingWrapping, self).setUp()
+        compat.engine_connect(self.engine, session._connect_ping_listener)
+
+    @contextlib.contextmanager
+    def _fixture(
+            self, dialect_name, exception, good_conn_count,
+            is_disconnect=True):
+        engine = self.engine
+
+        # empty out the connection pool
+        engine.dispose()
+
+        connect_fn = engine.dialect.connect
+        real_do_execute = engine.dialect.do_execute
+
+        counter = itertools.count(1)
+
+        def cant_execute(*arg, **kw):
+            value = next(counter)
+            if value > good_conn_count:
+                raise exception
+            else:
+                return real_do_execute(*arg, **kw)
+
+        def cant_connect(*arg, **kw):
+            value = next(counter)
+            if value > good_conn_count:
+                raise exception
+            else:
+                return connect_fn(*arg, **kw)
+
+        with self._dbapi_fixture(dialect_name, is_disconnect=is_disconnect):
+            with mock.patch.object(engine.dialect, "connect", cant_connect):
+                with mock.patch.object(
+                        engine.dialect, "do_execute", cant_execute):
+                    yield
+
+    def _test_ping_listener_disconnected(
+            self, dialect_name, exc_obj, is_disconnect=True):
+        with self._fixture(dialect_name, exc_obj, 3, is_disconnect):
+            conn = self.engine.connect()
+            self.assertEqual(conn.scalar(sqla.select([1])), 1)
+            conn.close()
+
+        with self._fixture(dialect_name, exc_obj, 1, is_disconnect):
+            self.assertRaises(
+                exception.DBConnectionError,
+                self.engine.connect
+            )
+            self.assertRaises(
+                exception.DBConnectionError,
+                self.engine.connect
+            )
+            self.assertRaises(
+                exception.DBConnectionError,
+                self.engine.connect
+            )
+
+        with self._fixture(dialect_name, exc_obj, 1, is_disconnect):
+            self.assertRaises(
+                exception.DBConnectionError,
+                self.engine.contextual_connect
+            )
+            self.assertRaises(
+                exception.DBConnectionError,
+                self.engine.contextual_connect
+            )
+            self.assertRaises(
+                exception.DBConnectionError,
+                self.engine.contextual_connect
+            )
+
+    def test_mysql_w_disconnect_flag(self):
+        for code in [2002, 2003, 2002]:
+            self._test_ping_listener_disconnected(
+                "mysql",
+                self.OperationalError('%d MySQL server has gone away' % code)
+            )
+
+    def test_mysql_wo_disconnect_flag(self):
+        for code in [2002, 2003]:
+            self._test_ping_listener_disconnected(
+                "mysql",
+                self.OperationalError('%d MySQL server has gone away' % code),
+                is_disconnect=False
+            )

@@ -23,8 +23,6 @@ from oslo_db.sqlalchemy.compat import handle_error as _h_err
 # flake8 won't let me import handle_error directly
 engine_connect = _e_conn.engine_connect
 handle_error = _h_err.handle_error
-handle_connect_context = _h_err.handle_connect_context
 
 __all__ = [
-    'engine_connect', 'handle_error',
-    'handle_connect_context']
+    'engine_connect', 'handle_error']

@@ -346,14 +346,10 @@ def register_engine(engine):
 
 
 def handle_connect_error(engine):
-    """Handle connect error.
+    """Connect to the engine, including handle_error handlers.
 
-    Provide a special context that will allow on-connect errors
-    to be treated within the filtering context.
-
-    This routine is dependent on SQLAlchemy version, as version 1.0.0
-    provides this functionality natively.
+    The compat library now builds this into the engine.connect()
+    system as per SQLAlchemy 1.0's behavior.
 
     """
-    with compat.handle_connect_context(handler, engine):
-        return engine.connect()
+    return engine.connect()
