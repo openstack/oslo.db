@@ -662,7 +662,9 @@ class IntegrationTest(test_base.DbTestCase):
 class TestDBDisconnected(TestsExceptionFilter):
 
     @contextlib.contextmanager
-    def _fixture(self, dialect_name, exception, num_disconnects):
+    def _fixture(
+            self,
+            dialect_name, exception, num_disconnects, is_disconnect=True):
         engine = self.engine
 
         compat.engine_connect(engine, session._connect_ping_listener)
@@ -683,12 +685,13 @@ class TestDBDisconnected(TestsExceptionFilter):
                                   fake_do_execute),
                 mock.patch.object(engine.dialect,
                                   "is_disconnect",
-                                  mock.Mock(return_value=True))
+                                  mock.Mock(return_value=is_disconnect))
             ):
                 yield
 
-    def _test_ping_listener_disconnected(self, dialect_name, exc_obj):
-        with self._fixture(dialect_name, exc_obj, 1):
+    def _test_ping_listener_disconnected(
+            self, dialect_name, exc_obj, is_disconnect=True):
+        with self._fixture(dialect_name, exc_obj, 1, is_disconnect):
             conn = self.engine.connect()
             with conn.begin():
                 self.assertEqual(conn.scalar(sqla.select([1])), 1)
@@ -696,7 +699,7 @@ class TestDBDisconnected(TestsExceptionFilter):
                 self.assertFalse(conn.invalidated)
                 self.assertTrue(conn.in_transaction())
 
-        with self._fixture(dialect_name, exc_obj, 2):
+        with self._fixture(dialect_name, exc_obj, 2, is_disconnect):
             self.assertRaises(
                 exception.DBConnectionError,
                 self.engine.connect
@@ -713,11 +716,30 @@ class TestDBDisconnected(TestsExceptionFilter):
                 self.OperationalError('%d MySQL server has gone away' % code)
             )
 
+    def test_mysql_ping_listener_disconnected_regex_only(self):
+        # intentionally set the is_disconnect flag to False
+        # in the "sqlalchemy" layer to make sure the regexp
+        # on _is_db_connection_error is catching
+        for code in [2002, 2003, 2006, 2013]:
+            self._test_ping_listener_disconnected(
+                "mysql",
+                self.OperationalError('%d MySQL server has gone away' % code),
+                is_disconnect=False
+            )
+
     def test_db2_ping_listener_disconnected(self):
         self._test_ping_listener_disconnected(
             "ibm_db_sa",
             self.OperationalError(
                 'SQL30081N: DB2 Server connection is no longer active')
+        )
+
+    def test_db2_ping_listener_disconnected_regex_only(self):
+        self._test_ping_listener_disconnected(
+            "ibm_db_sa",
+            self.OperationalError(
+                'SQL30081N: DB2 Server connection is no longer active'),
+            is_disconnect=False
         )
 
 
