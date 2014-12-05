@@ -16,6 +16,7 @@ http://docs.sqlalchemy.org/en/rel_0_9/core/events.html.
 
 
 """
+import contextlib
 import sys
 
 import six
@@ -35,9 +36,16 @@ def handle_error(engine, listener):
     in order to support safe re-raise of the exception.
 
     """
-
-    if utils.sqla_097:
+    if utils.sqla_100:
         event.listen(engine, "handle_error", listener)
+        return
+    elif utils.sqla_097:
+        # ctx.engine added per
+        # https://bitbucket.org/zzzeek/sqlalchemy/issue/3266/
+        def wrap_listener(ctx):
+            ctx.engine = ctx.connection.engine
+            return listener(ctx)
+        event.listen(engine, "handle_error", wrap_listener)
         return
 
     assert isinstance(engine, Engine), \
@@ -92,7 +100,7 @@ def handle_error(engine, listener):
                     # new handle_error event
                     ctx = ExceptionContextImpl(
                         original_exception, sqlalchemy_exception,
-                        self, cursor, statement,
+                        self.engine, self, cursor, statement,
                         parameters, context, is_disconnect)
 
                     for fn in _oslo_handle_error_events:
@@ -153,8 +161,9 @@ class ExceptionContextImpl(object):
     """
 
     def __init__(self, exception, sqlalchemy_exception,
-                 connection, cursor, statement, parameters,
+                 engine, connection, cursor, statement, parameters,
                  context, is_disconnect):
+        self.engine = engine
         self.connection = connection
         self.sqlalchemy_exception = sqlalchemy_exception
         self.original_exception = exception
@@ -166,7 +175,17 @@ class ExceptionContextImpl(object):
     connection = None
     """The :class:`.Connection` in use during the exception.
 
-    This member is always present.
+    This member is present, except in the case of a failure when
+    first connecting.
+
+
+    """
+
+    engine = None
+    """The :class:`.Engine` in use during the exception.
+
+    This member should always be present, even in the case of a failure
+    when first connecting.
 
     """
 
@@ -247,3 +266,24 @@ class ExceptionContextImpl(object):
     :meth:`.ConnectionEvents.handle_error` handler.
 
     """
+
+
+@contextlib.contextmanager
+def handle_connect_context(handler, engine):
+    """Wrap connect() routines with a "handle error" context."""
+    try:
+        yield
+    except Exception as e:
+        if utils.sqla_100:
+            raise
+
+        if isinstance(e, sqla_exc.StatementError):
+            s_exc, orig = e, e.orig
+        else:
+            s_exc, orig = None, e
+
+        ctx = ExceptionContextImpl(
+            orig, s_exc, engine, None, None,
+            None, None, None, False
+        )
+        handler(ctx)
