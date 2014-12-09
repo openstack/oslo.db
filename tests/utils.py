@@ -25,9 +25,7 @@ if six.PY3:
     @contextlib.contextmanager
     def nested(*contexts):
         with contextlib.ExitStack() as stack:
-            for c in contexts:
-                stack.enter_context(c)
-            yield
+            yield [stack.enter_context(c) for c in contexts]
 else:
     nested = contextlib.nested
 
