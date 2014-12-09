@@ -22,8 +22,10 @@ class MockWithCmp(mock.MagicMock):
 
     order = 0
 
-    def __cmp__(self, other):
-        return self.order > other.order
+    def __init__(self, *args, **kwargs):
+        super(MockWithCmp, self).__init__(*args, **kwargs)
+
+        self.__lt__ = lambda self, other: self.order < other.order
 
 
 @mock.patch(('oslo.db.sqlalchemy.migration_cli.'
