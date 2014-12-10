@@ -512,12 +512,12 @@ class TestConnectionUtils(test_utils.BaseTestCase):
     def setUp(self):
         super(TestConnectionUtils, self).setUp()
 
-        self.full_credentials = {'backend': 'mysql',
+        self.full_credentials = {'backend': 'postgresql',
                                  'database': 'test',
                                  'user': 'dude',
                                  'passwd': 'pass'}
 
-        self.connect_string = 'mysql://dude:pass@localhost/test'
+        self.connect_string = 'postgresql://dude:pass@localhost/test'
 
     def test_connect_string(self):
         connect_string = utils.get_connect_string(**self.full_credentials)
@@ -540,7 +540,7 @@ class TestConnectionUtils(test_utils.BaseTestCase):
     def test_is_backend_unavail(self):
         log = self.useFixture(fixtures.FakeLogger())
         err = OperationalError("Can't connect to database", None, None)
-        error_msg = "The mysql backend is unavailable: %s\n" % err
+        error_msg = "The postgresql backend is unavailable: %s\n" % err
         self.mox.StubOutWithMock(sqlalchemy.engine.base.Engine, 'connect')
         sqlalchemy.engine.base.Engine.connect().AndRaise(err)
         self.mox.ReplayAll()
@@ -571,7 +571,7 @@ class TestConnectionUtils(test_utils.BaseTestCase):
         )
         self.assertEqual("Could not connect", str(exc))
         self.assertEqual(
-            "The mysql backend is unavailable: %s" % err,
+            "The postgresql backend is unavailable: %s" % err,
             log.output.strip())
 
     def test_ensure_backend_available_no_dbapi_raises(self):
@@ -588,7 +588,7 @@ class TestConnectionUtils(test_utils.BaseTestCase):
         )
         self.assertEqual("No DBAPI installed", str(exc))
         self.assertEqual(
-            "The mysql backend is unavailable: Can't import "
+            "The postgresql backend is unavailable: Can't import "
             "DBAPI module foobar", log.output.strip())
 
     def test_get_db_connection_info(self):
@@ -599,7 +599,7 @@ class TestConnectionUtils(test_utils.BaseTestCase):
     def test_connect_string_host(self):
         self.full_credentials['host'] = 'myhost'
         connect_string = utils.get_connect_string(**self.full_credentials)
-        self.assertEqual(connect_string, 'mysql://dude:pass@myhost/test')
+        self.assertEqual(connect_string, 'postgresql://dude:pass@myhost/test')
 
 
 class MyModelSoftDeletedProjectId(declarative_base(), models.ModelBase,
