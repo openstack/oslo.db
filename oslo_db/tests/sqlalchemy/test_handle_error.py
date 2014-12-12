@@ -12,7 +12,7 @@
 
 """Test the compatibility layer for the handle_error() event.
 
-This event is added as of SQLAlchemy 0.9.7; oslo.db provides a compatibility
+This event is added as of SQLAlchemy 0.9.7; oslo_db provides a compatibility
 layer for prior SQLAlchemy versions.
 
 """
@@ -26,9 +26,9 @@ from sqlalchemy.sql import select
 from sqlalchemy.types import Integer
 from sqlalchemy.types import TypeDecorator
 
-from oslo.db.sqlalchemy.compat import handle_error
-from oslo.db.sqlalchemy.compat import utils
-from tests import utils as test_utils
+from oslo_db.sqlalchemy.compat import handle_error
+from oslo_db.sqlalchemy.compat import utils
+from oslo_db.tests import utils as test_utils
 
 
 class MyException(Exception):

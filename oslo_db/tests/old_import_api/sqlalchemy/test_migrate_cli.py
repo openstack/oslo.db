@@ -28,7 +28,7 @@ class MockWithCmp(mock.MagicMock):
         self.__lt__ = lambda self, other: self.order < other.order
 
 
-@mock.patch(('oslo.db.sqlalchemy.migration_cli.'
+@mock.patch(('oslo_db.sqlalchemy.migration_cli.'
              'ext_alembic.alembic.command'))
 class TestAlembicExtension(test_base.BaseTestCase):
 

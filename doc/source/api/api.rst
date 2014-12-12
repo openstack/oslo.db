@@ -1,8 +1,8 @@
 =============
- oslo.db.api
+ oslo_db.api
 =============
 
-.. automodule:: oslo.db.api
+.. automodule:: oslo_db.api
    :members:
    :undoc-members:
    :show-inheritance:

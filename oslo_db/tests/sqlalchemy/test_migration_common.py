@@ -22,10 +22,10 @@ from migrate.versioning import api as versioning_api
 import mock
 import sqlalchemy
 
-from oslo.db import exception as db_exception
-from oslo.db.sqlalchemy import migration
-from oslo.db.sqlalchemy import test_base
-from tests import utils as test_utils
+from oslo_db import exception as db_exception
+from oslo_db.sqlalchemy import migration
+from oslo_db.sqlalchemy import test_base
+from oslo_db.tests import utils as test_utils
 
 
 class TestMigrationCommon(test_base.DbTestCase):

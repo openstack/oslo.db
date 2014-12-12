@@ -13,10 +13,10 @@
 import logging
 import os
 
-from oslo.db._i18n import _LE
-from oslo.db.sqlalchemy import migration
-from oslo.db.sqlalchemy.migration_cli import ext_base
-from oslo.db.sqlalchemy import session as db_session
+from oslo_db._i18n import _LE
+from oslo_db.sqlalchemy import migration
+from oslo_db.sqlalchemy.migration_cli import ext_base
+from oslo_db.sqlalchemy import session as db_session
 
 
 LOG = logging.getLogger(__name__)

@@ -19,9 +19,9 @@ import mock
 from oslo.config import cfg
 from oslo.utils import importutils
 
-from oslo.db import api
-from oslo.db import exception
-from tests import utils as test_utils
+from oslo_db import api
+from oslo_db import exception
+from oslo_db.tests import utils as test_utils
 
 sqla = importutils.try_import('sqlalchemy')
 if not sqla:
@@ -66,7 +66,7 @@ class DBAPI(object):
 
 class DBAPITestCase(test_utils.BaseTestCase):
     def test_dbapi_full_path_module_method(self):
-        dbapi = api.DBAPI('tests.test_api')
+        dbapi = api.DBAPI('oslo_db.tests.test_api')
         result = dbapi.api_class_call1(1, 2, kwarg1='meow')
         expected = ((1, 2), {'kwarg1': 'meow'})
         self.assertEqual(expected, result)
@@ -75,7 +75,7 @@ class DBAPITestCase(test_utils.BaseTestCase):
         self.assertRaises(ImportError, api.DBAPI, 'tests.unit.db.not_existent')
 
     def test_dbapi_lazy_loading(self):
-        dbapi = api.DBAPI('tests.test_api', lazy=True)
+        dbapi = api.DBAPI('oslo_db.tests.test_api', lazy=True)
 
         self.assertIsNone(dbapi._backend)
         dbapi.api_class_call1(1, 'abc')

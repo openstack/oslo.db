@@ -1,8 +1,8 @@
 =====================
- oslo.db.concurrency
+ oslo_db.concurrency
 =====================
 
-.. automodule:: oslo.db.concurrency
+.. automodule:: oslo_db.concurrency
    :members:
    :undoc-members:
    :show-inheritance:

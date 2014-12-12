@@ -1,8 +1,8 @@
 ==============================
- oslo.db.sqlalchemy.provision
+ oslo_db.sqlalchemy.provision
 ==============================
 
-.. automodule:: oslo.db.sqlalchemy.provision
+.. automodule:: oslo_db.sqlalchemy.provision
    :members:
    :undoc-members:
    :show-inheritance:

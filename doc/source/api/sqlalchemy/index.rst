@@ -1,5 +1,5 @@
 ====================
- oslo.db.sqlalchemy
+ oslo_db.sqlalchemy
 ====================
 
 .. toctree::

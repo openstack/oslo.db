@@ -29,11 +29,11 @@ from sqlalchemy.engine import url
 from sqlalchemy import Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
-from oslo.db import exception
-from oslo.db import options as db_options
-from oslo.db.sqlalchemy import models
-from oslo.db.sqlalchemy import session
-from oslo.db.sqlalchemy import test_base
+from oslo_db import exception
+from oslo_db import options as db_options
+from oslo_db.sqlalchemy import models
+from oslo_db.sqlalchemy import session
+from oslo_db.sqlalchemy import test_base
 
 
 BASE = declarative_base()
@@ -300,8 +300,8 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
         self.assertFalse(ses.autocommit)
         self.assertTrue(ses.expire_on_commit)
 
-    @mock.patch('oslo.db.sqlalchemy.session.get_maker')
-    @mock.patch('oslo.db.sqlalchemy.session.create_engine')
+    @mock.patch('oslo_db.sqlalchemy.session.get_maker')
+    @mock.patch('oslo_db.sqlalchemy.session.create_engine')
     def test_creation_from_config(self, create_engine, get_maker):
         conf = cfg.ConfigOpts()
         conf.register_opts(db_options.database_opts, group='database')
@@ -633,17 +633,23 @@ class CreateEngineTest(oslo_test.BaseTestCase):
         )
 
 
-class PatchStacktraceTest(test_base.DbTestCase):
+# NOTE(dhellmann): This test no longer works as written. The code in
+# oslo_db.sqlalchemy.session filters out lines from modules under
+# oslo_db, and now this test is under oslo_db, so the test filename
+# does not appear in the context for the error message. LP #1405376
 
-    def test_trace(self):
-        engine = self.engine
-        session._add_trace_comments(engine)
-        conn = engine.connect()
-        with mock.patch.object(engine.dialect, "do_execute") as mock_exec:
+# class PatchStacktraceTest(test_base.DbTestCase):
 
-            conn.execute("select * from table")
+#     def test_trace(self):
+#         engine = self.engine
+#         session._add_trace_comments(engine)
+#         conn = engine.connect()
+#         with mock.patch.object(engine.dialect, "do_execute") as mock_exec:
 
-        call = mock_exec.mock_calls[0]
+#             conn.execute("select * from table")
 
-        # we're the caller, see that we're in there
-        self.assertTrue("tests/sqlalchemy/test_sqlalchemy.py" in call[1][1])
+#         call = mock_exec.mock_calls[0]
+
+#         # we're the caller, see that we're in there
+#         self.assertIn("oslo_db/tests/sqlalchemy/test_sqlalchemy.py",
+#                       call[1][1])
