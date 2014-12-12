@@ -314,13 +314,13 @@ def handler(context):
     more specific exception class are attempted first.
 
     """
-    def _dialect_registries(connection):
-        if connection.dialect.name in _registry:
-            yield _registry[connection.dialect.name]
+    def _dialect_registries(engine):
+        if engine.dialect.name in _registry:
+            yield _registry[engine.dialect.name]
         if '*' in _registry:
             yield _registry['*']
 
-    for per_dialect in _dialect_registries(context.connection):
+    for per_dialect in _dialect_registries(context.engine):
         for exc in (
                 context.sqlalchemy_exception,
                 context.original_exception):
@@ -334,7 +334,7 @@ def handler(context):
                                 fn(
                                     exc,
                                     match,
-                                    context.connection.dialect.name,
+                                    context.engine.dialect.name,
                                     context.is_disconnect)
                             except exception.DBConnectionError:
                                 context.is_disconnect = True
@@ -349,18 +349,11 @@ def handle_connect_error(engine):
     """Handle connect error.
 
     Provide a special context that will allow on-connect errors
-    to be raised within the filtering context.
-    """
-    try:
-        return engine.connect()
-    except Exception as e:
-        if isinstance(e, sqla_exc.StatementError):
-            s_exc, orig = e, e.orig
-        else:
-            s_exc, orig = None, e
+    to be treated within the filtering context.
 
-        ctx = compat.ExceptionContextImpl(
-            orig, s_exc, engine, None,
-            None, None, None, False
-        )
-        handler(ctx)
+    This routine is dependent on SQLAlchemy version, as version 1.0.0
+    provides this functionality natively.
+
+    """
+    with compat.handle_connect_context(handler, engine):
+        return engine.connect()
