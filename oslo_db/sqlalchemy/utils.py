@@ -32,6 +32,7 @@ from sqlalchemy.engine import url as sa_url
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import func
 from sqlalchemy import Index
+from sqlalchemy import inspect
 from sqlalchemy import Integer
 from sqlalchemy import MetaData
 from sqlalchemy.sql.expression import literal_column
@@ -147,8 +148,9 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
             raise ValueError(_("Unknown sort direction, "
                                "must be 'desc' or 'asc'"))
         try:
-            sort_key_attr = getattr(model, current_sort_key)
-        except AttributeError:
+            sort_key_attr = inspect(model).\
+                all_orm_descriptors[current_sort_key]
+        except KeyError:
             raise exception.InvalidSortKey()
         query = query.order_by(sort_dir_func(sort_key_attr))
 
