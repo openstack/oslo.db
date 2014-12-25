@@ -533,22 +533,31 @@ class MysqlConnectTest(test_base.MySQLOpportunisticTestCase):
                          log.output)
 
 
-# NOTE(dhellmann): This test no longer works as written. The code in
-# oslo_db.sqlalchemy.session filters out lines from modules under
-# oslo_db, and now this test is under oslo_db, so the test filename
-# does not appear in the context for the error message. LP #1405376
+class PatchStacktraceTest(test_base.DbTestCase):
 
-# class PatchStacktraceTest(test_base.DbTestCase):
+    def test_trace(self):
+        engine = self.engine
 
-#     def test_trace(self):
-#         engine = self.engine
-#         private_session._add_trace_comments(engine)
-#         conn = engine.connect()
-#         with mock.patch.object(engine.dialect, "do_execute") as mock_exec:
+        # NOTE(viktors): The code in oslo_db.sqlalchemy.session filters out
+        #                lines from modules under oslo_db, so we should remove
+        #                 "oslo_db/" from file path in traceback.
+        import traceback
+        orig_extract_stack = traceback.extract_stack
 
-#             conn.execute("select * from table")
+        def extract_stack():
+            return [(row[0].replace("oslo_db/", ""), row[1], row[2], row[3])
+                    for row in orig_extract_stack()]
 
-#         call = mock_exec.mock_calls[0]
+        with mock.patch("traceback.extract_stack", side_effect=extract_stack):
 
-#         # we're the caller, see that we're in there
-#         self.assertTrue("tests/sqlalchemy/test_sqlalchemy.py" in call[1][1])
+            private_session._add_trace_comments(engine)
+            conn = engine.connect()
+            with mock.patch.object(engine.dialect, "do_execute") as mock_exec:
+
+                conn.execute("select * from table")
+
+            call = mock_exec.mock_calls[0]
+
+            # we're the caller, see that we're in there
+            self.assertIn("tests/old_import_api/sqlalchemy/test_sqlalchemy.py",
+                          call[1][1])
