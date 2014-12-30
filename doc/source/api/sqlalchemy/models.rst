@@ -1,8 +1,8 @@
 ===========================
- oslo.db.sqlalchemy.models
+ oslo_db.sqlalchemy.models
 ===========================
 
-.. automodule:: oslo.db.sqlalchemy.models
+.. automodule:: oslo_db.sqlalchemy.models
    :members:
    :undoc-members:
    :show-inheritance:

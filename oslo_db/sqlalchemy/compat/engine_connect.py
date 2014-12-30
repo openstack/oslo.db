@@ -20,7 +20,7 @@ http://docs.sqlalchemy.org/en/rel_0_9/core/events.html.
 from sqlalchemy.engine import Engine
 from sqlalchemy import event
 
-from oslo.db.sqlalchemy.compat import utils
+from oslo_db.sqlalchemy.compat import utils
 
 
 def engine_connect(engine, listener):

@@ -17,8 +17,8 @@ import sys
 
 import mock
 
-from oslo.db import concurrency
-from tests import utils as test_utils
+from oslo_db import concurrency
+from oslo_db.tests import utils as test_utils
 
 FAKE_BACKEND_MAPPING = {'sqlalchemy': 'fake.db.sqlalchemy.api'}
 
@@ -30,7 +30,7 @@ class TpoolDbapiWrapperTestCase(test_utils.BaseTestCase):
         self.db_api = concurrency.TpoolDbapiWrapper(
             conf=self.conf, backend_mapping=FAKE_BACKEND_MAPPING)
 
-        # NOTE(akurilin): We are not  going to add `eventlet` to `oslo.db` in
+        # NOTE(akurilin): We are not  going to add `eventlet` to `oslo_db` in
         # requirements (`requirements.txt` and `test-requirements.txt`) due to
         # the following reasons:
         #  - supporting of eventlet's thread pooling is totally optional;
@@ -47,7 +47,7 @@ class TpoolDbapiWrapperTestCase(test_utils.BaseTestCase):
         sys.modules['eventlet'] = self.eventlet
         self.addCleanup(sys.modules.pop, 'eventlet', None)
 
-    @mock.patch('oslo.db.api.DBAPI')
+    @mock.patch('oslo_db.api.DBAPI')
     def test_db_api_common(self, mock_db_api):
         # test context:
         #     CONF.database.use_tpool == False
@@ -73,7 +73,7 @@ class TpoolDbapiWrapperTestCase(test_utils.BaseTestCase):
         self.assertFalse(self.eventlet.tpool.Proxy.called)
         self.assertEqual(1, mock_db_api.from_config.call_count)
 
-    @mock.patch('oslo.db.api.DBAPI')
+    @mock.patch('oslo_db.api.DBAPI')
     def test_db_api_config_change(self, mock_db_api):
         # test context:
         #     CONF.database.use_tpool == True
@@ -94,7 +94,7 @@ class TpoolDbapiWrapperTestCase(test_utils.BaseTestCase):
         self.eventlet.tpool.Proxy.assert_called_once_with(fake_db_api)
         self.assertEqual(self.db_api._db_api, self.proxy)
 
-    @mock.patch('oslo.db.api.DBAPI')
+    @mock.patch('oslo_db.api.DBAPI')
     def test_db_api_without_installed_eventlet(self, mock_db_api):
         # test context:
         #     CONF.database.use_tpool == True

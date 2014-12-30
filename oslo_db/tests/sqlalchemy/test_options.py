@@ -14,8 +14,8 @@
 from oslo.config import cfg
 from oslo.config import fixture as config
 
-from oslo.db import options
-from tests import utils as test_utils
+from oslo_db import options
+from oslo_db.tests import utils as test_utils
 
 
 class DbApiOptionsTestCase(test_utils.BaseTestCase):

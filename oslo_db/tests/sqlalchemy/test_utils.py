@@ -32,13 +32,13 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
-from oslo.db import exception
-from oslo.db.sqlalchemy import models
-from oslo.db.sqlalchemy import provision
-from oslo.db.sqlalchemy import session
-from oslo.db.sqlalchemy import test_base as db_test_base
-from oslo.db.sqlalchemy import utils
-from tests import utils as test_utils
+from oslo_db import exception
+from oslo_db.sqlalchemy import models
+from oslo_db.sqlalchemy import provision
+from oslo_db.sqlalchemy import session
+from oslo_db.sqlalchemy import test_base as db_test_base
+from oslo_db.sqlalchemy import utils
+from oslo_db.tests import utils as test_utils
 
 
 SA_VERSION = tuple(map(int, sqlalchemy.__version__.split('.')))
@@ -738,8 +738,8 @@ class TestUtils(db_test_base.DbTestCase):
         self.assertRaises(ValueError, utils.drop_index, self.engine,
                           'test_table', 'new_index')
 
-    @mock.patch('oslo.db.sqlalchemy.utils.drop_index')
-    @mock.patch('oslo.db.sqlalchemy.utils.add_index')
+    @mock.patch('oslo_db.sqlalchemy.utils.drop_index')
+    @mock.patch('oslo_db.sqlalchemy.utils.add_index')
     def test_change_index_columns(self, add_index, drop_index):
         utils.change_index_columns(self.engine, 'test_table', 'a_index',
                                    ('a',))

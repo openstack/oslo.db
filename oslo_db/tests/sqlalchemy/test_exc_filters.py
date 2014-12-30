@@ -21,12 +21,12 @@ import six
 import sqlalchemy as sqla
 from sqlalchemy.orm import mapper
 
-from oslo.db import exception
-from oslo.db.sqlalchemy import compat
-from oslo.db.sqlalchemy import exc_filters
-from oslo.db.sqlalchemy import session
-from oslo.db.sqlalchemy import test_base
-from tests import utils as test_utils
+from oslo_db import exception
+from oslo_db.sqlalchemy import compat
+from oslo_db.sqlalchemy import exc_filters
+from oslo_db.sqlalchemy import session
+from oslo_db.sqlalchemy import test_base
+from oslo_db.tests import utils as test_utils
 
 _TABLE_NAME = '__tmp__test__tmp__'
 

@@ -1,8 +1,8 @@
 ============================
- oslo.db.sqlalchemy.session
+ oslo_db.sqlalchemy.session
 ============================
 
-.. automodule:: oslo.db.sqlalchemy.session
+.. automodule:: oslo_db.sqlalchemy.session
    :members:
    :undoc-members:
    :show-inheritance:

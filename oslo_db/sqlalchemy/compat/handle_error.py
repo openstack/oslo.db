@@ -24,7 +24,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy import event
 from sqlalchemy import exc as sqla_exc
 
-from oslo.db.sqlalchemy.compat import utils
+from oslo_db.sqlalchemy.compat import utils
 
 
 def handle_error(engine, listener):

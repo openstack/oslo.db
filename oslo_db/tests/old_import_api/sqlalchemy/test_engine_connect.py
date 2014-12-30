@@ -21,7 +21,7 @@ import mock
 from oslotest import base as test_base
 import sqlalchemy as sqla
 
-from oslo.db.sqlalchemy.compat import engine_connect
+from oslo.db.sqlalchemy import compat
 
 
 class EngineConnectTest(test_base.BaseTestCase):
@@ -36,7 +36,7 @@ class EngineConnectTest(test_base.BaseTestCase):
         engine = self.engine
 
         listener = mock.Mock()
-        engine_connect(engine, listener)
+        compat.engine_connect(engine, listener)
 
         conn = engine.connect()
         self.assertEqual(
@@ -57,7 +57,7 @@ class EngineConnectTest(test_base.BaseTestCase):
         engine = self.engine
 
         listener = mock.Mock()
-        engine_connect(engine, listener)
+        compat.engine_connect(engine, listener)
 
         conn = engine.connect()
         branched = conn.connect()
