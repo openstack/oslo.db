@@ -229,20 +229,22 @@ class MySQLModeTestCase(test_base.MySQLOpportunisticTestCase):
 
     def setUp(self):
         super(MySQLModeTestCase, self).setUp()
-
-        self.engine = session.create_engine(self.engine.url,
-                                            mysql_sql_mode=self.mysql_mode)
-        self.connection = self.engine.connect()
+        mode_engine = session.create_engine(
+            self.engine.url,
+            mysql_sql_mode=self.mysql_mode)
+        self.connection = mode_engine.connect()
 
         meta = MetaData()
-        meta.bind = self.engine
         self.test_table = Table(_TABLE_NAME + "mode", meta,
                                 Column('id', Integer, primary_key=True),
                                 Column('bar', String(255)))
-        self.test_table.create()
+        self.test_table.create(self.connection)
 
-        self.addCleanup(self.test_table.drop)
-        self.addCleanup(self.connection.close)
+        def cleanup():
+            self.test_table.drop(self.connection)
+            self.connection.close()
+            mode_engine.dispose()
+        self.addCleanup(cleanup)
 
     def _test_string_too_long(self, value):
         with self.connection.begin():

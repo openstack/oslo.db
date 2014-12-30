@@ -17,6 +17,7 @@
 #    under the License.
 
 import collections
+import contextlib
 import logging
 import re
 
@@ -1012,3 +1013,126 @@ def get_non_innodb_tables(connectable, skip_tables=('migrate_version',
     query = text(query_str)
     noninnodb = connectable.execute(query, **params)
     return [i[0] for i in noninnodb]
+
+
+class NonCommittingConnectable(object):
+    """A ``Connectable`` substitute which rolls all operations back.
+
+    ``NonCommittingConnectable`` forms the basis of mock
+    ``Engine`` and ``Connection`` objects within a test.   It provides
+    only that part of the API that should reasonably be used within
+    a single-connection test environment (e.g. no engine.dispose(),
+    connection.invalidate(), etc. ).   The connection runs both within
+    a transaction as well as a savepoint.   The transaction is there
+    so that any operations upon the connection can be rolled back.
+    If the test calls begin(), a "pseduo" transaction is returned that
+    won't actually commit anything.   The subtransaction is there to allow
+    a test to successfully call rollback(), however, where all operations
+    to that point will be rolled back and the operations can continue,
+    simulating a real rollback while still remaining within a transaction
+    external to the test.
+
+    """
+
+    def __init__(self, connection):
+        self.connection = connection
+        self._trans = connection.begin()
+        self._restart_nested()
+
+    def _restart_nested(self):
+        self._nested_trans = self.connection.begin_nested()
+
+    def _dispose(self):
+        if not self.connection.closed:
+            self._nested_trans.rollback()
+            self._trans.rollback()
+            self.connection.close()
+
+    def execute(self, obj, *multiparams, **params):
+        """Executes the given construct and returns a :class:`.ResultProxy`."""
+
+        return self.connection.execute(obj, *multiparams, **params)
+
+    def scalar(self, obj, *multiparams, **params):
+        """Executes and returns the first column of the first row."""
+
+        return self.connection.scalar(obj, *multiparams, **params)
+
+
+class NonCommittingEngine(NonCommittingConnectable):
+    """``Engine`` -specific non committing connectbale."""
+
+    @property
+    def url(self):
+        return self.connection.engine.url
+
+    @property
+    def engine(self):
+        return self
+
+    def connect(self):
+        return NonCommittingConnection(self.connection)
+
+    @contextlib.contextmanager
+    def begin(self):
+        conn = self.connect()
+        trans = conn.begin()
+        try:
+            yield conn
+        except Exception:
+            trans.rollback()
+        else:
+            trans.commit()
+
+
+class NonCommittingConnection(NonCommittingConnectable):
+    """``Connection`` -specific non committing connectbale."""
+
+    def close(self):
+        """Close the 'Connection'.
+
+        In this context, close() is a no-op.
+
+        """
+        pass
+
+    def begin(self):
+        return NonCommittingTransaction(self, self.connection.begin())
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *arg):
+        pass
+
+
+class NonCommittingTransaction(object):
+    """A wrapper for ``Transaction``.
+
+    This is to accommodate being able to guaranteed start a new
+    SAVEPOINT when a transaction is rolled back.
+
+    """
+    def __init__(self, provisioned, transaction):
+        self.provisioned = provisioned
+        self.transaction = transaction
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        if type is None:
+            try:
+                self.commit()
+            except Exception:
+                self.rollback()
+                raise
+        else:
+            self.rollback()
+
+    def commit(self):
+        self.transaction.commit()
+
+    def rollback(self):
+        self.transaction.rollback()
+        self.provisioned._restart_nested()
