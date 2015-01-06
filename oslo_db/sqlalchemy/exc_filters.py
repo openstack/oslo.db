@@ -270,6 +270,7 @@ def _raise_operational_errors_directly_filter(operational_error,
 
 
 @filters("mysql", sqla_exc.OperationalError, r".*\(.*(?:2002|2003|2006|2013)")
+@filters("postgresql", sqla_exc.OperationalError, r".*could not connect to server")  # noqa
 @filters("ibm_db_sa", sqla_exc.OperationalError, r".*(?:30081)")
 def _is_db_connection_error(operational_error, match, engine_name,
                             is_disconnect):

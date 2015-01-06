@@ -745,6 +745,21 @@ class TestDBDisconnected(TestsExceptionFilter):
             is_disconnect=False
         )
 
+    def test_postgresql_ping_listener_disconnected(self):
+        self._test_ping_listener_disconnected(
+            "postgresql",
+            self.OperationalError(
+                "could not connect to server: Connection refused"),
+        )
+
+    def test_postgresql_ping_listener_disconnected_regex_only(self):
+        self._test_ping_listener_disconnected(
+            "postgresql",
+            self.OperationalError(
+                "could not connect to server: Connection refused"),
+            is_disconnect=False
+        )
+
 
 class TestDBConnectRetry(TestsExceptionFilter):
 
