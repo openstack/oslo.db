@@ -244,6 +244,8 @@ class BackendImpl(object):
 
     """
 
+    default_engine_kwargs = {}
+
     @classmethod
     def all_impls(cls):
         """Return an iterator of all possible BackendImpl objects.
@@ -314,11 +316,16 @@ class BackendImpl(object):
         url.database = ident
         return session.create_engine(
             url,
-            logging_name="%s@%s" % (self.drivername, ident))
+            logging_name="%s@%s" % (self.drivername, ident),
+            **self.default_engine_kwargs
+        )
 
 
 @BackendImpl.impl.dispatch_for("mysql")
 class MySQLBackendImpl(BackendImpl):
+
+    default_engine_kwargs = {'mysql_sql_mode': 'TRADITIONAL'}
+
     def create_opportunistic_driver_url(self):
         return "mysql://openstack_citest:openstack_citest@localhost/"
 

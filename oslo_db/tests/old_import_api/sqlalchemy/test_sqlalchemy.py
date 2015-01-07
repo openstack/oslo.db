@@ -441,8 +441,11 @@ class MysqlConnectTest(test_base.MySQLOpportunisticTestCase):
         # If _mysql_set_mode_callback is called with sql_mode=None, then
         # the SQL mode is NOT set on the connection.
 
+        # get the GLOBAL sql_mode, not the @@SESSION, so that
+        # we get what is configured for the MySQL database, as opposed
+        # to what our own session.create_engine() has set it to.
         expected = self.engine.execute(
-            "SHOW VARIABLES LIKE 'sql_mode'").fetchone()[1]
+            "SELECT @@GLOBAL.sql_mode").scalar()
 
         engine = self._fixture(sql_mode=None)
         self._assert_sql_mode(engine, expected, None)
