@@ -188,6 +188,18 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
     return query
 
 
+def to_list(x, default=None):
+    if x is None:
+        return default
+    if not isinstance(x, collections.Iterable) or \
+            isinstance(x, six.string_types):
+        return [x]
+    elif isinstance(x, list):
+        return x
+    else:
+        return list(x)
+
+
 def _read_deleted_filter(query, db_model, deleted):
     if 'deleted' not in db_model.__table__.columns:
         raise ValueError(_("There is no `deleted` column in `%s` table. "
