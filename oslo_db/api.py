@@ -27,7 +27,7 @@ import logging
 import threading
 import time
 
-from oslo.utils import importutils
+from oslo_utils import importutils
 import six
 
 from oslo_db._i18n import _LE

@@ -17,7 +17,7 @@ import copy
 import logging
 import threading
 
-from oslo.config import cfg
+from oslo_config import cfg
 
 from oslo_db._i18n import _LE
 from oslo_db import api

@@ -283,7 +283,7 @@ import logging
 import re
 import time
 
-from oslo.utils import timeutils
+from oslo_utils import timeutils
 import six
 import sqlalchemy.orm
 from sqlalchemy import pool

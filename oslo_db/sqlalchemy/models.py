@@ -22,7 +22,7 @@ SQLAlchemy models.
 
 import six
 
-from oslo.utils import timeutils
+from oslo_utils import timeutils
 from sqlalchemy import Column, Integer
 from sqlalchemy import DateTime
 from sqlalchemy.orm import object_mapper

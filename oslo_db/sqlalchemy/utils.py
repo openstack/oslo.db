@@ -20,7 +20,7 @@ import collections
 import logging
 import re
 
-from oslo.utils import timeutils
+from oslo_utils import timeutils
 import six
 import sqlalchemy
 from sqlalchemy import Boolean
