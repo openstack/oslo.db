@@ -161,6 +161,7 @@ class TestMigrationManager(test_base.BaseTestCase):
         self.migration_manager = manager.MigrationManager(
             self.migration_config)
         self.ext = mock.Mock()
+        self.ext.obj.version = mock.Mock(return_value=0)
         self.migration_manager._manager.extensions = [self.ext]
         super(TestMigrationManager, self).setUp()
 
@@ -179,6 +180,10 @@ class TestMigrationManager(test_base.BaseTestCase):
     def test_version(self):
         self.migration_manager.version()
         self.ext.obj.version.assert_called_once_with()
+
+    def test_version_return_value(self):
+        version = self.migration_manager.version()
+        self.assertEqual(0, version)
 
     def test_revision_message_autogenerate(self):
         self.migration_manager.revision('test', True)
