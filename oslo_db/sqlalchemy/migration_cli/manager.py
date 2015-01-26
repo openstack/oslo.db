@@ -57,7 +57,7 @@ class MigrationManager(object):
         last = None
         for plugin in self._plugins:
             version = plugin.version()
-            if version:
+            if version is not None:
                 last = version
         return last
 
