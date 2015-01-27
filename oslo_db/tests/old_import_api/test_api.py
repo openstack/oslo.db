@@ -33,32 +33,60 @@ def get_backend():
 
 
 class DBAPI(object):
-    def _api_raise(self, *args, **kwargs):
-        """Simulate raising a database-has-gone-away error
+    def _api_raise(self, exception_to_raise, *args, **kwargs):
+        """Simulate raising a database error
 
         This method creates a fake OperationalError with an ID matching
         a valid MySQL "database has gone away" situation. It also decrements
         the error_counter so that we can artificially keep track of
         how many times this function is called by the wrapper. When
         error_counter reaches zero, this function returns True, simulating
-        the database becoming available again and the query succeeding.
+        the query succeeding.
         """
 
         if self.error_counter > 0:
             self.error_counter -= 1
             orig = sqla.exc.DBAPIError(False, False, False)
             orig.args = [2006, 'Test raise operational error']
-            e = exception.DBConnectionError(orig)
+            exception_type = type(exception_to_raise)
+            e = exception_type(orig)
             raise e
         else:
             return True
 
-    def api_raise_default(self, *args, **kwargs):
-        return self._api_raise(*args, **kwargs)
+    def api_raise_conn_err_default(self, *args, **kwargs):
+        return self._api_raise(exception.DBConnectionError(), *args, **kwargs)
 
     @api.safe_for_db_retry
-    def api_raise_enable_retry(self, *args, **kwargs):
-        return self._api_raise(*args, **kwargs)
+    def api_raise_conn_err_enable_retry(self, *args, **kwargs):
+        return self._api_raise(exception.DBConnectionError(), *args, **kwargs)
+
+    def api_raise_deadlock_err_default(self, *args, **kwargs):
+        return self._api_raise(exception.DBDeadlock(), *args, **kwargs)
+
+    @api.retry_on_deadlock
+    def api_raise_deadlock_err_decorated(self, *args, **kwargs):
+        return self._api_raise(exception.DBDeadlock(), *args, **kwargs)
+
+    @api.safe_for_db_retry
+    def api_raise_deadlock_safe_db_retry_decorated(self, *args, **kwargs):
+        return self._api_raise(exception.DBDeadlock(), *args, **kwargs)
+
+    @api.safe_for_db_retry
+    @api.retry_on_deadlock
+    def api_raise_deadlock_err_two_decorators(self, *args, **kwargs):
+        if self.error_counter > 2:
+            return False
+        if self.error_counter == 2:
+            self.error_counter -= 1
+            orig = sqla.exc.DBAPIError(False, False, False)
+            orig.args = [2006, 'Test raise operational error']
+            raise exception.DBConnectionError(orig)
+        if self.error_counter == 1:
+            self.error_counter -= 1
+            raise exception.DBDeadlock()
+        else:
+            return True
 
     def api_class_call1(_self, *args, **kwargs):
         return args, kwargs
@@ -103,14 +131,15 @@ class DBReconnectTestCase(DBAPITestCase):
         self.dbapi = api.DBAPI('sqlalchemy', {'sqlalchemy': __name__})
 
         self.test_db_api.error_counter = 5
-        self.assertRaises(exception.DBConnectionError, self.dbapi._api_raise)
+        self.assertRaises(exception.DBConnectionError,
+                          self.dbapi.api_raise_conn_err_default)
 
     def test_raise_connection_error_decorated(self):
         self.dbapi = api.DBAPI('sqlalchemy', {'sqlalchemy': __name__})
 
         self.test_db_api.error_counter = 5
         self.assertRaises(exception.DBConnectionError,
-                          self.dbapi.api_raise_enable_retry)
+                          self.dbapi.api_raise_conn_err_enable_retry)
         self.assertEqual(4, self.test_db_api.error_counter, 'Unexpected retry')
 
     def test_raise_connection_error_enabled(self):
@@ -120,7 +149,7 @@ class DBReconnectTestCase(DBAPITestCase):
 
         self.test_db_api.error_counter = 5
         self.assertRaises(exception.DBConnectionError,
-                          self.dbapi.api_raise_default)
+                          self.dbapi.api_raise_conn_err_default)
         self.assertEqual(4, self.test_db_api.error_counter, 'Unexpected retry')
 
     def test_retry_one(self):
@@ -129,12 +158,9 @@ class DBReconnectTestCase(DBAPITestCase):
                                use_db_reconnect=True,
                                retry_interval=1)
 
-        try:
-            func = self.dbapi.api_raise_enable_retry
-            self.test_db_api.error_counter = 1
-            self.assertTrue(func(), 'Single retry did not succeed.')
-        except Exception:
-            self.fail('Single retry raised an un-wrapped error.')
+        func = self.dbapi.api_raise_conn_err_enable_retry
+        self.test_db_api.error_counter = 1
+        self.assertTrue(func(), 'Single retry did not succeed.')
 
         self.assertEqual(
             0, self.test_db_api.error_counter,
@@ -147,12 +173,9 @@ class DBReconnectTestCase(DBAPITestCase):
                                retry_interval=1,
                                inc_retry_interval=False)
 
-        try:
-            func = self.dbapi.api_raise_enable_retry
-            self.test_db_api.error_counter = 2
-            self.assertTrue(func(), 'Multiple retry did not succeed.')
-        except Exception:
-            self.fail('Multiple retry raised an un-wrapped error.')
+        func = self.dbapi.api_raise_conn_err_enable_retry
+        self.test_db_api.error_counter = 2
+        self.assertTrue(func(), 'Multiple retry did not succeed.')
 
         self.assertEqual(
             0, self.test_db_api.error_counter,
@@ -166,7 +189,7 @@ class DBReconnectTestCase(DBAPITestCase):
                                inc_retry_interval=False,
                                max_retries=3)
 
-        func = self.dbapi.api_raise_enable_retry
+        func = self.dbapi.api_raise_conn_err_enable_retry
         self.test_db_api.error_counter = 5
         self.assertRaises(
             exception.DBError, func,
@@ -175,3 +198,84 @@ class DBReconnectTestCase(DBAPITestCase):
         self.assertNotEqual(
             0, self.test_db_api.error_counter,
             'Retry did not stop after sql_max_retries iterations.')
+
+
+class DBDeadlockTestCase(DBAPITestCase):
+    def setUp(self):
+        super(DBDeadlockTestCase, self).setUp()
+
+        self.test_db_api = DBAPI()
+        patcher = mock.patch(__name__ + '.get_backend',
+                             return_value=self.test_db_api)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_raise_deadlock_error(self):
+        self.dbapi = api.DBAPI('sqlalchemy', {'sqlalchemy': __name__})
+
+        self.test_db_api.error_counter = 5
+        self.assertRaises(
+            exception.DBDeadlock,
+            self.dbapi.api_raise_deadlock_err_default)
+
+    def test_raise_deadlock_error_db_reconnect_enabled(self):
+        self.dbapi = api.DBAPI('sqlalchemy',
+                               {'sqlalchemy': __name__},
+                               use_db_reconnect=True)
+
+        self.test_db_api.error_counter = 5
+        self.assertRaises(exception.DBDeadlock,
+                          self.dbapi.api_raise_deadlock_err_default)
+        self.assertEqual(4, self.test_db_api.error_counter, 'Unexpected retry')
+
+    def test_raise_deadlock_error_connection_error_decorated(self):
+        self.dbapi = api.DBAPI('sqlalchemy',
+                               {'sqlalchemy': __name__},
+                               use_db_reconnect=True)
+
+        self.test_db_api.error_counter = 5
+        self.assertRaises(
+            exception.DBDeadlock,
+            self.dbapi.api_raise_deadlock_safe_db_retry_decorated)
+
+    def test_retry_one(self):
+        self.dbapi = api.DBAPI('sqlalchemy',
+                               {'sqlalchemy': __name__},
+                               retry_interval=1)
+
+        func = self.dbapi.api_raise_deadlock_err_decorated
+        self.test_db_api.error_counter = 1
+        self.assertTrue(func(), 'Single retry did not succeed.')
+
+        self.assertEqual(
+            0, self.test_db_api.error_counter,
+            'Counter not decremented, retry logic probably failed.')
+
+    def test_retry_two(self):
+        self.dbapi = api.DBAPI('sqlalchemy',
+                               {'sqlalchemy': __name__},
+                               retry_interval=1,
+                               inc_retry_interval=False)
+
+        func = self.dbapi.api_raise_deadlock_err_decorated
+        self.test_db_api.error_counter = 2
+        self.assertTrue(func(), 'Multiple retry did not succeed.')
+
+        self.assertEqual(
+            0, self.test_db_api.error_counter,
+            'Counter not decremented, retry logic probably failed.')
+
+    def test_retry_two_different_exception(self):
+        self.dbapi = api.DBAPI('sqlalchemy',
+                               {'sqlalchemy': __name__},
+                               use_db_reconnect=True,
+                               retry_interval=1,
+                               inc_retry_interval=False)
+
+        func = self.dbapi.api_raise_deadlock_err_two_decorators
+        self.test_db_api.error_counter = 2
+        self.assertTrue(func(), 'Multiple retry did not succeed.')
+
+        self.assertEqual(
+            0, self.test_db_api.error_counter,
+            'Counter not decremented, retry logic probably failed.')
