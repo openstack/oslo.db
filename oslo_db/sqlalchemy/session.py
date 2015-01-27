@@ -408,7 +408,11 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     compat.engine_connect(engine, _connect_ping_listener)
 
     # initial connect + test
-    _test_connection(engine, max_retries, retry_interval)
+    # NOTE(viktors): the current implementation of _test_connection()
+    #                does nothing, if max_retries == 0, so we can skip it
+    if max_retries:
+        test_conn = _test_connection(engine, max_retries, retry_interval)
+        test_conn.close()
 
     return engine
 
