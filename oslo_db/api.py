@@ -24,6 +24,7 @@ API methods.
 """
 
 import logging
+import sys
 import threading
 import time
 
@@ -69,6 +70,16 @@ def retry_on_deadlock(f):
     return f
 
 
+def retry_on_request(f):
+    """Retry a DB API call if RetryRequest exception was received.
+
+    wrap_db_entry will be applied to all db.api functions marked with this
+    decorator.
+    """
+    f.enable_retry_on_request = True
+    return f
+
+
 class wrap_db_retry(object):
     """Retry db.api methods, if db_error raised
 
@@ -91,8 +102,9 @@ class wrap_db_retry(object):
     :type max_retry_interval: int
     """
 
-    def __init__(self, retry_interval, max_retries, inc_retry_interval,
-                 max_retry_interval, retry_on_disconnect, retry_on_deadlock):
+    def __init__(self, retry_interval=0, max_retries=0, inc_retry_interval=0,
+                 max_retry_interval=0, retry_on_disconnect=False,
+                 retry_on_deadlock=False, retry_on_request=False):
         super(wrap_db_retry, self).__init__()
 
         self.db_error = ()
@@ -100,6 +112,8 @@ class wrap_db_retry(object):
             self.db_error += (exception.DBConnectionError, )
         if retry_on_deadlock:
             self.db_error += (exception.DBDeadlock, )
+        if retry_on_request:
+            self.db_error += (exception.RetryRequest, )
         self.retry_interval = retry_interval
         self.max_retries = max_retries
         self.inc_retry_interval = inc_retry_interval
@@ -118,6 +132,10 @@ class wrap_db_retry(object):
                 except db_error as e:
                     if remaining == 0:
                         LOG.exception(_LE('DB exceeded retry limit.'))
+                        if isinstance(e, exception.RetryRequest):
+                            six.reraise(type(e.inner_exc),
+                                        e.inner_exc,
+                                        sys.exc_info()[2])
                         raise e
                     if remaining != -1:
                         remaining -= 1
@@ -210,15 +228,17 @@ class DBAPI(object):
         retry_on_disconnect = self.use_db_reconnect and getattr(
             attr, 'enable_retry_on_disconnect', False)
         retry_on_deadlock = getattr(attr, 'enable_retry_on_deadlock', False)
+        retry_on_request = getattr(attr, 'enable_retry_on_request', False)
 
-        if retry_on_disconnect or retry_on_deadlock:
+        if retry_on_disconnect or retry_on_deadlock or retry_on_request:
             attr = wrap_db_retry(
                 retry_interval=self.retry_interval,
                 max_retries=self.max_retries,
                 inc_retry_interval=self.inc_retry_interval,
                 max_retry_interval=self.max_retry_interval,
                 retry_on_disconnect=retry_on_disconnect,
-                retry_on_deadlock=retry_on_deadlock)(attr)
+                retry_on_deadlock=retry_on_deadlock,
+                retry_on_request=retry_on_request)(attr)
 
         return attr
 

@@ -279,3 +279,24 @@ class DBDeadlockTestCase(DBAPITestCase):
         self.assertEqual(
             0, self.test_db_api.error_counter,
             'Counter not decremented, retry logic probably failed.')
+
+
+class DBRetryRequestCase(DBAPITestCase):
+    def test_retry_wrapper_succeeds(self):
+        @api.wrap_db_retry(max_retries=10, retry_on_request=True)
+        def some_method():
+            pass
+
+        some_method()
+
+    def test_retry_wrapper_reaches_limit(self):
+        max_retries = 10
+
+        @api.wrap_db_retry(max_retries=10, retry_on_request=True)
+        def some_method(res):
+            res['result'] += 1
+            raise exception.RetryRequest(ValueError())
+
+        res = {'result': 0}
+        self.assertRaises(ValueError, some_method, res)
+        self.assertEqual(max_retries + 1, res['result'])
