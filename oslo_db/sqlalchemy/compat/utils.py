@@ -24,3 +24,21 @@ sqla_097 = _SQLA_VERSION >= (0, 9, 7)
 sqla_094 = _SQLA_VERSION >= (0, 9, 4)
 sqla_090 = _SQLA_VERSION >= (0, 9, 0)
 sqla_08 = _SQLA_VERSION >= (0, 8)
+
+
+def get_postgresql_enums(conn):
+    """Return a list of ENUM type names on a Postgresql backend.
+
+    For SQLAlchemy 0.9 and lower, makes use of the semi-private
+    _load_enums() method of the Postgresql dialect.  In SQLAlchemy
+    1.0 this feature is supported using get_enums().
+
+    This function may only be called when the given connection
+    is against the Postgresql backend.  It will fail for other
+    kinds of backends.
+
+    """
+    if sqla_100:
+        return [e['name'] for e in sqlalchemy.inspect(conn).get_enums()]
+    else:
+        return conn.dialect._load_enums(conn).keys()
