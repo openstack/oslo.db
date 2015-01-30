@@ -1,5 +1,5 @@
 # Translations template for oslo.db.
-# Copyright (C) 2014 ORGANIZATION
+# Copyright (C) 2015 ORGANIZATION
 # This file is distributed under the same license as the oslo.db project.
 #
 # Translators:
@@ -8,9 +8,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: oslo.db\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-11-28 06:01+0000\n"
-"PO-Revision-Date: 2014-11-23 18:37+0000\n"
-"Last-Translator: Maxime COQUEREL <max.coquerel@gmail.com>\n"
+"POT-Creation-Date: 2015-01-30 06:20+0000\n"
+"PO-Revision-Date: 2015-01-27 15:33+0000\n"
+"Last-Translator: openstackjenkins <jenkins@openstack.org>\n"
 "Language-Team: French (http://www.transifex.com/projects/p/oslodb/language/"
 "fr/)\n"
 "Language: fr\n"
@@ -20,33 +20,33 @@ msgstr ""
 "Generated-By: Babel 1.3\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: oslo/db/api.py:106
+#: oslo_db/api.py:120
 msgid "DB exceeded retry limit."
 msgstr "DB limite de tentatives dépassé."
 
-#: oslo/db/api.py:110
-msgid "DB connection error."
-msgstr "Erreur de connexion DB."
+#: oslo_db/api.py:124
+msgid "DB error."
+msgstr ""
 
-#: oslo/db/concurrency.py:64
+#: oslo_db/concurrency.py:64
 msgid "'eventlet' is required for TpoolDbapiWrapper."
 msgstr "'eventlet' est requis pour poolDbapiWrapper."
 
-#: oslo/db/sqlalchemy/exc_filters.py:292
+#: oslo_db/sqlalchemy/exc_filters.py:292
 #, python-format
 msgid "DBAPIError exception wrapped from %s"
 msgstr "Exception DBAPIError enveloppé depuis %s"
 
-#: oslo/db/sqlalchemy/exc_filters.py:303
+#: oslo_db/sqlalchemy/exc_filters.py:303
 msgid "DB exception wrapped."
 msgstr "DB exception enveloppé."
 
-#: oslo/db/sqlalchemy/test_migrations.py:272
+#: oslo_db/sqlalchemy/test_migrations.py:272
 #, python-format
 msgid "Failed to migrate to version %(ver)s on engine %(eng)s"
 msgstr "Échec de migration de la version %(ver)s sur le moteur %(eng)s"
 
-#: oslo/db/sqlalchemy/migration_cli/ext_migrate.py:61
+#: oslo_db/sqlalchemy/migration_cli/ext_migrate.py:61
 msgid ""
 "Migration number for migrate plugin must be valid integer or empty, if you "
 "want to downgrade to initial state"
