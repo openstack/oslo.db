@@ -61,6 +61,7 @@ class DbFixture(fixtures.Fixture):
             msg = '%s backend is not available.' % self.DRIVER
             return self.test.skip(msg)
         else:
+            self.test.provision = self.provision
             self.test.engine = self.provision.engine
             self.addCleanup(setattr, self.test, 'engine', None)
             self.test.sessionmaker = session.get_maker(self.test.engine)

@@ -27,9 +27,11 @@ import six
 from six import moves
 import sqlalchemy
 from sqlalchemy.engine import url as sa_url
+from sqlalchemy import schema
 
 from oslo_db._i18n import _LI
 from oslo_db import exception
+from oslo_db.sqlalchemy.compat import utils as compat_utils
 from oslo_db.sqlalchemy import session
 from oslo_db.sqlalchemy import utils
 
@@ -55,6 +57,9 @@ class ProvisionedDatabase(object):
 
         self.backend.create_named_database(self.db_token)
         self.engine = self.backend.provisioned_engine(self.db_token)
+
+    def drop_all_objects(self):
+        self.backend.drop_all_objects(self.engine)
 
     def dispose(self):
         self.engine.dispose()
@@ -179,6 +184,15 @@ class Backend(object):
             self.engine, ident,
             conditional=conditional)
 
+    def drop_all_objects(self, engine):
+        """Drop all database objects.
+
+        Drops all database objects remaining on the default schema of the
+        given engine.
+
+        """
+        self.impl.drop_all_objects(engine)
+
     def database_exists(self, ident):
         """Return True if a database of the given name exists."""
 
@@ -246,6 +260,8 @@ class BackendImpl(object):
 
     default_engine_kwargs = {}
 
+    supports_drop_fk = True
+
     @classmethod
     def all_impls(cls):
         """Return an iterator of all possible BackendImpl objects.
@@ -293,6 +309,49 @@ class BackendImpl(object):
     @abc.abstractmethod
     def drop_named_database(self, engine, ident, conditional=False):
         """Drop a database with the given name."""
+
+    def drop_all_objects(self, engine):
+        """Drop all database objects.
+
+        Drops all database objects remaining on the default schema of the
+        given engine.
+
+        Per-db implementations will also need to drop items specific to those
+        systems, such as sequences, custom types (e.g. pg ENUM), etc.
+
+        """
+
+        with engine.begin() as conn:
+            inspector = sqlalchemy.inspect(engine)
+            metadata = schema.MetaData()
+            tbs = []
+            all_fks = []
+
+            for table_name in inspector.get_table_names():
+                fks = []
+                for fk in inspector.get_foreign_keys(table_name):
+                    # note that SQLite reflection does not have names
+                    # for foreign keys until SQLAlchemy 1.0
+                    if not fk['name']:
+                        continue
+                    fks.append(
+                        schema.ForeignKeyConstraint((), (), name=fk['name'])
+                        )
+                table = schema.Table(table_name, metadata, *fks)
+                tbs.append(table)
+                all_fks.extend(fks)
+
+            if self.supports_drop_fk:
+                for fkc in all_fks:
+                    conn.execute(schema.DropConstraint(fkc))
+
+            for table in tbs:
+                conn.execute(schema.DropTable(table))
+
+            self.drop_additional_objects(conn)
+
+    def drop_additional_objects(self, conn):
+        pass
 
     def provisioned_engine(self, base_url, ident):
         """Return a provisioned engine.
@@ -344,6 +403,9 @@ class MySQLBackendImpl(BackendImpl):
 
 @BackendImpl.impl.dispatch_for("sqlite")
 class SQLiteBackendImpl(BackendImpl):
+
+    supports_drop_fk = False
+
     def create_opportunistic_driver_url(self):
         return "sqlite://"
 
@@ -393,6 +455,12 @@ class PostgresqlBackendImpl(BackendImpl):
                 conn.execute("DROP DATABASE IF EXISTS %s" % ident)
             else:
                 conn.execute("DROP DATABASE %s" % ident)
+
+    def drop_additional_objects(self, conn):
+        enums = compat_utils.get_postgresql_enums(conn)
+
+        for e in enums:
+            conn.execute("DROP TYPE %s" % e)
 
     def database_exists(self, engine, ident):
         return bool(
