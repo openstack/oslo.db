@@ -12,6 +12,7 @@
 
 import mock
 from oslotest import base as test_base
+import sqlalchemy
 
 from oslo_db.sqlalchemy.migration_cli import ext_alembic
 from oslo_db.sqlalchemy.migration_cli import ext_migrate
@@ -35,7 +36,9 @@ class TestAlembicExtension(test_base.BaseTestCase):
     def setUp(self):
         self.migration_config = {'alembic_ini_path': '.',
                                  'db_url': 'sqlite://'}
-        self.alembic = ext_alembic.AlembicExtension(self.migration_config)
+        self.engine = sqlalchemy.create_engine(self.migration_config['db_url'])
+        self.alembic = ext_alembic.AlembicExtension(
+            self.engine, self.migration_config)
         super(TestAlembicExtension, self).setUp()
 
     def test_check_enabled_true(self, command):
@@ -52,7 +55,8 @@ class TestAlembicExtension(test_base.BaseTestCase):
         Verifies enabled returns False on empty alembic_ini_path variable
         """
         self.migration_config['alembic_ini_path'] = ''
-        alembic = ext_alembic.AlembicExtension(self.migration_config)
+        alembic = ext_alembic.AlembicExtension(
+            self.engine, self.migration_config)
         self.assertFalse(alembic.enabled)
 
     def test_upgrade_none(self, command):
@@ -98,7 +102,9 @@ class TestMigrateExtension(test_base.BaseTestCase):
     def setUp(self):
         self.migration_config = {'migration_repo_path': '.',
                                  'db_url': 'sqlite://'}
-        self.migrate = ext_migrate.MigrateExtension(self.migration_config)
+        self.engine = sqlalchemy.create_engine(self.migration_config['db_url'])
+        self.migrate = ext_migrate.MigrateExtension(
+            self.engine, self.migration_config)
         super(TestMigrateExtension, self).setUp()
 
     def test_check_enabled_true(self, migration):
@@ -106,7 +112,8 @@ class TestMigrateExtension(test_base.BaseTestCase):
 
     def test_check_enabled_false(self, migration):
         self.migration_config['migration_repo_path'] = ''
-        migrate = ext_migrate.MigrateExtension(self.migration_config)
+        migrate = ext_migrate.MigrateExtension(
+            self.engine, self.migration_config)
         self.assertFalse(migrate.enabled)
 
     def test_upgrade_head(self, migration):
@@ -143,7 +150,8 @@ class TestMigrateExtension(test_base.BaseTestCase):
 
     def test_change_init_version(self, migration):
         self.migration_config['init_version'] = 101
-        migrate = ext_migrate.MigrateExtension(self.migration_config)
+        migrate = ext_migrate.MigrateExtension(
+            self.engine, self.migration_config)
         migrate.downgrade(None)
         migration.db_sync.assert_called_once_with(
             migrate.engine,
@@ -158,8 +166,9 @@ class TestMigrationManager(test_base.BaseTestCase):
         self.migration_config = {'alembic_ini_path': '.',
                                  'migrate_repo_path': '.',
                                  'db_url': 'sqlite://'}
+        engine = sqlalchemy.create_engine(self.migration_config['db_url'])
         self.migration_manager = manager.MigrationManager(
-            self.migration_config)
+            self.migration_config, engine)
         self.ext = mock.Mock()
         self.ext.obj.version = mock.Mock(return_value=0)
         self.migration_manager._manager.extensions = [self.ext]
@@ -197,6 +206,13 @@ class TestMigrationManager(test_base.BaseTestCase):
         self.migration_manager.stamp('stamp')
         self.ext.obj.stamp.assert_called_once_with('stamp')
 
+    def test_wrong_config(self):
+        err = self.assertRaises(ValueError,
+                                manager.MigrationManager,
+                                {'wrong_key': 'sqlite://'})
+        self.assertEqual('Either database url or engine must be provided.',
+                         err.args[0])
+
 
 class TestMigrationRightOrder(test_base.BaseTestCase):
 
@@ -204,8 +220,9 @@ class TestMigrationRightOrder(test_base.BaseTestCase):
         self.migration_config = {'alembic_ini_path': '.',
                                  'migrate_repo_path': '.',
                                  'db_url': 'sqlite://'}
+        engine = sqlalchemy.create_engine(self.migration_config['db_url'])
         self.migration_manager = manager.MigrationManager(
-            self.migration_config)
+            self.migration_config, engine)
         self.first_ext = MockWithCmp()
         self.first_ext.obj.order = 1
         self.first_ext.obj.upgrade.return_value = 100

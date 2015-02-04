@@ -10,6 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import sqlalchemy
 from stevedore import enabled
 
 
@@ -23,11 +24,21 @@ def check_plugin_enabled(ext):
 
 class MigrationManager(object):
 
-    def __init__(self, migration_config):
+    def __init__(self, migration_config, engine=None):
+        if engine is None:
+            if migration_config.get('db_url'):
+                engine = sqlalchemy.create_engine(
+                    migration_config['db_url'],
+                    poolclass=sqlalchemy.pool.NullPool,
+                )
+            else:
+                raise ValueError('Either database url or engine'
+                                 ' must be provided.')
+
         self._manager = enabled.EnabledExtensionManager(
             MIGRATION_NAMESPACE,
             check_plugin_enabled,
-            invoke_kwds={'migration_config': migration_config},
+            invoke_args=(engine, migration_config),
             invoke_on_load=True
         )
         if not self._plugins:
