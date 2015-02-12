@@ -326,12 +326,17 @@ class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
         self.assertEqual("resource_foo", matched.key_table)
 
     def test_raise_ansi_quotes(self):
-        self.engine.execute("SET SESSION sql_mode = 'ANSI';")
-        matched = self.assertRaises(
-            exception.DBReferenceError,
-            self.engine.execute,
-            self.table_2.insert({'id': 1, 'foo_id': 2})
-        )
+        with self.engine.connect() as conn:
+            conn.detach()  # will not be returned to the pool when closed
+
+            # this is incompatible with some internals of the engine
+            conn.execute("SET SESSION sql_mode = 'ANSI';")
+
+            matched = self.assertRaises(
+                exception.DBReferenceError,
+                conn.execute,
+                self.table_2.insert({'id': 1, 'foo_id': 2})
+            )
 
         self.assertInnerException(
             matched,

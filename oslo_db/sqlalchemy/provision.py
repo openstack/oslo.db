@@ -16,7 +16,6 @@
 """Provision test environment for specific DB backends"""
 
 import abc
-import argparse
 import logging
 import os
 import random
@@ -28,6 +27,7 @@ from six import moves
 import sqlalchemy
 from sqlalchemy.engine import url as sa_url
 from sqlalchemy import schema
+import testresources
 
 from oslo_db._i18n import _LI
 from oslo_db import exception
@@ -39,31 +39,103 @@ LOG = logging.getLogger(__name__)
 
 
 class ProvisionedDatabase(object):
-    """Represent a single database node that can be used for testing in
+    pass
 
-    a serialized fashion.
 
-    ``ProvisionedDatabase`` includes features for full lifecycle management
-    of a node, in a way that is context-specific.   Depending on how the
-    test environment runs, ``ProvisionedDatabase`` should know if it needs
-    to create and drop databases or if it is making use of a database that
-    is maintained by an external process.
+class BackendResource(testresources.TestResourceManager):
+    def __init__(self, database_type):
+        super(BackendResource, self).__init__()
+        self.database_type = database_type
+        self.backend = Backend.backend_for_database_type(self.database_type)
 
-    """
+    def make(self, dependency_resources):
+        return self.backend
+
+    def isDirty(self):
+        return False
+
+
+class DatabaseResource(testresources.TestResourceManager):
 
     def __init__(self, database_type):
-        self.backend = Backend.backend_for_database_type(database_type)
-        self.db_token = _random_ident()
+        super(DatabaseResource, self).__init__()
+        self.database_type = database_type
+        self.resources = [
+            ('backend', BackendResource(database_type))
+        ]
 
-        self.backend.create_named_database(self.db_token)
-        self.engine = self.backend.provisioned_engine(self.db_token)
+    def make(self, dependency_resources):
+        dependency_resources['db_token'] = db_token = _random_ident()
+        backend = dependency_resources['backend']
+        LOG.info(
+            "CREATE BACKEND %s TOKEN %s", backend.engine.url, db_token)
+        backend.create_named_database(db_token, conditional=True)
+        dependency_resources['engine'] = \
+            backend.provisioned_engine(db_token)
+        return ProvisionedDatabase()
 
-    def drop_all_objects(self):
-        self.backend.drop_all_objects(self.engine)
+    def clean(self, resource):
+        resource.engine.dispose()
+        LOG.info(
+            "DROP BACKEND %s TOKEN %s",
+            resource.backend.engine, resource.db_token)
+        resource.backend.drop_named_database(resource.db_token)
 
-    def dispose(self):
-        self.engine.dispose()
-        self.backend.drop_named_database(self.db_token)
+    def isDirty(self):
+        return False
+
+
+class TransactionResource(testresources.TestResourceManager):
+
+    def __init__(self, database_resource, schema_resource):
+        super(TransactionResource, self).__init__()
+        self.resources = [
+            ('database', database_resource),
+            ('schema', schema_resource)
+        ]
+
+    def clean(self, resource):
+        resource._dispose()
+
+    def make(self, dependency_resources):
+        conn = dependency_resources['database'].engine.connect()
+        return utils.NonCommittingEngine(conn)
+
+    def isDirty(self):
+        return True
+
+
+class Schema(object):
+    pass
+
+
+class SchemaResource(testresources.TestResourceManager):
+
+    def __init__(self, database_resource, generate_schema, teardown=False):
+        super(SchemaResource, self).__init__()
+        self.generate_schema = generate_schema
+        self.teardown = teardown
+        self.resources = [
+            ('database', database_resource)
+        ]
+
+    def clean(self, resource):
+        LOG.info(
+            "DROP ALL OBJECTS, BACKEND %s",
+            resource.database.engine.url)
+        resource.database.backend.drop_all_objects(
+            resource.database.engine)
+
+    def make(self, dependency_resources):
+        if self.generate_schema:
+            self.generate_schema(dependency_resources['database'].engine)
+        return Schema()
+
+    def isDirty(self):
+        if self.teardown:
+            return True
+        else:
+            return False
 
 
 class Backend(object):
@@ -85,19 +157,12 @@ class Backend(object):
         self.verified = False
         self.engine = None
         self.impl = BackendImpl.impl(database_type)
+        self.current_dbs = set()
         Backend.backends_by_database_type[database_type] = self
 
     @classmethod
     def backend_for_database_type(cls, database_type):
-        """Return and verify the ``Backend`` for the given database type.
-
-        Creates the engine if it does not already exist and raises
-        ``BackendNotAvailable`` if it cannot be produced.
-
-        :return: a base ``Engine`` that allows provisioning of databases.
-
-        :raises: ``BackendNotAvailable``, if an engine for this backend
-         cannot be produced.
+        """Return the ``Backend`` for the given database type.
 
         """
         try:
@@ -172,10 +237,13 @@ class Backend(object):
                 conn.close()
                 return eng
 
-    def create_named_database(self, ident):
+    def create_named_database(self, ident, conditional=False):
         """Create a database with the given name."""
 
-        self.impl.create_named_database(self.engine, ident)
+        if not conditional or ident not in self.current_dbs:
+            self.current_dbs.add(ident)
+            self.impl.create_named_database(
+                self.engine, ident, conditional=conditional)
 
     def drop_named_database(self, ident, conditional=False):
         """Drop a database with the given name."""
@@ -183,6 +251,7 @@ class Backend(object):
         self.impl.drop_named_database(
             self.engine, ident,
             conditional=conditional)
+        self.current_dbs.discard(ident)
 
     def drop_all_objects(self, engine):
         """Drop all database objects.
@@ -303,7 +372,7 @@ class BackendImpl(object):
         """
 
     @abc.abstractmethod
-    def create_named_database(self, engine, ident):
+    def create_named_database(self, engine, ident, conditional=False):
         """Create a database with the given name."""
 
     @abc.abstractmethod
@@ -388,9 +457,10 @@ class MySQLBackendImpl(BackendImpl):
     def create_opportunistic_driver_url(self):
         return "mysql://openstack_citest:openstack_citest@localhost/"
 
-    def create_named_database(self, engine, ident):
+    def create_named_database(self, engine, ident, conditional=False):
         with engine.connect() as conn:
-            conn.execute("CREATE DATABASE %s" % ident)
+            if not conditional or not self.database_exists(conn, ident):
+                conn.execute("CREATE DATABASE %s" % ident)
 
     def drop_named_database(self, engine, ident, conditional=False):
         with engine.connect() as conn:
@@ -409,10 +479,12 @@ class SQLiteBackendImpl(BackendImpl):
     def create_opportunistic_driver_url(self):
         return "sqlite://"
 
-    def create_named_database(self, engine, ident):
+    def create_named_database(self, engine, ident, conditional=False):
         url = self._provisioned_database_url(engine.url, ident)
-        eng = sqlalchemy.create_engine(url)
-        eng.connect().close()
+        filename = url.database
+        if filename and (not conditional or not os.access(filename, os.F_OK)):
+            eng = sqlalchemy.create_engine(url)
+            eng.connect().close()
 
     def provisioned_engine(self, base_url, ident):
         return session.create_engine(
@@ -442,10 +514,11 @@ class PostgresqlBackendImpl(BackendImpl):
         return "postgresql://openstack_citest:openstack_citest"\
             "@localhost/postgres"
 
-    def create_named_database(self, engine, ident):
+    def create_named_database(self, engine, ident, conditional=False):
         with engine.connect().execution_options(
                 isolation_level="AUTOCOMMIT") as conn:
-            conn.execute("CREATE DATABASE %s" % ident)
+            if not conditional or not self.database_exists(conn, ident):
+                conn.execute("CREATE DATABASE %s" % ident)
 
     def drop_named_database(self, engine, ident, conditional=False):
         with engine.connect().execution_options(
@@ -501,82 +574,4 @@ def _random_ident():
         for i in moves.range(10))
 
 
-def _echo_cmd(args):
-    idents = [_random_ident() for i in moves.range(args.instances_count)]
-    print("\n".join(idents))
-
-
-def _create_cmd(args):
-    idents = [_random_ident() for i in moves.range(args.instances_count)]
-
-    for backend in Backend.all_viable_backends():
-        for ident in idents:
-            backend.create_named_database(ident)
-
-    print("\n".join(idents))
-
-
-def _drop_cmd(args):
-    for backend in Backend.all_viable_backends():
-        for ident in args.instances:
-            backend.drop_named_database(ident, args.conditional)
-
 Backend._setup()
-
-
-def main(argv=None):
-    """Command line interface to create/drop databases.
-
-    ::create: Create test database with random names.
-    ::drop: Drop database created by previous command.
-    ::echo: create random names and display them; don't create.
-    """
-    parser = argparse.ArgumentParser(
-        description='Controller to handle database creation and dropping'
-        ' commands.',
-        epilog='Typically called by the test runner, e.g. shell script, '
-        'testr runner via .testr.conf, or other system.')
-    subparsers = parser.add_subparsers(
-        help='Subcommands to manipulate temporary test databases.')
-
-    create = subparsers.add_parser(
-        'create',
-        help='Create temporary test databases.')
-    create.set_defaults(which=_create_cmd)
-    create.add_argument(
-        'instances_count',
-        type=int,
-        help='Number of databases to create.')
-
-    drop = subparsers.add_parser(
-        'drop',
-        help='Drop temporary test databases.')
-    drop.set_defaults(which=_drop_cmd)
-    drop.add_argument(
-        'instances',
-        nargs='+',
-        help='List of databases uri to be dropped.')
-    drop.add_argument(
-        '--conditional',
-        action="store_true",
-        help="Check if database exists first before dropping"
-    )
-
-    echo = subparsers.add_parser(
-        'echo',
-        help="Create random database names and display only."
-    )
-    echo.set_defaults(which=_echo_cmd)
-    echo.add_argument(
-        'instances_count',
-        type=int,
-        help='Number of identifiers to create.')
-
-    args = parser.parse_args(argv)
-
-    cmd = args.which
-    cmd(args)
-
-
-if __name__ == "__main__":
-    main()

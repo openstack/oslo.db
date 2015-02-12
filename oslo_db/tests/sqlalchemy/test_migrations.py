@@ -171,7 +171,7 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
         self.assertEqual(upgraded, self.migrate_up.call_args_list)
 
 
-class ModelsMigrationSyncMixin(test.BaseTestCase):
+class ModelsMigrationSyncMixin(test_base.DbTestCase):
 
     def setUp(self):
         super(ModelsMigrationSyncMixin, self).setUp()

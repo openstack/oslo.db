@@ -10,11 +10,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
+from oslotest import base as oslo_test_base
 from sqlalchemy import inspect
 from sqlalchemy import schema
 from sqlalchemy import types
 
+from oslo.db import exception
+from oslo.db.sqlalchemy import provision
 from oslo_db.sqlalchemy import test_base
 
 
@@ -62,7 +64,7 @@ class DropAllObjectsTest(test_base.DbTestCase):
             set(insp.get_table_names())
         )
 
-        self.provision.drop_all_objects()
+        self.db.backend.drop_all_objects(self.engine)
 
         insp = inspect(self.engine)
         self.assertEqual(
@@ -71,11 +73,83 @@ class DropAllObjectsTest(test_base.DbTestCase):
         )
 
 
-class MySQLRetainSchemaTest(
+class MySQLDropAllObjectsTest(
         DropAllObjectsTest, test_base.MySQLOpportunisticTestCase):
     pass
 
 
-class PostgresqlRetainSchemaTest(
+class PostgreSQLDropAllObjectsTest(
         DropAllObjectsTest, test_base.PostgreSQLOpportunisticTestCase):
     pass
+
+
+class RetainSchemaTest(oslo_test_base.BaseTestCase):
+    DRIVER = "sqlite"
+
+    def setUp(self):
+        super(RetainSchemaTest, self).setUp()
+
+        metadata = schema.MetaData()
+        self.test_table = schema.Table(
+            'test_table', metadata,
+            schema.Column('x', types.Integer),
+            schema.Column('y', types.Integer),
+            mysql_engine='InnoDB'
+        )
+
+        def gen_schema(engine):
+            metadata.create_all(engine, checkfirst=False)
+        self._gen_schema = gen_schema
+
+    def test_once(self):
+        self._run_test()
+
+    def test_twice(self):
+        self._run_test()
+
+    def _run_test(self):
+        try:
+            database_resource = provision.DatabaseResource(self.DRIVER)
+        except exception.BackendNotAvailable:
+            self.skip("database not available")
+
+        schema_resource = provision.SchemaResource(
+            database_resource, self._gen_schema)
+        transaction_resource = provision.TransactionResource(
+            database_resource, schema_resource)
+
+        engine = transaction_resource.getResource()
+
+        with engine.connect() as conn:
+            rows = conn.execute(self.test_table.select())
+            self.assertEqual(rows.fetchall(), [])
+
+            trans = conn.begin()
+            conn.execute(
+                self.test_table.insert(),
+                {"x": 1, "y": 2}
+            )
+            trans.rollback()
+
+            rows = conn.execute(self.test_table.select())
+            self.assertEqual(rows.fetchall(), [])
+
+            trans = conn.begin()
+            conn.execute(
+                self.test_table.insert(),
+                {"x": 2, "y": 3}
+            )
+            trans.commit()
+
+            rows = conn.execute(self.test_table.select())
+            self.assertEqual(rows.fetchall(), [(2, 3)])
+
+        transaction_resource.finishedWith(engine)
+
+
+class MySQLRetainSchemaTest(RetainSchemaTest):
+    DRIVER = "mysql"
+
+
+class PostgresqlRetainSchemaTest(RetainSchemaTest):
+    DRIVER = "postgresql"

@@ -16,6 +16,7 @@
 
 import abc
 import collections
+import functools
 import logging
 import pprint
 
@@ -483,9 +484,6 @@ class ModelsMigrationsSync(object):
                 return meta_def != insp_def
             return insp_def != "'%s'::character varying" % meta_def.arg
 
-    def _cleanup(self):
-        self.provision.drop_all_objects()
-
     FKInfo = collections.namedtuple('fk_info', ['constrained_columns',
                                                 'referred_table',
                                                 'referred_columns'])
@@ -567,7 +565,8 @@ class ModelsMigrationsSync(object):
                           ' for running of this test: %s' % e)
 
         # drop all tables after a test run
-        self.addCleanup(self._cleanup)
+        self.addCleanup(functools.partial(self.db.backend.drop_all_objects,
+                                          self.get_engine()))
 
         # run migration scripts
         self.db_sync(self.get_engine())
