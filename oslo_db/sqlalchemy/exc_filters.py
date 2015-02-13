@@ -192,7 +192,7 @@ def _sqlite_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
          "is not present in table "
          "\"(?P<key_table>[^\"]+)\".")
 @filters("mysql", sqla_exc.IntegrityError,
-         r".* 'Cannot add or update a child row: "
+         r".* u?'Cannot add or update a child row: "
          'a foreign key constraint fails \([`"].+[`"]\.[`"](?P<table>.+)[`"], '
          'CONSTRAINT [`"](?P<constraint>.+)[`"] FOREIGN KEY '
          '\([`"](?P<key>.+)[`"]\) REFERENCES [`"](?P<key_table>.+)[`"] ')
