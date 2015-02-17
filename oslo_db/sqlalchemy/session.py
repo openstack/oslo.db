@@ -280,11 +280,13 @@ Efficient use of soft deletes:
 
 import itertools
 import logging
+import os
 import re
 import time
 
 from oslo_utils import timeutils
 import six
+from sqlalchemy import exc
 import sqlalchemy.orm
 from sqlalchemy import pool
 from sqlalchemy.sql.expression import literal_column
@@ -476,6 +478,8 @@ def _init_connection_args(url, engine_args, **kw):
 def _init_events(engine, thread_checkin=True, connection_trace=False, **kw):
     """Set up event listeners for all database backends."""
 
+    _add_process_guards(engine)
+
     if connection_trace:
         _add_trace_comments(engine)
 
@@ -607,6 +611,35 @@ def get_maker(engine, autocommit=True, expire_on_commit=False):
                                        autocommit=autocommit,
                                        expire_on_commit=expire_on_commit,
                                        query_cls=Query)
+
+
+def _add_process_guards(engine):
+    """Add multiprocessing guards.
+
+    Forces a connection to be reconnected if it is detected
+    as having been shared to a sub-process.
+
+    """
+
+    @sqlalchemy.event.listens_for(engine, "connect")
+    def connect(dbapi_connection, connection_record):
+        connection_record.info['pid'] = os.getpid()
+
+    @sqlalchemy.event.listens_for(engine, "checkout")
+    def checkout(dbapi_connection, connection_record, connection_proxy):
+        pid = os.getpid()
+        if connection_record.info['pid'] != pid:
+            LOG.debug(_LW(
+                "Parent process %(orig)s forked (%(newproc)s) with an open "
+                "database connection, "
+                "which is being discarded and recreated."),
+                {"newproc": pid, "orig": connection_record.info['pid']})
+            connection_record.connection = connection_proxy.connection = None
+            raise exc.DisconnectionError(
+                "Connection record belongs to pid %s, "
+                "attempting to check out in pid %s" %
+                (connection_record.info['pid'], pid)
+            )
 
 
 def _add_trace_comments(engine):
