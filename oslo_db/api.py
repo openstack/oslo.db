@@ -56,7 +56,7 @@ def safe_for_db_retry(f):
     :param f: database api method.
     :type f: function.
     """
-    f.enable_retry_on_disconnect = True
+    f.__dict__['enable_retry_on_disconnect'] = True
     return f
 
 
@@ -66,7 +66,7 @@ def retry_on_deadlock(f):
     wrap_db_entry will be applied to all db.api functions marked with this
     decorator.
     """
-    f.enable_retry_on_deadlock = True
+    f.__dict__['enable_retry_on_deadlock'] = True
     return f
 
 
@@ -76,7 +76,7 @@ def retry_on_request(f):
     wrap_db_entry will be applied to all db.api functions marked with this
     decorator.
     """
-    f.enable_retry_on_request = True
+    f.__dict__['enable_retry_on_request'] = True
     return f
 
 
@@ -225,10 +225,11 @@ class DBAPI(object):
         # NOTE(vsergeyev): If `use_db_reconnect` option is set to True, retry
         #                  DB API methods, decorated with @safe_for_db_retry
         #                  on disconnect.
-        retry_on_disconnect = self.use_db_reconnect and getattr(
-            attr, 'enable_retry_on_disconnect', False)
-        retry_on_deadlock = getattr(attr, 'enable_retry_on_deadlock', False)
-        retry_on_request = getattr(attr, 'enable_retry_on_request', False)
+        retry_on_disconnect = self.use_db_reconnect and attr.__dict__.get(
+            'enable_retry_on_disconnect', False)
+        retry_on_deadlock = attr.__dict__.get('enable_retry_on_deadlock',
+                                              False)
+        retry_on_request = attr.__dict__.get('enable_retry_on_request', False)
 
         if retry_on_disconnect or retry_on_deadlock or retry_on_request:
             attr = wrap_db_retry(

@@ -196,3 +196,11 @@ class DBRetryRequestCase(DBAPITestCase):
         res = {'result': 0}
         self.assertRaises(ValueError, some_method, res)
         self.assertEqual(max_retries + 1, res['result'])
+
+    @mock.patch.object(DBAPI, 'api_class_call1')
+    @mock.patch.object(api, 'wrap_db_retry')
+    def test_mocked_methods_are_not_wrapped(self, mocked_wrap, mocked_method):
+        dbapi = api.DBAPI('oslo_db.tests.test_api')
+        dbapi.api_class_call1()
+
+        self.assertFalse(mocked_wrap.called)
