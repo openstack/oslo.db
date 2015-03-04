@@ -76,10 +76,14 @@ def db_sync(engine, abs_path, version=None, init_version=0, sanity_check=True):
     if sanity_check:
         _db_schema_sanity_check(engine)
     if version is None or version > current_version:
-        return versioning_api.upgrade(engine, repository, version)
+        migration = versioning_api.upgrade(engine, repository, version)
     else:
-        return versioning_api.downgrade(engine, repository,
-                                        version)
+        migration = versioning_api.downgrade(engine, repository,
+                                             version)
+    if sanity_check:
+        _db_schema_sanity_check(engine)
+
+    return migration
 
 
 def _db_schema_sanity_check(engine):

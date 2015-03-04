@@ -158,7 +158,8 @@ class TestMigrationCommon(test_base.DbTestCase):
             mock_find_repo.return_value = self.return_value
             migration.db_sync(self.engine, self.path, self.test_version)
 
-            mock_sanity.assert_called_once_with(self.engine)
+            self.assertEqual([mock.call(self.engine), mock.call(self.engine)],
+                             mock_sanity.call_args_list)
 
     def test_db_sync_sanity_skipped(self):
         with test_utils.nested(
