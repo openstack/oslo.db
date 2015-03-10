@@ -38,7 +38,7 @@ class DbFixture(fixtures.Fixture):
 
     Allows to run tests on various db backends, such as SQLite, MySQL and
     PostgreSQL. By default use sqlite backend. To override default backend
-    uri set env variable OS_TEST_DBAPI_CONNECTION with database admin
+    uri set env variable OS_TEST_DBAPI_ADMIN_CONNECTION with database admin
     credentials for specific backend.
     """
 
