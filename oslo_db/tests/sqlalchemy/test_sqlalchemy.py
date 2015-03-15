@@ -648,6 +648,34 @@ class CreateEngineTest(oslo_test.BaseTestCase):
         )
 
 
+class ProcessGuardTest(test_base.DbTestCase):
+    def test_process_guard(self):
+        self.engine.dispose()
+
+        def get_parent_pid():
+            return 4
+
+        def get_child_pid():
+            return 5
+
+        with mock.patch("os.getpid", get_parent_pid):
+            with self.engine.connect() as conn:
+                dbapi_id = id(conn.connection.connection)
+
+        with mock.patch("os.getpid", get_child_pid):
+            with self.engine.connect() as conn:
+                new_dbapi_id = id(conn.connection.connection)
+
+        self.assertNotEqual(dbapi_id, new_dbapi_id)
+
+        # ensure it doesn't trip again
+        with mock.patch("os.getpid", get_child_pid):
+            with self.engine.connect() as conn:
+                newer_dbapi_id = id(conn.connection.connection)
+
+        self.assertEqual(new_dbapi_id, newer_dbapi_id)
+
+
 class PatchStacktraceTest(test_base.DbTestCase):
 
     def test_trace(self):
