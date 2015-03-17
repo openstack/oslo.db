@@ -38,11 +38,12 @@ from oslo.db.sqlalchemy import provision
 from oslo.db.sqlalchemy import session
 from oslo.db.sqlalchemy import test_base as db_test_base
 from oslo.db.sqlalchemy import utils
+from oslo_db.sqlalchemy.compat import utils as compat_utils
 from oslo_db.sqlalchemy import utils as private_utils
 from oslo_db.tests.old_import_api import utils as test_utils
 
 
-SA_VERSION = tuple(map(int, sqlalchemy.__version__.split('.')))
+SA_VERSION = compat_utils.SQLA_VERSION
 Base = declarative_base()
 
 

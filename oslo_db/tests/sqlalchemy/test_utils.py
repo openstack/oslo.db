@@ -33,6 +33,7 @@ from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
 from oslo_db import exception
+from oslo_db.sqlalchemy.compat import utils as compat_utils
 from oslo_db.sqlalchemy import models
 from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import session
@@ -42,7 +43,7 @@ from oslo_db.tests import utils as test_utils
 
 
 Base = declarative_base()
-SA_VERSION = tuple(map(int, sqlalchemy.__version__.split('.')))
+SA_VERSION = compat_utils.SQLA_VERSION
 
 
 class TestSanitizeDbUrl(test_base.BaseTestCase):
