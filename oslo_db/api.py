@@ -139,7 +139,11 @@ class wrap_db_retry(object):
                         raise e
                     if remaining != -1:
                         remaining -= 1
-                        LOG.exception(_LE('DB error.'))
+                        # RetryRequest is application-initated exception
+                        # and not an error condition in case retries are
+                        # not exceeded
+                        if not isinstance(e, exception.RetryRequest):
+                            LOG.exception(_LE('DB error.'))
                     # NOTE(vsergeyev): We are using patched time module, so
                     #                  this effectively yields the execution
                     #                  context to another green thread.
