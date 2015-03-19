@@ -1,5 +1,5 @@
 # Translations template for oslo.db.
-# Copyright (C) 2014 ORGANIZATION
+# Copyright (C) 2015 ORGANIZATION
 # This file is distributed under the same license as the oslo.db project.
 #
 # Translators:
@@ -8,9 +8,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: oslo.db\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-09-12 06:00+0000\n"
-"PO-Revision-Date: 2014-09-02 09:17+0000\n"
-"Last-Translator: Andi Chandler <andi@gowling.com>\n"
+"POT-Creation-Date: 2015-03-19 06:01+0000\n"
+"PO-Revision-Date: 2015-03-15 14:48+0000\n"
+"Last-Translator: openstackjenkins <jenkins@openstack.org>\n"
 "Language-Team: English (United Kingdom) (http://www.transifex.com/projects/p/"
 "oslodb/language/en_GB/)\n"
 "Language: en_GB\n"
@@ -20,22 +20,29 @@ msgstr ""
 "Generated-By: Babel 1.3\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: oslo/db/sqlalchemy/session.py:458
+#: oslo_db/sqlalchemy/session.py:510
 msgid "Unable to detect effective SQL mode"
 msgstr "Unable to detect effective SQL mode"
 
-#: oslo/db/sqlalchemy/session.py:465
+#: oslo_db/sqlalchemy/session.py:517
 #, python-format
 msgid ""
 "MySQL SQL mode is '%s', consider enabling TRADITIONAL or STRICT_ALL_TABLES"
 msgstr ""
 "MySQL SQL mode is '%s', consider enabling TRADITIONAL or STRICT_ALL_TABLES"
 
-#: oslo/db/sqlalchemy/session.py:521
+#: oslo_db/sqlalchemy/session.py:585
 #, python-format
 msgid "SQL connection failed. %s attempts left."
 msgstr "SQL connection failed. %s attempts left."
 
-#: oslo/db/sqlalchemy/utils.py:100
+#: oslo_db/sqlalchemy/session.py:632
+#, python-format
+msgid ""
+"Parent process %(orig)s forked (%(newproc)s) with an open database "
+"connection, which is being discarded and recreated."
+msgstr ""
+
+#: oslo_db/sqlalchemy/utils.py:127
 msgid "Id not in sort_keys; is sort_keys unique?"
 msgstr "Id not in sort_keys; is sort_keys unique?"
