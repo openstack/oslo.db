@@ -3,14 +3,14 @@
 # This file is distributed under the same license as the oslo.db project.
 #
 # Translators:
-# Andi Chandler <andi@gowling.com>, 2014
+# Andi Chandler <andi@gowling.com>, 2014-2015
 msgid ""
 msgstr ""
 "Project-Id-Version: oslo.db\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2015-03-19 06:01+0000\n"
-"PO-Revision-Date: 2015-03-15 14:48+0000\n"
-"Last-Translator: openstackjenkins <jenkins@openstack.org>\n"
+"POT-Creation-Date: 2015-03-21 06:01+0000\n"
+"PO-Revision-Date: 2015-03-19 19:04+0000\n"
+"Last-Translator: Andi Chandler <andi@gowling.com>\n"
 "Language-Team: English (United Kingdom) (http://www.transifex.com/projects/p/"
 "oslodb/language/en_GB/)\n"
 "Language: en_GB\n"
@@ -42,6 +42,8 @@ msgid ""
 "Parent process %(orig)s forked (%(newproc)s) with an open database "
 "connection, which is being discarded and recreated."
 msgstr ""
+"Parent process %(orig)s forked (%(newproc)s) with an open database "
+"connection, which is being discarded and recreated."
 
 #: oslo_db/sqlalchemy/utils.py:127
 msgid "Id not in sort_keys; is sort_keys unique?"
