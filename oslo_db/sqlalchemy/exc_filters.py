@@ -220,6 +220,26 @@ def _foreign_key_error(integrity_error, match, engine_name, is_disconnect):
                                      integrity_error)
 
 
+@filters("postgresql", sqla_exc.IntegrityError,
+         r".*new row for relation \"(?P<table>.+)\" "
+         "violates check constraint "
+         "\"(?P<check_name>.+)\"")
+def _check_constraint_error(
+        integrity_error, match, engine_name, is_disconnect):
+    """Filter for check constraint errors."""
+
+    try:
+        table = match.group("table")
+    except IndexError:
+        table = None
+    try:
+        check_name = match.group("check_name")
+    except IndexError:
+        check_name = None
+
+    raise exception.DBConstraintError(table, check_name, integrity_error)
+
+
 @filters("ibm_db_sa", sqla_exc.IntegrityError, r"^.*SQL0803N.*$")
 def _db2_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
     """Filter for DB2 duplicate key errors.

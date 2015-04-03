@@ -354,6 +354,19 @@ class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
         self.assertEqual("resource_foo", matched.key_table)
 
 
+class TestConstraint(TestsExceptionFilter):
+    def test_postgresql(self):
+        matched = self._run_test(
+            "postgresql", "insert into resource some_values",
+            self.IntegrityError(
+                "new row for relation \"resource\" violates "
+                "check constraint \"ck_started_before_ended\""),
+            exception.DBConstraintError,
+        )
+        self.assertEqual("resource", matched.table)
+        self.assertEqual("ck_started_before_ended", matched.check_name)
+
+
 class TestDuplicate(TestsExceptionFilter):
 
     def _run_dupe_constraint_test(self, dialect_name, message,
