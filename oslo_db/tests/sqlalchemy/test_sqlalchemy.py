@@ -167,21 +167,21 @@ class SQLiteSavepointTest(test_base.DbTestCase):
         )
 
 
-class FakeDBAPIConnection():
+class FakeDBAPIConnection(object):
     def cursor(self):
         return FakeCursor()
 
 
-class FakeCursor():
+class FakeCursor(object):
     def execute(self, sql):
         pass
 
 
-class FakeConnectionProxy():
+class FakeConnectionProxy(object):
     pass
 
 
-class FakeConnectionRec():
+class FakeConnectionRec(object):
     pass
 
 
@@ -195,7 +195,7 @@ class ProgrammingError(Exception):
 
 class FakeDB2Engine(object):
 
-    class Dialect():
+    class Dialect(object):
 
         def is_disconnect(self, e, *args):
             expected_error = ('SQL30081N: DB2 Server connection is no longer '
