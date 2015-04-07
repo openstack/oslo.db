@@ -233,14 +233,14 @@ class TestReferenceErrorSQLite(_SQLAExceptionMatcher, test_base.DbTestCase):
 
         meta = sqla.MetaData(bind=self.engine)
 
-        table_1 = sqla.Table(
+        self.table_1 = sqla.Table(
             "resource_foo", meta,
             sqla.Column("id", sqla.Integer, primary_key=True),
             sqla.Column("foo", sqla.Integer),
             mysql_engine='InnoDB',
             mysql_charset='utf8',
         )
-        table_1.create()
+        self.table_1.create()
 
         self.table_2 = sqla.Table(
             "resource_entity", meta,
@@ -274,6 +274,30 @@ class TestReferenceErrorSQLite(_SQLAExceptionMatcher, test_base.DbTestCase):
         self.assertIsNone(matched.key)
         self.assertIsNone(matched.key_table)
 
+    def test_raise_delete(self):
+        self.engine.execute("PRAGMA foreign_keys = ON;")
+
+        with self.engine.connect() as conn:
+            conn.execute(self.table_1.insert({"id": 1234, "foo": 42}))
+            conn.execute(self.table_2.insert({"id": 4321, "foo_id": 1234}))
+        matched = self.assertRaises(
+            exception.DBReferenceError,
+            self.engine.execute,
+            self.table_1.delete()
+        )
+        self.assertInnerException(
+            matched,
+            "IntegrityError",
+            "foreign key constraint failed",
+            "DELETE FROM resource_foo",
+            (),
+        )
+
+        self.assertIsNone(matched.table)
+        self.assertIsNone(matched.constraint)
+        self.assertIsNone(matched.key)
+        self.assertIsNone(matched.key_table)
+
 
 class TestReferenceErrorPostgreSQL(TestReferenceErrorSQLite,
                                    test_base.PostgreSQLOpportunisticTestCase):
@@ -299,6 +323,31 @@ class TestReferenceErrorPostgreSQL(TestReferenceErrorSQLite,
         self.assertEqual("foo_fkey", matched.constraint)
         self.assertEqual("foo_id", matched.key)
         self.assertEqual("resource_foo", matched.key_table)
+
+    def test_raise_delete(self):
+        with self.engine.connect() as conn:
+            conn.execute(self.table_1.insert({"id": 1234, "foo": 42}))
+            conn.execute(self.table_2.insert({"id": 4321, "foo_id": 1234}))
+        matched = self.assertRaises(
+            exception.DBReferenceError,
+            self.engine.execute,
+            self.table_1.delete()
+        )
+        self.assertInnerException(
+            matched,
+            "IntegrityError",
+            "update or delete on table \"resource_foo\" violates foreign key "
+            "constraint \"foo_fkey\" on table \"resource_entity\"\n"
+            "DETAIL:  Key (id)=(1234) is still referenced from "
+            "table \"resource_entity\".\n",
+            "DELETE FROM resource_foo",
+            {},
+        )
+
+        self.assertEqual("resource_foo", matched.table)
+        self.assertEqual("foo_fkey", matched.constraint)
+        self.assertEqual("id", matched.key)
+        self.assertEqual("resource_entity", matched.key_table)
 
 
 class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
@@ -348,6 +397,32 @@ class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
             "INSERT INTO resource_entity (id, foo_id) VALUES (%s, %s)",
             (1, 2)
         )
+        self.assertEqual("resource_entity", matched.table)
+        self.assertEqual("foo_fkey", matched.constraint)
+        self.assertEqual("foo_id", matched.key)
+        self.assertEqual("resource_foo", matched.key_table)
+
+    def test_raise_delete(self):
+        with self.engine.connect() as conn:
+            conn.execute(self.table_1.insert({"id": 1234, "foo": 42}))
+            conn.execute(self.table_2.insert({"id": 4321, "foo_id": 1234}))
+        matched = self.assertRaises(
+            exception.DBReferenceError,
+            self.engine.execute,
+            self.table_1.delete()
+        )
+        self.assertInnerException(
+            matched,
+            "IntegrityError",
+            "(1451, 'cannot delete or update a parent row: a foreign key "
+            "constraint fails (`{0}`.`resource_entity`, "
+            "constraint `foo_fkey` "
+            "foreign key (`foo_id`) references "
+            "`resource_foo` (`id`))')".format(self.engine.url.database),
+            "DELETE FROM resource_foo",
+            (),
+        )
+
         self.assertEqual("resource_entity", matched.table)
         self.assertEqual("foo_fkey", matched.constraint)
         self.assertEqual("foo_id", matched.key)
