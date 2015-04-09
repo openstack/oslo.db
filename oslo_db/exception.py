@@ -155,6 +155,14 @@ class DBConnectionError(DBError):
     pass
 
 
+class DBDataError(DBError):
+    """Raised for errors that are due to problems with the processed data.
+
+    E.g. division by zero, numeric value out of range, incorrect data type, etc
+
+    """
+
+
 class InvalidSortKey(Exception):
     """A sort key destined for database query usage is invalid."""
 
