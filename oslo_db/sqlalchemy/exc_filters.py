@@ -91,8 +91,12 @@ def _deadlock_error(operational_error, match, engine_name, is_disconnect):
 
 
 @filters("mysql", sqla_exc.IntegrityError,
-         r"^.*\b1062\b.*Duplicate entry '(?P<value>[^']+)'"
+         r"^.*\b1062\b.*Duplicate entry '(?P<value>.+)'"
          r" for key '(?P<columns>[^']+)'.*$")
+# NOTE(jd) For binary types
+@filters("mysql", sqla_exc.IntegrityError,
+         r"^.*\b1062\b.*Duplicate entry \\'(?P<value>.+)\\'"
+         r" for key \\'(?P<columns>.+)\\'.*$")
 # NOTE(pkholkin): the first regex is suitable only for PostgreSQL 9.x versions
 #                 the second regex is suitable for PostgreSQL 8.x versions
 @filters("postgresql", sqla_exc.IntegrityError,

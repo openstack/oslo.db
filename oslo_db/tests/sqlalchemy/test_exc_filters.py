@@ -424,6 +424,24 @@ class TestDuplicate(TestsExceptionFilter):
             expected_value='2'
         )
 
+    def test_mysql_binary(self):
+        self._run_dupe_constraint_test(
+            "mysql",
+            "(1062, \'Duplicate entry "
+            "\\\'\\\\x8A$\\\\x8D\\\\xA6\"s\\\\x8E\\\' "
+            "for key \\\'PRIMARY\\\'\')",
+            expected_columns=['PRIMARY'],
+            expected_value="\\\\x8A$\\\\x8D\\\\xA6\"s\\\\x8E"
+        )
+        self._run_dupe_constraint_test(
+            "mysql",
+            "(1062, \'Duplicate entry "
+            "''\\\\x8A$\\\\x8D\\\\xA6\"s\\\\x8E!,' "
+            "for key 'PRIMARY'\')",
+            expected_columns=['PRIMARY'],
+            expected_value="'\\\\x8A$\\\\x8D\\\\xA6\"s\\\\x8E!,"
+        )
+
     def test_postgresql_single(self):
         self._run_dupe_constraint_test(
             'postgresql',
