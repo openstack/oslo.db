@@ -78,6 +78,9 @@ class TestsExceptionFilter(_SQLAExceptionMatcher, oslo_test_base.BaseTestCase):
     class ProgrammingError(Error):
         pass
 
+    class DataError(Error):
+        pass
+
     class TransactionRollbackError(OperationalError):
         """Special psycopg2-only error class.
 
@@ -221,6 +224,52 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
             exception.DBError
         )
         self.assertEqual("mysqldb has an attribute error", matched.args[0])
+
+
+class TestDataError(TestsExceptionFilter):
+
+    def test_mysql_incorrect_value(self):
+        matched = self._run_test(
+            "mysql", "insert into testtbl (id, b) values (4242, 4242)",
+            self.OperationalError(
+                "ERROR 1292 (22007): Incorrect datetime value: '4242' "
+                "for column 'b' at row 1"
+            ),
+            exception.DBDataError
+        )
+        self.assertInnerException(
+            matched,
+            "OperationalError",
+            ("ERROR 1292 (22007): Incorrect datetime value: '4242' for column "
+             "'b' at row 1"),
+            "insert into testtbl (id, b) values (4242, 4242)", ())
+
+    def test_mysql_data_truncated_for_column(self):
+        matched = self._run_test(
+            "mysql", "insert into testtbl (id, b) values (4242, '42aabbccdd')",
+            self.DataError(
+                "ERROR 1265 (01000): Data truncated for column 'b' at row 1"),
+            exception.DBDataError
+        )
+        self.assertInnerException(
+            matched,
+            "DataError",
+            "ERROR 1265 (01000): Data truncated for column 'b' at row 1",
+            "insert into testtbl (id, b) values (4242, '42aabbccdd')", ())
+
+    def test_mysql_out_of_range_value(self):
+        matched = self._run_test(
+            "mysql", "insert into testtbl (id, b) values (4242, 424242424242)",
+            self.DataError(
+                "ERROR 1264 (22003): Out of range value for column 'b' "
+                "at row 1"),
+            exception.DBDataError
+        )
+        self.assertInnerException(
+            matched,
+            "DataError",
+            "ERROR 1264 (22003): Out of range value for column 'b' at row 1",
+            "insert into testtbl (id, b) values (4242, 424242424242)", ())
 
 
 class TestReferenceErrorSQLite(_SQLAExceptionMatcher, test_base.DbTestCase):
