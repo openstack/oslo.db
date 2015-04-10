@@ -191,12 +191,12 @@ def _sqlite_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
          r"(?i).*foreign key constraint failed")
 @filters("postgresql", sqla_exc.IntegrityError,
          r".*on table \"(?P<table>[^\"]+)\" violates "
-         "foreign key constraint \"(?P<constraint>[^\"]+)\"\s*\n"
+         "foreign key constraint \"(?P<constraint>[^\"]+)\".*\n"
          "DETAIL:  Key \((?P<key>.+)\)=\(.+\) "
-         "is not present in table "
+         "is (not present in|still referenced from) table "
          "\"(?P<key_table>[^\"]+)\".")
 @filters("mysql", sqla_exc.IntegrityError,
-         r".* u?'Cannot add or update a child row: "
+         r".* u?'Cannot (add|delete) or update a (child|parent) row: "
          'a foreign key constraint fails \([`"].+[`"]\.[`"](?P<table>.+)[`"], '
          'CONSTRAINT [`"](?P<constraint>.+)[`"] FOREIGN KEY '
          '\([`"](?P<key>.+)[`"]\) REFERENCES [`"](?P<key_table>.+)[`"] ')
