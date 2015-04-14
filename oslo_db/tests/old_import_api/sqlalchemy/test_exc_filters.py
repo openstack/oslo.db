@@ -19,10 +19,10 @@ import mock
 from oslotest import base as oslo_test_base
 import six
 import sqlalchemy as sqla
+from sqlalchemy import event
 from sqlalchemy.orm import mapper
 
 from oslo.db import exception
-from oslo.db.sqlalchemy import compat
 from oslo.db.sqlalchemy import exc_filters
 from oslo.db.sqlalchemy import test_base
 from oslo_db.sqlalchemy import session as private_session
@@ -719,7 +719,8 @@ class TestDBDisconnected(TestsExceptionFilter):
             dialect_name, exception, num_disconnects, is_disconnect=True):
         engine = self.engine
 
-        compat.engine_connect(engine, private_session._connect_ping_listener)
+        event.listen(
+            engine, "engine_connect", private_session._connect_ping_listener)
 
         real_do_execute = engine.dialect.do_execute
         counter = itertools.count(1)

@@ -32,8 +32,7 @@ def handle_error(engine, listener):
 
     This listener uses the SQLAlchemy
     :meth:`sqlalchemy.event.ConnectionEvents.handle_error`
-    event, however augments the listener for pre-0.9.7 versions of SQLAlchemy
-    in order to support safe re-raise of the exception.
+    event.
 
     """
     if utils.sqla_100:
@@ -43,122 +42,17 @@ def handle_error(engine, listener):
     assert isinstance(engine, Engine), \
         "engine argument must be an Engine instance, not a Connection"
 
-    if not utils.sqla_097:
-        _rework_handle_exception_for_events(engine)
-        engine._oslo_handle_error_events.append(listener)
+    assert utils.sqla_097
 
     _rework_connect_and_revalidate_for_events(engine)
 
-    if utils.sqla_097:
-        # ctx.engine added per
-        # https://bitbucket.org/zzzeek/sqlalchemy/issue/3266/
-        def wrap_listener(ctx):
-            if isinstance(ctx, engine_base.ExceptionContextImpl):
-                ctx.engine = ctx.connection.engine
-            return listener(ctx)
-        event.listen(engine, "handle_error", wrap_listener)
-
-
-def _rework_handle_exception_for_events(engine):
-    """Patch the _handle_dbapi_error() system on Connection.
-
-    This allows the 0.9.7-style handle_error() event to be available on
-    the Connection object.
-
-    """
-    engine._oslo_handle_error_events = []
-
-    class Connection(engine._connection_cls):
-        def _handle_dbapi_exception(self, e, statement, parameters,
-                                    cursor, context):
-
-            try:
-                super(Connection, self)._handle_dbapi_exception(
-                    e, statement, parameters, cursor, context)
-            except Exception as reraised_exception:
-                # all versions:
-                #   _handle_dbapi_exception reraises all DBAPI errors
-                # 0.8 and above:
-                #   reraises all errors unconditionally
-                pass
-            else:
-                # 0.7.8:
-                #   _handle_dbapi_exception does not unconditionally
-                #   re-raise
-                reraised_exception = e
-
-            _oslo_handle_error_events = getattr(
-                self.engine,
-                '_oslo_handle_error_events',
-                False)
-
-            newraise = None
-            if _oslo_handle_error_events:
-                if isinstance(reraised_exception,
-                              sqla_exc.StatementError):
-                    sqlalchemy_exception = reraised_exception
-                    original_exception = sqlalchemy_exception.orig
-                    self._is_disconnect = is_disconnect = (
-                        isinstance(sqlalchemy_exception,
-                                   sqla_exc.DBAPIError)
-                        and sqlalchemy_exception.connection_invalidated)
-                else:
-                    sqlalchemy_exception = None
-                    original_exception = reraised_exception
-                    is_disconnect = False
-
-                # new handle_error event
-                ctx = ExceptionContextImpl(
-                    original_exception, sqlalchemy_exception,
-                    self.engine, self, cursor, statement,
-                    parameters, context, is_disconnect)
-
-                for fn in _oslo_handle_error_events:
-                    try:
-                        # handler returns an exception;
-                        # call next handler in a chain
-                        per_fn = fn(ctx)
-                        if per_fn is not None:
-                            ctx.chained_exception = newraise = per_fn
-                    except Exception as _raised:
-                        # handler raises an exception - stop processing
-                        newraise = _raised
-                        break
-
-                if sqlalchemy_exception and \
-                        self._is_disconnect != ctx.is_disconnect:
-
-                    if not ctx.is_disconnect:
-                        raise NotImplementedError(
-                            "Can't reset 'disconnect' status of exception "
-                            "once it is set with this version of "
-                            "SQLAlchemy")
-
-                    sqlalchemy_exception.connection_invalidated = \
-                        self._is_disconnect = ctx.is_disconnect
-                    if self._is_disconnect:
-                        self._do_disconnect(e)
-
-            if newraise:
-                six.reraise(type(newraise), newraise, sys.exc_info()[2])
-            else:
-                six.reraise(type(reraised_exception),
-                            reraised_exception, sys.exc_info()[2])
-
-        def _do_disconnect(self, e):
-            del self._is_disconnect
-            if utils.sqla_094:
-                dbapi_conn_wrapper = self.connection
-                self.engine.pool._invalidate(dbapi_conn_wrapper, e)
-                self.invalidate(e)
-            else:
-                dbapi_conn_wrapper = self.connection
-                self.invalidate(e)
-                if not hasattr(dbapi_conn_wrapper, '_pool') or \
-                        dbapi_conn_wrapper._pool is self.engine.pool:
-                    self.engine.dispose()
-
-    engine._connection_cls = Connection
+    # ctx.engine added per
+    # https://bitbucket.org/zzzeek/sqlalchemy/issue/3266/
+    def wrap_listener(ctx):
+        if isinstance(ctx, engine_base.ExceptionContextImpl):
+            ctx.engine = ctx.connection.engine
+        return listener(ctx)
+    event.listen(engine, "handle_error", wrap_listener)
 
 
 def _rework_connect_and_revalidate_for_events(engine):
@@ -334,6 +228,8 @@ class ExceptionContextImpl(object):
 
     This is for forwards compatibility with the
     ExceptionContext interface introduced in SQLAlchemy 0.9.7.
+
+    It also provides for the "engine" argument added in SQLAlchemy 1.0.0.
 
     """
 
