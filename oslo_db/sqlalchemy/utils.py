@@ -337,7 +337,7 @@ def get_table(engine, name):
 class InsertFromSelect(object):
     """Form the base for `INSERT INTO table (SELECT ... )` statement.
 
-    DEPRECATED: this class is deprecated and will be removed from oslo.db
+    DEPRECATED: this class is deprecated and will be removed from oslo_db
     in a few releases. Use default SQLAlchemy insert from select implementation
     instead
 
@@ -662,7 +662,7 @@ def get_connect_string(backend, database, user=None, passwd=None,
     Try to get a connection with a very specific set of values, if we get
     these then we'll run the tests, otherwise they are skipped
 
-    DEPRECATED: this function is deprecated and will be removed from oslo.db
+    DEPRECATED: this function is deprecated and will be removed from oslo_db
     in a few releases. Please use the provisioning system for dealing
     with URLs and database provisioning.
 
@@ -683,7 +683,7 @@ def is_backend_avail(backend, database, user=None, passwd=None):
     """Return True if the given backend is available.
 
 
-    DEPRECATED: this function is deprecated and will be removed from oslo.db
+    DEPRECATED: this function is deprecated and will be removed from oslo_db
     in a few releases. Please use the provisioning system to access
     databases based on backend availability.
 
