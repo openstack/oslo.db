@@ -16,4 +16,4 @@ oslotest>=1.5.1  # Apache-2.0
 PyMySQL>=0.6.2  # MIT License
 testrepository>=0.0.18
 testtools>=0.9.36,!=1.2.0
-tempest-lib>=0.4.0
+tempest-lib>=0.5.0
