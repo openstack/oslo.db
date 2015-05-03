@@ -20,28 +20,17 @@ msgstr ""
 "Generated-By: Babel 1.3\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: oslo_db/sqlalchemy/session.py:510
 msgid "Unable to detect effective SQL mode"
 msgstr "Impossible de détecter le mode SQL"
 
-#: oslo_db/sqlalchemy/session.py:517
 #, python-format
 msgid ""
 "MySQL SQL mode is '%s', consider enabling TRADITIONAL or STRICT_ALL_TABLES"
 msgstr "MySQL SQL mode est '%s', TRADITIONAL ou STRICT_ALL_TABLES"
 
-#: oslo_db/sqlalchemy/session.py:585
 #, python-format
 msgid "SQL connection failed. %s attempts left."
 msgstr "Echec de connexion SQL. %s tentatives échouées"
 
-#: oslo_db/sqlalchemy/session.py:632
-#, python-format
-msgid ""
-"Parent process %(orig)s forked (%(newproc)s) with an open database "
-"connection, which is being discarded and recreated."
-msgstr ""
-
-#: oslo_db/sqlalchemy/utils.py:127
 msgid "Id not in sort_keys; is sort_keys unique?"
 msgstr "Id n'est pas dans sort_keys; sort_keys est unique ?"

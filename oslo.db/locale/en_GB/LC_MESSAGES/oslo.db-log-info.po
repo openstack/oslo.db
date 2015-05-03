@@ -20,12 +20,10 @@ msgstr ""
 "Generated-By: Babel 1.3\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: oslo/db/sqlalchemy/provision.py:151 oslo/db/sqlalchemy/provision.py:162
 #, python-format
 msgid "The %(dbapi)s backend is unavailable: %(err)s"
 msgstr "The %(dbapi)s backend is unavailable: %(err)s"
 
-#: oslo/db/sqlalchemy/utils.py:415
 #, python-format
 msgid "Deleting duplicated row with id: %(id)s from table: %(table)s"
 msgstr "Deleting duplicated row with id: %(id)s from table: %(table)s"

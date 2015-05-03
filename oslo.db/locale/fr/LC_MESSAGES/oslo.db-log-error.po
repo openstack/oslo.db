@@ -20,33 +20,26 @@ msgstr ""
 "Generated-By: Babel 1.3\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: oslo_db/api.py:134
 msgid "DB exceeded retry limit."
 msgstr "DB limite de tentatives dépassé."
 
-#: oslo_db/api.py:142
 msgid "DB error."
 msgstr "Erreur DB."
 
-#: oslo_db/concurrency.py:64
 msgid "'eventlet' is required for TpoolDbapiWrapper."
 msgstr "'eventlet' est requis pour poolDbapiWrapper."
 
-#: oslo_db/sqlalchemy/exc_filters.py:292
 #, python-format
 msgid "DBAPIError exception wrapped from %s"
 msgstr "Exception DBAPIError enveloppé depuis %s"
 
-#: oslo_db/sqlalchemy/exc_filters.py:303
 msgid "DB exception wrapped."
 msgstr "DB exception enveloppé."
 
-#: oslo_db/sqlalchemy/test_migrations.py:271
 #, python-format
 msgid "Failed to migrate to version %(ver)s on engine %(eng)s"
 msgstr "Échec de migration de la version %(ver)s sur le moteur %(eng)s"
 
-#: oslo_db/sqlalchemy/migration_cli/ext_migrate.py:59
 msgid ""
 "Migration number for migrate plugin must be valid integer or empty, if you "
 "want to downgrade to initial state"
