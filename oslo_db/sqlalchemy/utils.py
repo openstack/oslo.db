@@ -147,10 +147,13 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
             raise ValueError(_("Unknown sort direction, "
                                "must be 'desc' or 'asc'"))
         try:
-            sort_key_attr = inspect(model).\
+            inspect(model).\
                 all_orm_descriptors[current_sort_key]
         except KeyError:
             raise exception.InvalidSortKey()
+        else:
+            sort_key_attr = getattr(model, current_sort_key)
+
         query = query.order_by(sort_dir_func(sort_key_attr))
 
     # Add pagination
