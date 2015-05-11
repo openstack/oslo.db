@@ -29,6 +29,8 @@ from sqlalchemy.engine import reflection
 from sqlalchemy.engine import url as sa_url
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import Session
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
@@ -72,6 +74,18 @@ class FakeTable(Base):
     user_id = Column(String(50), primary_key=True)
     project_id = Column(String(50))
     snapshot_id = Column(String(50))
+
+    # mox is comparing in some awkward way that
+    # in this case requires the same identity of object
+    _expr_to_appease_mox = project_id + snapshot_id
+
+    @hybrid_property
+    def some_hybrid(self):
+        raise NotImplementedError()
+
+    @some_hybrid.expression
+    def some_hybrid(cls):
+        return cls._expr_to_appease_mox
 
     def foo(self):
         pass
@@ -193,6 +207,41 @@ class TestPaginateQuery(test_base.BaseTestCase):
         self.assertRaises(ValueError, utils.paginate_query,
                           self.query, self.model, 5, ['user_id', 'project_id'],
                           marker=self.marker, sort_dirs=['asc', 'mixed'])
+
+    def test_paginate_on_hybrid(self):
+        sqlalchemy.asc(self.model.user_id).AndReturn('asc_1')
+        self.query.order_by('asc_1').AndReturn(self.query)
+
+        sqlalchemy.desc(self.model.some_hybrid).AndReturn('desc_1')
+        self.query.order_by('desc_1').AndReturn(self.query)
+
+        self.query.limit(5).AndReturn(self.query)
+        self.mox.ReplayAll()
+        utils.paginate_query(self.query, self.model, 5,
+                             ['user_id', 'some_hybrid'],
+                             sort_dirs=['asc', 'desc'])
+
+
+class TestPaginateQueryActualSQL(test_base.BaseTestCase):
+
+    def test_paginate_on_hybrid_assert_stmt(self):
+        s = Session()
+        q = s.query(FakeTable)
+        q = utils.paginate_query(
+            q, FakeTable, 5,
+            ['user_id', 'some_hybrid'],
+            sort_dirs=['asc', 'desc'])
+        expected_core_sql = (
+            select([FakeTable]).
+            order_by(sqlalchemy.asc(FakeTable.user_id)).
+            order_by(sqlalchemy.desc(FakeTable.some_hybrid)).
+            limit(5)
+        )
+
+        self.assertEqual(
+            str(q.statement.compile()),
+            str(expected_core_sql.compile())
+        )
 
 
 class TestMigrationUtils(db_test_base.DbTestCase):
