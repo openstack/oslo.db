@@ -40,7 +40,8 @@ class ModelBaseTest(test_base.DbTestCase):
                         'get',
                         'update',
                         'save',
-                        'iteritems')
+                        'iteritems',
+                        'keys')
         for method in dict_methods:
             self.assertTrue(hasattr(models.ModelBase, method),
                             "Method %s() is not found" % method)
@@ -80,6 +81,18 @@ class ModelBaseTest(test_base.DbTestCase):
         self.ekm.update(h)
         self.assertEqual(dict(self.ekm.iteritems()), expected)
 
+    def test_modelbase_dict(self):
+        h = {'a': '1', 'b': '2'}
+        expected = {
+            'id': None,
+            'smth': None,
+            'name': 'NAME',
+            'a': '1',
+            'b': '2',
+        }
+        self.ekm.update(h)
+        self.assertEqual(dict(self.ekm), expected)
+
     def test_modelbase_iter(self):
         expected = {
             'id': None,
@@ -96,6 +109,14 @@ class ModelBaseTest(test_base.DbTestCase):
             found_items += 1
 
         self.assertEqual(len(expected), found_items)
+
+    def test_modelbase_keys(self):
+        self.assertEqual(set(self.ekm.keys()),
+                         set(('id', 'smth', 'name')))
+
+        self.ekm.update({'a': '1', 'b': '2'})
+        self.assertEqual(set(self.ekm.keys()),
+                         set(('a', 'b', 'id', 'smth', 'name')))
 
     def test_modelbase_several_iters(self):
         mb = ExtraKeysModel()

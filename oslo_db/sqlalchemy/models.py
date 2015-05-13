@@ -90,14 +90,18 @@ class ModelBase(six.Iterator):
 
         Includes attributes from joins.
         """
-        local = dict(self)
+        local = dict((key, value) for key, value in self)
         joined = dict([(k, v) for k, v in six.iteritems(self.__dict__)
                       if not k[0] == '_'])
         local.update(joined)
         return six.iteritems(local)
 
+    def keys(self):
+        """Make the model object behave like a dict."""
+        return [key for key, value in self.iteritems()]
 
-class ModelIterator(ModelBase, six.Iterator):
+
+class ModelIterator(six.Iterator):
 
     def __init__(self, model, columns):
         self.model = model
