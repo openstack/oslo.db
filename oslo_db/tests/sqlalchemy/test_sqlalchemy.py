@@ -558,7 +558,7 @@ class CreateEngineTest(oslo_test.BaseTestCase):
 
     def test_queuepool_args(self):
         engines._init_connection_args(
-            url.make_url("mysql://u:p@host/test"), self.args,
+            url.make_url("mysql+pymysql://u:p@host/test"), self.args,
             max_pool_size=10, max_overflow=10)
         self.assertEqual(self.args['pool_size'], 10)
         self.assertEqual(self.args['max_overflow'], 10)
@@ -608,6 +608,12 @@ class CreateEngineTest(oslo_test.BaseTestCase):
             url.make_url("mysql+oursql://u:p@host/test"), self.args)
         self.assertEqual(self.args['connect_args'],
                          {'charset': 'utf8', 'use_unicode': 0})
+
+    def test_mysql_pymysql_connect_args_default(self):
+        engines._init_connection_args(
+            url.make_url("mysql+pymysql://u:p@host/test"), self.args)
+        self.assertEqual(self.args['connect_args'],
+                         {'charset': 'utf8'})
 
     def test_mysql_mysqldb_connect_args_default(self):
         engines._init_connection_args(

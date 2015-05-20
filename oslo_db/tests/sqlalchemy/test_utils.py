@@ -912,8 +912,10 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
         dispatcher = orig = utils.dispatch_for_dialect("*")(
             callable_fn.default)
         dispatcher = dispatcher.dispatch_for("sqlite")(callable_fn.sqlite)
-        dispatcher = dispatcher.dispatch_for("mysql+mysqldb")(
-            callable_fn.mysql_mysqldb)
+        dispatcher = dispatcher.dispatch_for("mysql+pymysql")(
+            callable_fn.mysql_pymysql)
+        dispatcher = dispatcher.dispatch_for("mysql")(
+            callable_fn.mysql)
         dispatcher = dispatcher.dispatch_for("postgresql")(
             callable_fn.postgresql)
 
@@ -927,7 +929,8 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
         for targ in [
             callable_fn.default,
             callable_fn.sqlite,
-            callable_fn.mysql_mysqldb,
+            callable_fn.mysql,
+            callable_fn.mysql_pymysql,
             callable_fn.postgresql,
             callable_fn.postgresql_psycopg2,
             callable_fn.pyodbc
@@ -937,8 +940,10 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
         dispatcher = orig = utils.dispatch_for_dialect("*", multiple=True)(
             callable_fn.default)
         dispatcher = dispatcher.dispatch_for("sqlite")(callable_fn.sqlite)
-        dispatcher = dispatcher.dispatch_for("mysql+mysqldb")(
-            callable_fn.mysql_mysqldb)
+        dispatcher = dispatcher.dispatch_for("mysql+pymysql")(
+            callable_fn.mysql_pymysql)
+        dispatcher = dispatcher.dispatch_for("mysql")(
+            callable_fn.mysql)
         dispatcher = dispatcher.dispatch_for("postgresql+*")(
             callable_fn.postgresql)
         dispatcher = dispatcher.dispatch_for("postgresql+psycopg2")(
@@ -955,15 +960,17 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
         dispatcher, callable_fn = self._single_fixture()
         dispatcher("sqlite://", 1)
         dispatcher("postgresql+psycopg2://u:p@h/t", 2)
-        dispatcher("mysql://u:p@h/t", 3)
-        dispatcher("mysql+mysqlconnector://u:p@h/t", 4)
+        dispatcher("mysql+pymysql://u:p@h/t", 3)
+        dispatcher("mysql://u:p@h/t", 4)
+        dispatcher("mysql+mysqlconnector://u:p@h/t", 5)
 
         self.assertEqual(
             [
                 mock.call.sqlite('sqlite://', 1),
                 mock.call.postgresql("postgresql+psycopg2://u:p@h/t", 2),
-                mock.call.mysql_mysqldb("mysql://u:p@h/t", 3),
-                mock.call.default("mysql+mysqlconnector://u:p@h/t", 4)
+                mock.call.mysql_pymysql("mysql+pymysql://u:p@h/t", 3),
+                mock.call.mysql("mysql://u:p@h/t", 4),
+                mock.call.mysql("mysql+mysqlconnector://u:p@h/t", 5),
             ],
             callable_fn.mock_calls)
 
@@ -1081,10 +1088,10 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
 
     def test_single_retval(self):
         dispatcher, callable_fn = self._single_fixture()
-        callable_fn.mysql_mysqldb.return_value = 5
+        callable_fn.mysql_pymysql.return_value = 5
 
         self.assertEqual(
-            dispatcher("mysql://u:p@h/t", 3), 5
+            dispatcher("mysql+pymysql://u:p@h/t", 3), 5
         )
 
     def test_engine(self):
@@ -1097,14 +1104,25 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
             callable_fn.mock_calls
         )
 
-    def test_url(self):
+    def test_url_pymysql(self):
         url = sqlalchemy.engine.url.make_url(
-            "mysql+mysqldb://scott:tiger@localhost/test")
+            "mysql+pymysql://scott:tiger@localhost/test")
         dispatcher, callable_fn = self._single_fixture()
 
         dispatcher(url, 15)
         self.assertEqual(
-            [mock.call.mysql_mysqldb(url, 15)],
+            [mock.call.mysql_pymysql(url, 15)],
+            callable_fn.mock_calls
+        )
+
+    def test_url_mysql_generic(self):
+        url = sqlalchemy.engine.url.make_url(
+            "mysql://scott:tiger@localhost/test")
+        dispatcher, callable_fn = self._single_fixture()
+
+        dispatcher(url, 15)
+        self.assertEqual(
+            [mock.call.mysql(url, 15)],
             callable_fn.mock_calls
         )
 
@@ -1149,9 +1167,10 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
         dispatcher, callable_fn = self._multiple_fixture()
 
         dispatcher("postgresql+pyodbc://", 1)
-        dispatcher("mysql://", 2)
+        dispatcher("mysql+pymysql://", 2)
         dispatcher("ibm_db_sa+db2://", 3)
         dispatcher("postgresql+psycopg2://", 4)
+        dispatcher("postgresql://", 5)
 
         # TODO(zzzeek): there is a deterministic order here, but we might
         # want to tweak it, or maybe provide options.  default first?
@@ -1161,12 +1180,18 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
                 mock.call.postgresql('postgresql+pyodbc://', 1),
                 mock.call.pyodbc('postgresql+pyodbc://', 1),
                 mock.call.default('postgresql+pyodbc://', 1),
-                mock.call.mysql_mysqldb('mysql://', 2),
-                mock.call.default('mysql://', 2),
+                mock.call.mysql_pymysql('mysql+pymysql://', 2),
+                mock.call.mysql('mysql+pymysql://', 2),
+                mock.call.default('mysql+pymysql://', 2),
                 mock.call.default('ibm_db_sa+db2://', 3),
                 mock.call.postgresql_psycopg2('postgresql+psycopg2://', 4),
                 mock.call.postgresql('postgresql+psycopg2://', 4),
                 mock.call.default('postgresql+psycopg2://', 4),
+                # note this is called because we resolve the default
+                # DBAPI for the url
+                mock.call.postgresql_psycopg2('postgresql://', 5),
+                mock.call.postgresql('postgresql://', 5),
+                mock.call.default('postgresql://', 5),
             ],
             callable_fn.mock_calls
         )

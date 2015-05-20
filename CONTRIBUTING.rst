@@ -26,12 +26,15 @@ How to run unit tests
 oslo.db (as all OpenStack projects) uses tox to run unit tests. You can find
 general information about OpenStack unit tests and testing with tox in wiki_.
 
-oslo.db tests use MySQL-python as the default MySQL DB API driver (which is
-true for OpenStack), and psycopg2 for PostgreSQL. pip will build these libs in
-your venv, so you must ensure that you have the required system packages
-installed.  For Ubuntu/Debian they are python-dev, libmysqlclient-dev and
-libpq-dev.  For Fedora/CentOS - gcc, python-devel, postgresql-devel and
-mysql-devel.
+oslo.db tests use PyMySQL as the default MySQL DB API driver (which is true for
+OpenStack), and psycopg2 for PostgreSQL. pip will build these libs in your
+venv, so you must ensure that you have the required system packages installed
+for psycopg2 (PyMySQL is a pure-Python implementation and so needs no
+additional system packages).  For Ubuntu/Debian they are python-dev, and
+libpq-dev.  For Fedora/CentOS - gcc, python-devel and postgresql-devel.
+There is also a separate env for testing with MySQL-python. If you are suppose
+to run these tests as well, you need to install libmysqlclient-dev on Ubuntu/Debian
+or mysql-devel for Fedora/CentOS.
 
 The oslo.db unit tests system allows to run unittests on real databases. At the
 moment it supports MySQL, PostgreSQL and SQLite.

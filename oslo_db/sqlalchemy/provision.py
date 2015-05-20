@@ -455,7 +455,7 @@ class MySQLBackendImpl(BackendImpl):
     default_engine_kwargs = {'mysql_sql_mode': 'TRADITIONAL'}
 
     def create_opportunistic_driver_url(self):
-        return "mysql://openstack_citest:openstack_citest@localhost/"
+        return "mysql+pymysql://openstack_citest:openstack_citest@localhost/"
 
     def create_named_database(self, engine, ident, conditional=False):
         with engine.connect() as conn:

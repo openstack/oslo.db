@@ -46,7 +46,16 @@ class _SQLAExceptionMatcher(object):
             self.assertTrue(issubclass(exc.__class__, exception_type))
         else:
             self.assertEqual(exc.__class__.__name__, exception_type)
-        self.assertEqual(str(exc.orig).lower(), message.lower())
+        if isinstance(message, tuple):
+            self.assertEqual(
+                [a.lower()
+                 if isinstance(a, six.string_types) else a
+                 for a in exc.orig.args],
+                [m.lower()
+                 if isinstance(m, six.string_types) else m for m in message]
+            )
+        else:
+            self.assertEqual(str(exc.orig).lower(), message.lower())
         if sql is not None:
             self.assertEqual(exc.statement, sql)
         if params is not None:
@@ -362,10 +371,10 @@ class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
         self.assertInnerException(
             matched,
             "IntegrityError",
-            "(1452, 'Cannot add or update a child row: a "
-            "foreign key constraint fails (`{0}`.`resource_entity`, "
-            "CONSTRAINT `foo_fkey` FOREIGN KEY (`foo_id`) REFERENCES "
-            "`resource_foo` (`id`))')".format(self.engine.url.database),
+            (1452, "Cannot add or update a child row: a "
+             "foreign key constraint fails (`{0}`.`resource_entity`, "
+             "CONSTRAINT `foo_fkey` FOREIGN KEY (`foo_id`) REFERENCES "
+             "`resource_foo` (`id`))".format(self.engine.url.database)),
             "INSERT INTO resource_entity (id, foo_id) VALUES (%s, %s)",
             (1, 2)
         )
@@ -390,10 +399,13 @@ class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
         self.assertInnerException(
             matched,
             "IntegrityError",
-            '(1452, \'Cannot add or update a child row: a '
-            'foreign key constraint fails ("{0}"."resource_entity", '
-            'CONSTRAINT "foo_fkey" FOREIGN KEY ("foo_id") REFERENCES '
-            '"resource_foo" ("id"))\')'.format(self.engine.url.database),
+            (
+                1452,
+                'Cannot add or update a child row: a '
+                'foreign key constraint fails ("{0}"."resource_entity", '
+                'CONSTRAINT "foo_fkey" FOREIGN KEY ("foo_id") REFERENCES '
+                '"resource_foo" ("id"))'.format(self.engine.url.database)
+            ),
             "INSERT INTO resource_entity (id, foo_id) VALUES (%s, %s)",
             (1, 2)
         )
@@ -414,11 +426,14 @@ class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
         self.assertInnerException(
             matched,
             "IntegrityError",
-            "(1451, 'cannot delete or update a parent row: a foreign key "
-            "constraint fails (`{0}`.`resource_entity`, "
-            "constraint `foo_fkey` "
-            "foreign key (`foo_id`) references "
-            "`resource_foo` (`id`))')".format(self.engine.url.database),
+            (
+                1451,
+                "Cannot delete or update a parent row: a foreign key "
+                "constraint fails (`{0}`.`resource_entity`, "
+                "constraint `foo_fkey` "
+                "foreign key (`foo_id`) references "
+                "`resource_foo` (`id`))".format(self.engine.url.database)
+            ),
             "DELETE FROM resource_foo",
             (),
         )
@@ -483,7 +498,7 @@ class TestDuplicate(TestsExceptionFilter):
             "PRIMARY KEY must be unique 'insert into t values(10)'",
             expected_columns=[])
 
-    def test_mysql_mysqldb(self):
+    def test_mysql_pymysql(self):
         self._run_dupe_constraint_test(
             "mysql",
             '(1062, "Duplicate entry '
@@ -606,7 +621,7 @@ class TestDeadlock(TestsExceptionFilter):
 
         self.assertEqual(matched.orig.__class__.__name__, expected_dbapi_cls)
 
-    def test_mysql_mysqldb_deadlock(self):
+    def test_mysql_pymysql_deadlock(self):
         self._run_deadlock_detect_test(
             "mysql",
             "(1213, 'Deadlock found when trying "
@@ -614,7 +629,7 @@ class TestDeadlock(TestsExceptionFilter):
             "transaction')"
         )
 
-    def test_mysql_mysqldb_galera_deadlock(self):
+    def test_mysql_pymysql_galera_deadlock(self):
         self._run_deadlock_detect_test(
             "mysql",
             "(1205, 'Lock wait timeout exceeded; "
