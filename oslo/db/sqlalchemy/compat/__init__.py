@@ -12,6 +12,5 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_db.sqlalchemy.compat import engine_connect  # noqa
 from oslo_db.sqlalchemy.compat import handle_error  # noqa
 from oslo_db.sqlalchemy.compat import utils  # noqa

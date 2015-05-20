@@ -16,13 +16,10 @@ added at some point but for which oslo.db provides a compatible versions
 for previous SQLAlchemy versions.
 
 """
-from oslo_db.sqlalchemy.compat import engine_connect as _e_conn
 from oslo_db.sqlalchemy.compat import handle_error as _h_err
 
 # trying to get: "from oslo_db.sqlalchemy import compat; compat.handle_error"
 # flake8 won't let me import handle_error directly
-engine_connect = _e_conn.engine_connect
 handle_error = _h_err.handle_error
 
-__all__ = [
-    'engine_connect', 'handle_error']
+__all__ = ['handle_error']

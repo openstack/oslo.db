@@ -286,6 +286,7 @@ import time
 
 from oslo_utils import timeutils
 import six
+from sqlalchemy import event
 from sqlalchemy import exc
 import sqlalchemy.orm
 from sqlalchemy import pool
@@ -295,7 +296,6 @@ from sqlalchemy.sql.expression import select
 from oslo_db._i18n import _LW
 from oslo_db import exception
 from oslo_db import options
-from oslo_db.sqlalchemy import compat
 from oslo_db.sqlalchemy import exc_filters
 from oslo_db.sqlalchemy import update_match
 from oslo_db.sqlalchemy import utils
@@ -408,7 +408,7 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     exc_filters.register_engine(engine)
 
     # register engine connect handler
-    compat.engine_connect(engine, _connect_ping_listener)
+    event.listen(engine, "engine_connect", _connect_ping_listener)
 
     # initial connect + test
     _test_connection(engine, max_retries, retry_interval)
