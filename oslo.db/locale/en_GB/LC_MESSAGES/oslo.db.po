@@ -1,5 +1,5 @@
 # English (United Kingdom) translations for oslo.db.
-# Copyright (C) 2014 ORGANIZATION
+# Copyright (C) 2015 ORGANIZATION
 # This file is distributed under the same license as the oslo.db project.
 #
 # Translators:
@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  oslo.db\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2014-09-12 06:00+0000\n"
+"POT-Creation-Date: 2015-05-28 06:14+0000\n"
 "PO-Revision-Date: 2014-09-02 09:18+0000\n"
 "Last-Translator: Andi Chandler <andi@gowling.com>\n"
 "Language-Team: English (United Kingdom) (http://www.transifex.com/projects/p/"
@@ -22,11 +22,16 @@ msgstr ""
 msgid "Invalid Parameter: Encoding directive wasn't provided."
 msgstr "Invalid Parameter: Encoding directive wasn't provided."
 
+#, python-format
+msgid ""
+"Please specify column %s in col_name_col_instance param. It is required "
+"because column has unsupported type by SQLite."
+msgstr ""
+"Please specify column %s in col_name_col_instance param. It is required "
+"because column has unsupported type by SQLite."
+
 msgid "Sort key supplied was not valid."
 msgstr "Sort key supplied was not valid."
-
-msgid "version should be an integer"
-msgstr "version should be an integer"
 
 #, python-format
 msgid ""
@@ -42,9 +47,6 @@ msgid ""
 msgstr ""
 "The database is not under version control, but has tables. Please stamp the "
 "current version of the schema manually."
-
-msgid "Unknown sort direction, must be 'desc' or 'asc'"
-msgstr "Unknown sort direction, must be 'desc' or 'asc'"
 
 #, python-format
 msgid ""
@@ -58,24 +60,22 @@ msgstr ""
 msgid "There is no `project_id` column in `%s` table."
 msgstr "There is no `project_id` column in `%s` table."
 
-msgid "model should be a subclass of ModelBase"
-msgstr "model should be a subclass of ModelBase"
-
-#, python-format
-msgid ""
-"Please specify column %s in col_name_col_instance param. It is required "
-"because column has unsupported type by SQLite."
-msgstr ""
-"Please specify column %s in col_name_col_instance param. It is required "
-"because column has unsupported type by SQLite."
-
-#, python-format
-msgid ""
-"col_name_col_instance param has wrong type of column instance for column %s "
-"It should be instance of sqlalchemy.Column."
-msgstr ""
-"col_name_col_instance param has wrong type of column instance for column %s "
-"It should be instance of sqlalchemy.Column."
+msgid "Unknown sort direction, must be 'desc' or 'asc'"
+msgstr "Unknown sort direction, must be 'desc' or 'asc'"
 
 msgid "Unsupported id columns type"
 msgstr "Unsupported id columns type"
+
+#, python-format
+msgid ""
+"col_name_col_instance param has wrong type of column instance for column %s "
+"It should be instance of sqlalchemy.Column."
+msgstr ""
+"col_name_col_instance param has wrong type of column instance for column %s "
+"It should be instance of sqlalchemy.Column."
+
+msgid "model should be a subclass of ModelBase"
+msgstr "model should be a subclass of ModelBase"
+
+msgid "version should be an integer"
+msgstr "version should be an integer"
