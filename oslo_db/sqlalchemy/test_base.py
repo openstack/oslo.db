@@ -49,9 +49,10 @@ class DbFixture(fixtures.Fixture):
     # are referring to them directly.
     DBNAME = PASSWORD = USERNAME = 'openstack_citest'
 
-    def __init__(self, test):
+    def __init__(self, test, skip_on_unavailable_db=True):
         super(DbFixture, self).__init__()
         self.test = test
+        self.skip_on_unavailable_db = skip_on_unavailable_db
 
     def setUp(self):
         super(DbFixture, self).setUp()
@@ -63,7 +64,11 @@ class DbFixture(fixtures.Fixture):
             self.test, self.test.resources, testresources._get_result()
         )
         if not hasattr(self.test, 'db'):
-            self.test.skip("database '%s' unavailable" % self.DRIVER)
+            msg = "database '%s' unavailable" % self.DRIVER
+            if self.skip_on_unavailable_db:
+                self.test.skip(msg)
+            else:
+                self.test.fail(msg)
 
         if self.test.SCHEMA_SCOPE:
             self.test.engine = self.test.transaction_engine
@@ -83,6 +88,7 @@ class DbTestCase(test_base.BaseTestCase):
 
     FIXTURE = DbFixture
     SCHEMA_SCOPE = None
+    SKIP_ON_UNAVAILABLE_DB = True
 
     _schema_resources = {}
     _database_resources = {}
@@ -144,7 +150,9 @@ class DbTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(DbTestCase, self).setUp()
-        self.useFixture(self.FIXTURE(self))
+        self.useFixture(
+            self.FIXTURE(
+                self, skip_on_unavailable_db=self.SKIP_ON_UNAVAILABLE_DB))
 
     def generate_schema(self, engine):
         """Generate schema objects to be used within a test.
