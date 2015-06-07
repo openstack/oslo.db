@@ -25,12 +25,13 @@ except ImportError:
 
 
 import os
+
+from oslo_utils import reflection
 import six
 
 from oslo_db import exception
 from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import session
-from oslo_db.sqlalchemy import utils
 
 
 class DbFixture(fixtures.Fixture):
@@ -192,7 +193,7 @@ def backend_specific(*dialects):
             if self.engine.name not in dialects:
                 msg = ('The test "%s" can be run '
                        'only on %s. Current engine is %s.')
-                args = (utils.get_callable_name(f), ' '.join(dialects),
+                args = (reflection.get_callable_name(f), ' '.join(dialects),
                         self.engine.name)
                 self.skip(msg % args)
             else:
