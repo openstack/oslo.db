@@ -2,11 +2,11 @@
  oslo.db
 =========
 
-.. image:: https://pypip.in/version/oslo.db/badge.svg
+.. image:: https://img.shields.io/pypi/v/oslo.db.svg
     :target: https://pypi.python.org/pypi/oslo.db/
     :alt: Latest Version
 
-.. image:: https://pypip.in/download/oslo.db/badge.svg?period=month
+.. image:: https://img.shields.io/pypi/dm/oslo.db.svg
     :target: https://pypi.python.org/pypi/oslo.db/
     :alt: Downloads
 
