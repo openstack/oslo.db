@@ -7,26 +7,91 @@ To use oslo.db in a project:
 Session Handling
 ================
 
+Session handling is achieved using the :mod:`oslo_db.sqlalchemy.enginefacade`
+system.   This module presents a function decorator as well as a
+context manager approach to delivering :class:`.Session` as well as
+:class:`.Connection` objects to a function or block.
+
+Both calling styles require the use of a context object.   This object may
+be of any class, though when used with the decorator form, requires
+special instrumentation.
+
+The context manager form is as follows:
+
 .. code:: python
 
-    from oslo.config import cfg
-    from oslo.db.sqlalchemy import session as db_session
 
-    _FACADE = None
+    from oslo_db.sqlalchemy import enginefacade
 
-    def _create_facade_lazily():
-        global _FACADE
-        if _FACADE is None:
-            _FACADE = db_session.EngineFacade.from_config(cfg.CONF)
-        return _FACADE
 
-    def get_engine():
-        facade = _create_facade_lazily()
-        return facade.get_engine()
+    class MyContext(object):
+        "User-defined context class."
 
-    def get_session(**kwargs):
-        facade = _create_facade_lazily()
-        return facade.get_session(**kwargs)
+
+    def some_reader_api_function(context):
+        with enginefacade.reader.using(context) as session:
+            return session.query(SomeClass).all()
+
+
+    def some_writer_api_function(context, x, y):
+        with enginefacade.writer.using(context) as session:
+            session.add(SomeClass(x, y))
+
+
+    def run_some_database_calls():
+        context = MyContext()
+
+        results = some_reader_api_function(context)
+        some_writer_api_function(context, 5, 10)
+
+
+The decorator form accesses attributes off the user-defined context
+directly; the context must be decorated with the
+:func:`oslo_db.sqlalchemy.enginefacade.transaction_context_provider`
+decorator.   Each function must receive the context as the first
+positional argument:
+
+.. code:: python
+
+
+    from oslo_db.sqlalchemy import enginefacade
+
+    @enginefacade.transaction_context_provider
+    class MyContext(object):
+        "User-defined context class."
+
+    @enginefacade.reader
+    def some_reader_api_function(context):
+        return context.session.query(SomeClass).all()
+
+
+    @enginefacade.writer
+    def some_writer_api_function(context, x, y):
+        context.session.add(SomeClass(x, y))
+
+
+    def run_some_database_calls():
+        context = MyContext()
+
+        results = some_reader_api_function(context)
+        some_writer_api_function(context, 5, 10)
+
+The scope of transaction and connectivity for both approaches is managed
+transparently.   The configuration for the connection comes from the standard
+:obj:`oslo_config.cfg.CONF` collection.  Additional configurations can be
+established for the enginefacade using the
+:func:`oslo_db.sqlalchemy.enginefacade.configure` function, before any use of
+the database begins:
+
+.. code:: python
+
+    from oslo_db.sqlalchemy import enginefacade
+
+    enginefacade.configure(
+        sqlite_fk=True,
+        max_retries=5,
+        mysql_sql_mode='ANSI'
+    )
 
 
 Base class for models usage

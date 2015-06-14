@@ -29,11 +29,11 @@ from sqlalchemy import Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
 from oslo.db import exception
+from oslo.db import options as db_options
 from oslo.db.sqlalchemy import models
 from oslo.db.sqlalchemy import session
 from oslo.db.sqlalchemy import test_base
-from oslo_db import options as db_options
-from oslo_db.sqlalchemy import session as private_session
+from oslo_db.sqlalchemy import engines
 
 
 BASE = declarative_base()
@@ -300,8 +300,8 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
         self.assertFalse(ses.autocommit)
         self.assertTrue(ses.expire_on_commit)
 
-    @mock.patch('oslo_db.sqlalchemy.session.get_maker')
-    @mock.patch('oslo_db.sqlalchemy.session.create_engine')
+    @mock.patch('oslo_db.sqlalchemy.orm.get_maker')
+    @mock.patch('oslo_db.sqlalchemy.engines.create_engine')
     def test_creation_from_config(self, create_engine, get_maker):
         conf = cfg.ConfigOpts()
         conf.register_opts(db_options.database_opts, group='database')
@@ -338,6 +338,42 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
         get_maker.assert_called_once_with(engine=create_engine(),
                                           autocommit=False,
                                           expire_on_commit=True)
+
+    @mock.patch('oslo_db.sqlalchemy.orm.get_maker')
+    @mock.patch('oslo_db.sqlalchemy.engines.create_engine')
+    def test_passed_in_url_overrides_conf(self, create_engine, get_maker):
+        conf = cfg.ConfigOpts()
+        conf.register_opts(db_options.database_opts, group='database')
+
+        overrides = {
+            'connection': 'sqlite:///conf_db_setting',
+            'connection_debug': 100,
+            'max_pool_size': 10,
+            'mysql_sql_mode': 'TRADITIONAL',
+        }
+        for optname, optvalue in overrides.items():
+            conf.set_override(optname, optvalue, group='database')
+
+        session.EngineFacade(
+            "sqlite:///override_sql",
+            **dict(conf.database.items())
+        )
+
+        create_engine.assert_called_once_with(
+            sql_connection='sqlite:///override_sql',
+            connection_debug=100,
+            max_pool_size=10,
+            mysql_sql_mode='TRADITIONAL',
+            sqlite_fk=False,
+            idle_timeout=mock.ANY,
+            retry_interval=mock.ANY,
+            max_retries=mock.ANY,
+            max_overflow=mock.ANY,
+            connection_trace=mock.ANY,
+            sqlite_synchronous=mock.ANY,
+            pool_timeout=mock.ANY,
+            thread_checkin=mock.ANY,
+        )
 
     def test_slave_connection(self):
         paths = self.create_tempfiles([('db.master', ''), ('db.slave', '')],
@@ -483,9 +519,7 @@ class MysqlConnectTest(test_base.MySQLOpportunisticTestCase):
                 )
             )
         ):
-            private_session._init_events.dispatch_on_drivername("mysql")(
-                test_engine
-            )
+            engines._init_events.dispatch_on_drivername("mysql")(test_engine)
 
             test_engine.raw_connection()
         self.assertIn('Unable to detect effective SQL mode',
@@ -553,7 +587,7 @@ class PatchStacktraceTest(test_base.DbTestCase):
 
         with mock.patch("traceback.extract_stack", side_effect=extract_stack):
 
-            private_session._add_trace_comments(engine)
+            engines._add_trace_comments(engine)
             conn = engine.connect()
             with mock.patch.object(engine.dialect, "do_execute") as mock_exec:
 
