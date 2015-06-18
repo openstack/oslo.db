@@ -23,7 +23,7 @@ Recommended ways to use sessions within this framework:
 
   .. code-block:: python
 
-    from oslo.db.sqlalchemy import enginefacade
+    from oslo_db.sqlalchemy import enginefacade
 
     @enginefacade.reader
     def get_foo(context, foo):

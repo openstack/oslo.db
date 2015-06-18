@@ -21,7 +21,7 @@ import logging
 
 import fixtures
 import mock
-from oslo.config import cfg
+from oslo_config import cfg
 from oslotest import base as oslo_test
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table

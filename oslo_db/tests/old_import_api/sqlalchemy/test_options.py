@@ -11,8 +11,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo.config import cfg
-from oslo.config import fixture as config
+from oslo_config import cfg
+from oslo_config import fixture as config
 
 from oslo.db import options
 from oslo_db.tests.old_import_api import utils as test_utils

@@ -234,7 +234,7 @@ def optimize_db_test_loader(file_):
     Place this in an __init__.py package file within the root of the test
     suite, at the level where testresources loads it as a package::
 
-        from oslo.db.sqlalchemy import test_base
+        from oslo_db.sqlalchemy import test_base
 
         load_tests = test_base.optimize_db_test_loader(__file__)
 
