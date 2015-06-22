@@ -24,10 +24,10 @@ API methods.
 """
 
 import logging
-import sys
 import threading
 import time
 
+from oslo_utils import excutils
 from oslo_utils import importutils
 import six
 
@@ -100,14 +100,20 @@ class wrap_db_retry(object):
 
     :param max_retry_interval: max interval value between retries
     :type max_retry_interval: int
+
+    :param exception_checker: checks if an exception should trigger a retry
+    :type exception_checker: callable
     """
 
     def __init__(self, retry_interval=0, max_retries=0, inc_retry_interval=0,
                  max_retry_interval=0, retry_on_disconnect=False,
-                 retry_on_deadlock=False, retry_on_request=False):
+                 retry_on_deadlock=False, retry_on_request=False,
+                 exception_checker=lambda exc: False):
         super(wrap_db_retry, self).__init__()
 
         self.db_error = ()
+        # default is that we re-raise anything unexpected
+        self.exception_checker = exception_checker
         if retry_on_disconnect:
             self.db_error += (exception.DBConnectionError, )
         if retry_on_deadlock:
@@ -124,26 +130,20 @@ class wrap_db_retry(object):
         def wrapper(*args, **kwargs):
             next_interval = self.retry_interval
             remaining = self.max_retries
-            db_error = self.db_error
 
             while True:
                 try:
                     return f(*args, **kwargs)
-                except db_error as e:
-                    if remaining == 0:
-                        LOG.exception(_LE('DB exceeded retry limit.'))
-                        if isinstance(e, exception.RetryRequest):
-                            six.reraise(type(e.inner_exc),
-                                        e.inner_exc,
-                                        sys.exc_info()[2])
-                        raise e
-                    if remaining != -1:
-                        remaining -= 1
-                        # RetryRequest is application-initated exception
-                        # and not an error condition in case retries are
-                        # not exceeded
-                        if not isinstance(e, exception.RetryRequest):
-                            LOG.exception(_LE('DB error.'))
+                except Exception as e:
+                    with excutils.save_and_reraise_exception() as ectxt:
+                        if remaining > 0:
+                            ectxt.reraise = not self._is_exception_expected(e)
+                        else:
+                            LOG.exception(_LE('DB exceeded retry limit.'))
+                            # if it's a RetryRequest, we need to unpack it
+                            if isinstance(e, exception.RetryRequest):
+                                ectxt.type_ = type(e.inner_exc)
+                                ectxt.value = e.inner_exc
                     # NOTE(vsergeyev): We are using patched time module, so
                     #                  this effectively yields the execution
                     #                  context to another green thread.
@@ -153,7 +153,19 @@ class wrap_db_retry(object):
                             next_interval * 2,
                             self.max_retry_interval
                         )
+                    remaining -= 1
+
         return wrapper
+
+    def _is_exception_expected(self, exc):
+        if isinstance(exc, self.db_error):
+            # RetryRequest is application-initated exception
+            # and not an error condition in case retries are
+            # not exceeded
+            if not isinstance(exc, exception.RetryRequest):
+                LOG.exception(_LE('DB error.'))
+            return True
+        return self.exception_checker(exc)
 
 
 class DBAPI(object):
