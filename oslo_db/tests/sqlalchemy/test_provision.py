@@ -15,8 +15,8 @@ from sqlalchemy import inspect
 from sqlalchemy import schema
 from sqlalchemy import types
 
-from oslo.db import exception
-from oslo.db.sqlalchemy import provision
+from oslo_db import exception
+from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import test_base
 
 
