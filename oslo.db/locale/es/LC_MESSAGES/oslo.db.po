@@ -1,0 +1,81 @@
+# Spanish translations for oslo.db.
+# Copyright (C) 2015 ORGANIZATION
+# This file is distributed under the same license as the oslo.db project.
+#
+# Translators:
+# Adriana Chisco Landazábal <achisco94@gmail.com>, 2015
+msgid ""
+msgstr ""
+"Project-Id-Version:  oslo.db\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2015-06-24 06:21+0000\n"
+"PO-Revision-Date: 2015-06-22 21:21+0000\n"
+"Last-Translator: Adriana Chisco Landazábal <achisco94@gmail.com>\n"
+"Language-Team: Spanish (http://www.transifex.com/projects/p/oslodb/language/"
+"es/)\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 1.3\n"
+
+msgid "Invalid Parameter: Encoding directive wasn't provided."
+msgstr "Parámetro no válido: No se proporcionó directiva de codificación."
+
+#, python-format
+msgid ""
+"Please specify column %s in col_name_col_instance param. It is required "
+"because column has unsupported type by SQLite."
+msgstr ""
+"Por favor especifique la columna %s en el parámetro col_name_col_instance. "
+"Es necesario porque la columna tiene un tipo no soportado por SQLite."
+
+msgid "Sort key supplied was not valid."
+msgstr "La clave de ordenación proporcionada no es válida. "
+
+#, python-format
+msgid ""
+"Tables \"%s\" have non utf8 collation, please make sure all tables are "
+"CHARSET=utf8"
+msgstr ""
+"Las tablas \"%s\" no tienen una colación utf8, por favor asegúrese de que "
+"todas las tablas sean CHARSET=utf8"
+
+msgid ""
+"The database is not under version control, but has tables. Please stamp the "
+"current version of the schema manually."
+msgstr ""
+"La base de datos no está bajo el control de la versión, pero tiene tablas. "
+"Por favor indique manualmente la versión actual del esquema."
+
+#, python-format
+msgid ""
+"There is no `deleted` column in `%s` table. Project doesn't use soft-deleted "
+"feature."
+msgstr ""
+"No existe la columna `deleted` en la tabla `%s`. El projecto no utiliza la "
+"característica de eliminación suave."
+
+#, python-format
+msgid "There is no `project_id` column in `%s` table."
+msgstr "No existe la columna `project_id` en la tabla `%s`."
+
+msgid "Unknown sort direction, must be 'desc' or 'asc'"
+msgstr "Dirección de ordenación desconocida, debe ser 'desc' o ' asc'"
+
+msgid "Unsupported id columns type"
+msgstr "Tipo de identificador de columnas no soportado"
+
+#, python-format
+msgid ""
+"col_name_col_instance param has wrong type of column instance for column %s "
+"It should be instance of sqlalchemy.Column."
+msgstr ""
+"El parámetro col_name_col_instance contiene el tipo incorrecto de instancia "
+"de columna para la columna %s. Debe ser una instancia de  sqlalchemy.Column."
+
+msgid "model should be a subclass of ModelBase"
+msgstr "el modelo debe ser una subclase del ModelBase"
+
+msgid "version should be an integer"
+msgstr "la versión debe ser un entero"
