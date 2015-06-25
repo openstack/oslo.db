@@ -54,7 +54,15 @@ class ModelBase(six.Iterator):
         return getattr(self, key)
 
     def __contains__(self, key):
-        return hasattr(self, key)
+        # Don't use hasattr() because hasattr() catches any exception, not only
+        # AttributeError. We want to passthrough SQLAlchemy exceptions
+        # (ex: sqlalchemy.orm.exc.DetachedInstanceError).
+        try:
+            getattr(self, key)
+        except AttributeError:
+            return False
+        else:
+            return True
 
     def get(self, key, default=None):
         return getattr(self, key, default)
