@@ -35,6 +35,9 @@ from oslo_db.sqlalchemy import orm
 from oslo_db.sqlalchemy import test_base
 
 
+enginefacade.transaction_context_provider(oslo_context.RequestContext)
+
+
 class SingletonOnName(mock.MagicMock):
     def __init__(self, the_name, **kw):
         super(SingletonOnName, self).__init__(

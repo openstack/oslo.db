@@ -18,7 +18,6 @@ import threading
 import warnings
 
 from oslo_config import cfg
-from oslo_context import context as oslo_context
 
 from oslo_db import exception
 from oslo_db import options
@@ -776,10 +775,6 @@ def transaction_context_provider(klass):
         setattr(klass, attr, _context_descriptor(attr))
 
     return klass
-
-
-# apply the context descriptors to oslo.context.RequestContext
-transaction_context_provider(oslo_context.RequestContext)
 
 
 _context_manager = _TransactionContextManager(_is_global_manager=True)
