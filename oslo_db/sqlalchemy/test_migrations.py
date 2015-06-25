@@ -555,6 +555,20 @@ class ModelsMigrationsSync(object):
         return self.FKInfo((fk.parent.name,), fk.column.table.name,
                            (fk.column.name,))
 
+    def filter_metadata_diff(self, diff):
+        """Filter changes before assert in test_models_sync().
+
+        Allow subclasses to whitelist/blacklist changes. By default, no
+        filtering is performed, changes are returned as is.
+
+        :param diff: a list of differences (see `compare_metadata()` docs for
+                     details on format)
+        :returns: a list of differences
+
+        """
+
+        return diff
+
     def test_models_sync(self):
         # recent versions of sqlalchemy and alembic are needed for running of
         # this test, but we already have them in requirements
@@ -580,8 +594,8 @@ class ModelsMigrationsSync(object):
             mc = alembic.migration.MigrationContext.configure(conn, opts=opts)
 
             # compare schemas and fail with diff, if it's not empty
-            diff = alembic.autogenerate.compare_metadata(mc,
-                                                         self.get_metadata())
+            diff = self.filter_metadata_diff(
+                alembic.autogenerate.compare_metadata(mc, self.get_metadata()))
             if diff:
                 msg = pprint.pformat(diff, indent=2, width=20)
                 self.fail(
