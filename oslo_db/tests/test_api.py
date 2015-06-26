@@ -197,6 +197,22 @@ class DBRetryRequestCase(DBAPITestCase):
         self.assertRaises(ValueError, some_method, res)
         self.assertEqual(max_retries + 1, res['result'])
 
+    def test_retry_wrapper_exception_checker(self):
+
+        def exception_checker(exc):
+            return isinstance(exc, ValueError) and exc.args[0] < 5
+
+        @api.wrap_db_retry(max_retries=10, retry_on_request=True,
+                           exception_checker=exception_checker)
+        def some_method(res):
+            res['result'] += 1
+            raise ValueError(res['result'])
+
+        res = {'result': 0}
+        self.assertRaises(ValueError, some_method, res)
+        # our exception checker should have stopped returning True after 5
+        self.assertEqual(5, res['result'])
+
     @mock.patch.object(DBAPI, 'api_class_call1')
     @mock.patch.object(api, 'wrap_db_retry')
     def test_mocked_methods_are_not_wrapped(self, mocked_wrap, mocked_method):
