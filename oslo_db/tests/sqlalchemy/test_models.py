@@ -70,6 +70,18 @@ class ModelBaseTest(test_base.DbTestCase):
 
         self.assertFalse('non-existent-key' in mb)
 
+    def test_modelbase_contains_exc(self):
+        class ErrorModel(models.ModelBase):
+            @property
+            def bug(self):
+                raise ValueError
+
+        model = ErrorModel()
+        model.update({'attr': 5})
+
+        self.assertTrue('attr' in model)
+        self.assertRaises(ValueError, lambda: 'bug' in model)
+
     def test_modelbase_items_iteritems(self):
         h = {'a': '1', 'b': '2'}
         expected = {
