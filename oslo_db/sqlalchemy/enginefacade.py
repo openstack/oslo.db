@@ -964,6 +964,18 @@ class LegacyEngineFacade(object):
         else:
             return self._factory._writer_maker(**kwargs)
 
+    def get_sessionmaker(self, use_slave=False):
+        """Get the sessionmaker instance used to create a Session.
+
+        This can be called for those cases where the sessionmaker() is to
+        be temporarily injected with some state such as a specific connection.
+
+        """
+        if use_slave:
+            return self._factory._reader_maker
+        else:
+            return self._factory._writer_maker
+
     @classmethod
     def from_config(cls, conf,
                     sqlite_fk=False, autocommit=True, expire_on_commit=False):
