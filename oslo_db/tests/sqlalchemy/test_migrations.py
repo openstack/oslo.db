@@ -245,6 +245,53 @@ class ModelsMigrationSyncMixin(test_base.DbTestCase):
         else:
             return True
 
+    def _test_models_not_sync_filtered(self):
+        self.metadata_migrations.clear()
+        sa.Table(
+            'table', self.metadata_migrations,
+            sa.Column('fk_check', sa.String(36), nullable=False),
+            sa.PrimaryKeyConstraint('fk_check'),
+            mysql_engine='InnoDB'
+        )
+
+        sa.Table(
+            'testtbl', self.metadata_migrations,
+            sa.Column('id', sa.Integer, primary_key=True),
+            sa.Column('spam', sa.String(8), nullable=True),
+            sa.Column('eggs', sa.DateTime),
+            sa.Column('foo', sa.Boolean,
+                      server_default=sa.sql.expression.false()),
+            sa.Column('bool_wo_default', sa.Boolean, unique=True),
+            sa.Column('bar', sa.BigInteger),
+            sa.Column('defaulttest', sa.Integer, server_default='7'),
+            sa.Column('defaulttest2', sa.String(8), server_default=''),
+            sa.Column('defaulttest3', sa.String(5), server_default="fake"),
+            sa.Column('defaulttest4',
+                      sa.Enum('first', 'second', name='testenum'),
+                      server_default="first"),
+            sa.Column('fk_check', sa.String(36), nullable=False),
+            sa.UniqueConstraint('spam', 'foo', name='uniq_cons'),
+            sa.ForeignKeyConstraint(['fk_check'], ['table.fk_check']),
+            mysql_engine='InnoDB'
+        )
+
+        with mock.patch.object(self, 'filter_metadata_diff') as filter_mock:
+            def filter_diffs(diffs):
+                # test filter returning only constraint related diffs
+                return [
+                    diff
+                    for diff in diffs
+                    if 'constraint' in diff[0]
+                ]
+            filter_mock.side_effect = filter_diffs
+
+            msg = six.text_type(self.assertRaises(AssertionError,
+                                self.test_models_sync))
+            self.assertNotIn('defaulttest', msg)
+            self.assertNotIn('defaulttest3', msg)
+            self.assertNotIn('remove_fk', msg)
+            self.assertIn('constraint', msg)
+
     def _test_models_not_sync(self):
         self.metadata_migrations.clear()
         sa.Table(
@@ -300,6 +347,9 @@ class ModelsMigrationsSyncMysql(ModelsMigrationSyncMixin,
     def test_models_not_sync(self):
         self._test_models_not_sync()
 
+    def test_models_not_sync_filtered(self):
+        self._test_models_not_sync_filtered()
+
 
 class ModelsMigrationsSyncPsql(ModelsMigrationSyncMixin,
                                migrate.ModelsMigrationsSync,
@@ -307,6 +357,9 @@ class ModelsMigrationsSyncPsql(ModelsMigrationSyncMixin,
 
     def test_models_not_sync(self):
         self._test_models_not_sync()
+
+    def test_models_not_sync_filtered(self):
+        self._test_models_not_sync_filtered()
 
 
 class TestOldCheckForeignKeys(test_base.DbTestCase):
