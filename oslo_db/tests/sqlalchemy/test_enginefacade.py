@@ -947,6 +947,13 @@ class LegacyIntegrationtest(test_base.DbTestCase):
             enginefacade.get_legacy_facade() is legacy_facade
         )
 
+    def test_get_sessionmaker(self):
+        legacy_facade = enginefacade.get_legacy_facade()
+        self.assertTrue(
+            legacy_facade.get_sessionmaker() is
+            enginefacade._context_manager._factory._writer_maker
+        )
+
 
 class ThreadingTest(test_base.DbTestCase):
     """Test copying on new threads using real connections and sessions."""
