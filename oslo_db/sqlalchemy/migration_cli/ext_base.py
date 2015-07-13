@@ -70,6 +70,15 @@ class MigrationExtensionBase(object):
         """
         raise NotImplementedError()
 
+    def has_revision(self, rev_id):
+        """Checks whether the repo contains a revision
+
+        :param rev_id: Revision to check
+        :returns: Whether the revision is in the repo
+        :rtype: bool
+        """
+        raise NotImplementedError()
+
     def __cmp__(self, other):
         """Used for definition of plugin order.
 

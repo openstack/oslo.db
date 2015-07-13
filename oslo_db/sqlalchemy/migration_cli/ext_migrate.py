@@ -13,6 +13,8 @@
 import logging
 import os
 
+from migrate.versioning import version as migrate_version
+
 from oslo_db._i18n import _LE
 from oslo_db.sqlalchemy import migration
 from oslo_db.sqlalchemy.migration_cli import ext_base
@@ -65,3 +67,14 @@ class MigrateExtension(ext_base.MigrationExtensionBase):
     def version(self):
         return migration.db_version(
             self.engine, self.repository, init_version=self.init_version)
+
+    def has_revision(self, rev_id):
+        collection = migrate_version.Collection(self.repository)
+        try:
+            collection.version(rev_id)
+            return True
+        except (KeyError, ValueError):
+            # NOTE(breton): migrate raises KeyError if an int is passed but not
+            # found in the list of revisions and ValueError if non-int is
+            # passed. Both mean there is no requested revision.
+            return False
