@@ -859,6 +859,24 @@ class TestDBDisconnected(TestsExceptionFilter):
                 is_disconnect=False
             )
 
+    def test_mysql_galera_non_primary_disconnected(self):
+        self._test_ping_listener_disconnected(
+            "mysql",
+            self.OperationalError('(1047, \'Unknown command\') '
+                                  '\'SELECT DATABASE()\' ()')
+        )
+
+    def test_mysql_galera_non_primary_disconnected_regex_only(self):
+        # intentionally set the is_disconnect flag to False
+        # in the "sqlalchemy" layer to make sure the regexp
+        # on _is_db_connection_error is catching
+        self._test_ping_listener_disconnected(
+            "mysql",
+            self.OperationalError('(1047, \'Unknown command\') '
+                                  '\'SELECT DATABASE()\' ()'),
+            is_disconnect=False
+        )
+
     def test_db2_ping_listener_disconnected(self):
         self._test_ping_listener_disconnected(
             "ibm_db_sa",
