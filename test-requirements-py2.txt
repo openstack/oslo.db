@@ -9,6 +9,7 @@ discover
 doc8  # Apache-2.0
 fixtures>=0.3.14
 MySQL-python
+mock>=1.0,<1.1.0
 psycopg2
 python-subunit>=0.0.18
 sphinx>=1.1.2,!=1.2.0,!=1.3b1,<1.3
