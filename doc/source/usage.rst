@@ -76,6 +76,12 @@ positional argument:
         results = some_reader_api_function(context)
         some_writer_api_function(context, 5, 10)
 
+.. note::  The ``context.session`` and ``context.connection`` attributes
+   must be accessed within the scope of an appropriate writer/reader block
+   (either the decorator or contextmanager approach). An AttributeError is
+   raised otherwise.
+
+
 The scope of transaction and connectivity for both approaches is managed
 transparently.   The configuration for the connection comes from the standard
 :obj:`oslo_config.cfg.CONF` collection.  Additional configurations can be

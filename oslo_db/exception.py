@@ -208,12 +208,12 @@ class RetryRequest(Exception):
 
 
 class NoEngineContextEstablished(AttributeError):
-    """Error raised for non-present enginefacade attribute access.
+    """Error raised for enginefacade attribute access with no context.
 
 
     This applies to the ``session`` and ``connection`` attributes
     of a user-defined context and/or RequestContext object, when they
-    are accessed outside of the scope of an enginefacade decorator
+    are accessed *outside* of the scope of an enginefacade decorator
     or context manager.
 
     The exception is a subclass of AttributeError so that
@@ -222,6 +222,23 @@ class NoEngineContextEstablished(AttributeError):
 
 
     """
+
+
+class ContextNotRequestedError(AttributeError):
+    """Error raised when requesting a not-setup enginefacade attribute.
+
+    This applies to the ``session`` and ``connection`` attributes
+    of a user-defined context and/or RequestContext object, when they
+    are accessed *within* the scope of an enginefacade decorator
+    or context manager, but the context has not requested that
+    attribute (e.g. like "with enginefacade.connection.using(context)"
+    and "context.session" is requested).
+
+    """
+
+
+class CantStartEngineError(Exception):
+    """Error raised when the enginefacade cannot start up correctly."""
 
 
 class NotSupportedWarning(Warning):

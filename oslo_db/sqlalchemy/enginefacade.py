@@ -314,7 +314,6 @@ class _TransactionFactory(object):
             # for the lock.
             if self._started:
                 return
-            self._started = True
             if conf is False:
                 conf = cfg.CONF
 
@@ -349,8 +348,16 @@ class _TransactionFactory(object):
 
             self.synchronous_reader = self._facade_cfg['synchronous_reader']
 
+            # set up _started last, so that in case of exceptions
+            # we try the whole thing again and report errors
+            # correctly
+            self._started = True
+
     def _setup_for_connection(
             self, sql_connection, engine_kwargs, maker_kwargs):
+        if sql_connection is None:
+            raise exception.CantStartEngineError(
+                "No sql_connection parameter is established")
         engine = engines.create_engine(
             sql_connection=sql_connection, **engine_kwargs)
         sessionmaker = orm.get_maker(engine=engine, **maker_kwargs)
@@ -736,7 +743,13 @@ def _context_descriptor(attr=None):
                 % (context, attr)
             )
         else:
-            return getter(transaction_context)
+            result = getter(transaction_context)
+            if result is None:
+                raise exception.ContextNotRequestedError(
+                    "The '%s' context attribute was requested but "
+                    "it has not been established for this context." % attr
+                )
+            return result
     return property(_property_for_context)
 
 

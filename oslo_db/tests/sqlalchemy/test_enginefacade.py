@@ -770,6 +770,36 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
                 conn.execute("test1")
                 conn.execute("test2")
 
+    def test_session_context_notrequested_exception(self):
+        context = oslo_context.RequestContext()
+
+        with enginefacade.reader.connection.using(context):
+            exc = self.assertRaises(
+                exception.ContextNotRequestedError,
+                getattr, context, 'session'
+            )
+
+            self.assertRegexpMatches(
+                exc.args[0],
+                "The 'session' context attribute was requested but it has "
+                "not been established for this context."
+            )
+
+    def test_connection_context_notrequested_exception(self):
+        context = oslo_context.RequestContext()
+
+        with enginefacade.reader.using(context):
+            exc = self.assertRaises(
+                exception.ContextNotRequestedError,
+                getattr, context, 'connection'
+            )
+
+            self.assertRegexpMatches(
+                exc.args[0],
+                "The 'connection' context attribute was requested but it has "
+                "not been established for this context."
+            )
+
     def test_session_context_exception(self):
         context = oslo_context.RequestContext()
         exc = self.assertRaises(
@@ -1052,19 +1082,28 @@ class ThreadingTest(test_base.DbTestCase):
 
         @enginefacade.writer.connection
         def go_one(context):
-            self.assertIsNone(context.session)
+            self.assertRaises(
+                exception.ContextNotRequestedError,
+                getattr, context, "session"
+            )
             self.assertIsNotNone(context.connection)
 
             self.ident = 2
             go_two(context)
 
             self.ident = 1
-            self.assertIsNone(context.session)
+            self.assertRaises(
+                exception.ContextNotRequestedError,
+                getattr, context, "session"
+            )
             self.assertIsNotNone(context.connection)
 
         @enginefacade.reader
         def go_two(context):
-            self.assertIsNone(context.connection)
+            self.assertRaises(
+                exception.ContextNotRequestedError,
+                getattr, context, "connection"
+            )
             self.assertIsNotNone(context.session)
 
         context = oslo_context.RequestContext()
@@ -1651,6 +1690,20 @@ class ConfigOptionsTest(oslo_test_base.BaseTestCase):
             "Configuration option(s) ['fake1', 'wrong2'] not supported",
             str(w[-1].message)
         )
+
+    def test_no_engine(self):
+        factory = enginefacade._TransactionFactory()
+
+        self.assertRaises(
+            exception.CantStartEngineError,
+            factory._create_session, enginefacade._WRITER
+        )
+
+        self.assertRaises(
+            exception.CantStartEngineError,
+            factory._create_session, enginefacade._WRITER
+        )
+
 
 # TODO(zzzeek): test configuration options, e.g. like
 # test_sqlalchemy->test_creation_from_config
