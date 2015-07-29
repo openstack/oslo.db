@@ -1,0 +1,74 @@
+# French translations for oslo.db.
+# Copyright (C) 2015 ORGANIZATION
+# This file is distributed under the same license as the oslo.db project.
+#
+# Translators:
+# Maxime COQUEREL <max.coquerel@gmail.com>, 2014-2015
+msgid ""
+msgstr ""
+"Project-Id-Version:  oslo.db\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2015-07-29 06:40+0000\n"
+"PO-Revision-Date: 2015-07-28 21:03+0000\n"
+"Last-Translator: Maxime COQUEREL <max.coquerel@gmail.com>\n"
+"Language-Team: French (http://www.transifex.com/projects/p/oslodb/language/"
+"fr/)\n"
+"Plural-Forms: nplurals=2; plural=(n > 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.0\n"
+
+msgid "Invalid Parameter: Encoding directive wasn't provided."
+msgstr "Paramètre non valide : La directive encodage n'a pas été fourni."
+
+#, python-format
+msgid ""
+"Please specify column %s in col_name_col_instance param. It is required "
+"because column has unsupported type by SQLite."
+msgstr ""
+"Spécifiez la colonne %s dans le paramètre col_name_col_instance. Ceci est "
+"obligatoire car la colonne a un type non pris en charge dans SQLite."
+
+msgid "Sort key supplied was not valid."
+msgstr "La clé de tri fournie n'était pas valide."
+
+#, python-format
+msgid ""
+"Tables \"%s\" have non utf8 collation, please make sure all tables are "
+"CHARSET=utf8"
+msgstr ""
+"Les tables \"%s\" ont une collation non utf8, assurez-vous que pour toutes "
+"les tables CHARSET=utf8."
+
+msgid ""
+"The database is not under version control, but has tables. Please stamp the "
+"current version of the schema manually."
+msgstr ""
+"La base de données n'est pas versionnée, mais contient des tables. Veuillez "
+"indiquer manuellement la version courante du schéma."
+
+#, python-format
+msgid "There is no `project_id` column in `%s` table."
+msgstr "Il n'y a pas de colonne `project_id` dans la table `%s`."
+
+msgid "Unknown sort direction, must be 'desc' or 'asc'"
+msgstr "Direction d'ordonnancement inconnue, choisir 'desc' ou 'asc'"
+
+msgid "Unsupported id columns type"
+msgstr "Type de colonnes id non pris en charge"
+
+#, python-format
+msgid ""
+"col_name_col_instance param has wrong type of column instance for column %s "
+"It should be instance of sqlalchemy.Column."
+msgstr ""
+"Le paramètre col_name_col_instance contient un type d'instance de colonne "
+"incorrect pour la colonne %s. Il devrait être une instance de sqlalchemy."
+"Column."
+
+msgid "model should be a subclass of ModelBase"
+msgstr "model doit etre une sous-classe de ModelBase"
+
+msgid "version should be an integer"
+msgstr "version doit être un entier"
