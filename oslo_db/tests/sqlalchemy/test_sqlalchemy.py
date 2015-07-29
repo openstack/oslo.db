@@ -23,6 +23,7 @@ import fixtures
 import mock
 from oslo_config import cfg
 from oslotest import base as oslo_test
+import six
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table
 from sqlalchemy.engine import url
@@ -597,17 +598,23 @@ class CreateEngineTest(oslo_test.BaseTestCase):
         # no need to specify this
         self.assertTrue('poolclass' not in self.args)
 
+    def _test_mysql_connect_args_default(self, connect_args):
+        if six.PY3:
+            self.assertEqual(connect_args,
+                             {'charset': 'utf8', 'use_unicode': 1})
+        else:
+            self.assertEqual(connect_args,
+                             {'charset': 'utf8', 'use_unicode': 0})
+
     def test_mysql_connect_args_default(self):
         engines._init_connection_args(
             url.make_url("mysql://u:p@host/test"), self.args)
-        self.assertEqual(self.args['connect_args'],
-                         {'charset': 'utf8', 'use_unicode': 0})
+        self._test_mysql_connect_args_default(self.args['connect_args'])
 
     def test_mysql_oursql_connect_args_default(self):
         engines._init_connection_args(
             url.make_url("mysql+oursql://u:p@host/test"), self.args)
-        self.assertEqual(self.args['connect_args'],
-                         {'charset': 'utf8', 'use_unicode': 0})
+        self._test_mysql_connect_args_default(self.args['connect_args'])
 
     def test_mysql_pymysql_connect_args_default(self):
         engines._init_connection_args(
@@ -618,8 +625,7 @@ class CreateEngineTest(oslo_test.BaseTestCase):
     def test_mysql_mysqldb_connect_args_default(self):
         engines._init_connection_args(
             url.make_url("mysql+mysqldb://u:p@host/test"), self.args)
-        self.assertEqual(self.args['connect_args'],
-                         {'charset': 'utf8', 'use_unicode': 0})
+        self._test_mysql_connect_args_default(self.args['connect_args'])
 
     def test_postgresql_connect_args_default(self):
         engines._init_connection_args(
