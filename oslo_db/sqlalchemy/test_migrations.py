@@ -185,7 +185,8 @@ class WalkVersionsMixin(object):
                                                        self.REPOSITORY))
 
         LOG.debug('latest version is %s', self.REPOSITORY.latest)
-        versions = range(self.INIT_VERSION + 1, self.REPOSITORY.latest + 1)
+        versions = range(int(self.INIT_VERSION) + 1,
+                         int(self.REPOSITORY.latest) + 1)
 
         for version in versions:
             # upgrade -> downgrade -> upgrade
