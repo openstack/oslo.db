@@ -211,7 +211,10 @@ def _init_connection_args(url, engine_args, **kw):
     # to internal usage of Python unicode objects in the driver
     #  http://docs.sqlalchemy.org/en/rel_0_9/dialects/mysql.html
     if 'use_unicode' not in url.query:
-        engine_args['connect_args']['use_unicode'] = 0
+        if six.PY3:
+            engine_args['connect_args']['use_unicode'] = 1
+        else:
+            engine_args['connect_args']['use_unicode'] = 0
 
 
 @utils.dispatch_for_dialect('*', multiple=True)
