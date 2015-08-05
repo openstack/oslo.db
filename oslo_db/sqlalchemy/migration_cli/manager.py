@@ -13,6 +13,8 @@
 import sqlalchemy
 from stevedore import enabled
 
+from oslo_db import exception
+
 
 MIGRATION_NAMESPACE = 'oslo.db.migration'
 
@@ -50,17 +52,40 @@ class MigrationManager(object):
 
     def upgrade(self, revision):
         """Upgrade database with all available backends."""
+        # a revision exists only in a single plugin. Until we reached it, we
+        # should upgrade to the plugins' heads.
+        # revision=None is a special case meaning latest revision.
+        rev_in_plugins = [p.has_revision(revision) for p in self._plugins]
+        if not any(rev_in_plugins) and revision is not None:
+            raise exception.DbMigrationError('Revision does not exist')
+
         results = []
-        for plugin in self._plugins:
-            results.append(plugin.upgrade(revision))
+        for plugin, has_revision in zip(self._plugins, rev_in_plugins):
+            if not has_revision or revision is None:
+                results.append(plugin.upgrade(None))
+            else:
+                results.append(plugin.upgrade(revision))
+                break
         return results
 
     def downgrade(self, revision):
         """Downgrade database with available backends."""
+        # a revision exists only in a single plugin. Until we reached it, we
+        # should upgrade to the plugins' first revision.
+        # revision=None is a special case meaning initial revision.
+        rev_in_plugins = [p.has_revision(revision) for p in self._plugins]
+        if not any(rev_in_plugins) and revision is not None:
+            raise exception.DbMigrationError('Revision does not exist')
+
         # downgrading should be performed in reversed order
         results = []
-        for plugin in reversed(self._plugins):
-            results.append(plugin.downgrade(revision))
+        for plugin, has_revision in zip(reversed(self._plugins),
+                                        reversed(rev_in_plugins)):
+            if not has_revision or revision is None:
+                results.append(plugin.downgrade(None))
+            else:
+                results.append(plugin.downgrade(revision))
+                break
         return results
 
     def version(self):

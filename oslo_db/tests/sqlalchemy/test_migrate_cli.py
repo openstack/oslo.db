@@ -10,10 +10,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import alembic
 import mock
 from oslotest import base as test_base
 import sqlalchemy
 
+from oslo_db import exception
 from oslo_db.sqlalchemy.migration_cli import ext_alembic
 from oslo_db.sqlalchemy.migration_cli import ext_migrate
 from oslo_db.sqlalchemy.migration_cli import manager
@@ -94,6 +96,29 @@ class TestAlembicExtension(test_base.BaseTestCase):
         version = self.alembic.version()
         self.assertIsNone(version)
 
+    def test_has_revision(self, command):
+        with mock.patch(('oslo_db.sqlalchemy.migration_cli.'
+                         'ext_alembic.alembic_script')) as mocked:
+            self.alembic.config.get_main_option = mock.Mock()
+            # since alembic_script is mocked and no exception is raised, call
+            # will result in success
+            self.assertIs(True, self.alembic.has_revision('test'))
+            mocked.ScriptDirectory().get_revision.assert_called_once_with(
+                'test')
+            self.assertIs(True, self.alembic.has_revision(None))
+            self.assertIs(True, self.alembic.has_revision('head'))
+
+    def test_has_revision_negative(self, command):
+        with mock.patch(('oslo_db.sqlalchemy.migration_cli.'
+                         'ext_alembic.alembic_script')) as mocked:
+            mocked.ScriptDirectory().get_revision.side_effect = (
+                alembic.util.CommandError)
+            self.alembic.config.get_main_option = mock.Mock()
+            # exception is raised, the call should be false
+            self.assertIs(False, self.alembic.has_revision('test'))
+            mocked.ScriptDirectory().get_revision.assert_called_once_with(
+                'test')
+
 
 @mock.patch(('oslo_db.sqlalchemy.migration_cli.'
              'ext_migrate.migration'))
@@ -159,6 +184,21 @@ class TestMigrateExtension(test_base.BaseTestCase):
             self.migration_config['init_version'],
             init_version=self.migration_config['init_version'])
 
+    def test_has_revision(self, command):
+        with mock.patch(('oslo_db.sqlalchemy.migration_cli.'
+                         'ext_migrate.migrate_version')) as mocked:
+            self.migrate.has_revision('test')
+            mocked.Collection().version.assert_called_once_with('test')
+            # tip of the branch should always be True
+            self.assertIs(True, self.migrate.has_revision(None))
+
+    def test_has_revision_negative(self, command):
+        with mock.patch(('oslo_db.sqlalchemy.migration_cli.'
+                         'ext_migrate.migrate_version')) as mocked:
+            mocked.Collection().version.side_effect = ValueError
+            self.assertIs(False, self.migrate.has_revision('test'))
+            mocked.Collection().version.assert_called_once_with('test')
+
 
 class TestMigrationManager(test_base.BaseTestCase):
 
@@ -214,7 +254,7 @@ class TestMigrationManager(test_base.BaseTestCase):
                          err.args[0])
 
 
-class TestMigrationRightOrder(test_base.BaseTestCase):
+class TestMigrationMultipleExtensions(test_base.BaseTestCase):
 
     def setUp(self):
         self.migration_config = {'alembic_ini_path': '.',
@@ -233,7 +273,7 @@ class TestMigrationRightOrder(test_base.BaseTestCase):
         self.second_ext.obj.downgrade.return_value = 100
         self.migration_manager._manager.extensions = [self.first_ext,
                                                       self.second_ext]
-        super(TestMigrationRightOrder, self).setUp()
+        super(TestMigrationMultipleExtensions, self).setUp()
 
     def test_upgrade_right_order(self):
         results = self.migration_manager.upgrade(None)
@@ -242,3 +282,59 @@ class TestMigrationRightOrder(test_base.BaseTestCase):
     def test_downgrade_right_order(self):
         results = self.migration_manager.downgrade(None)
         self.assertEqual(results, [100, 0])
+
+    def test_upgrade_does_not_go_too_far(self):
+        self.first_ext.obj.has_revision.return_value = True
+        self.second_ext.obj.has_revision.return_value = False
+        self.second_ext.obj.upgrade.side_effect = AssertionError(
+            'this method should not have been called')
+
+        results = self.migration_manager.upgrade(100)
+        self.assertEqual([100], results)
+
+    def test_downgrade_does_not_go_too_far(self):
+        self.second_ext.obj.has_revision.return_value = True
+        self.first_ext.obj.has_revision.return_value = False
+        self.first_ext.obj.downgrade.side_effect = AssertionError(
+            'this method should not have been called')
+
+        results = self.migration_manager.downgrade(100)
+        self.assertEqual([100], results)
+
+    def test_upgrade_checks_rev_existence(self):
+        self.first_ext.obj.has_revision.return_value = False
+        self.second_ext.obj.has_revision.return_value = False
+
+        # upgrade to a specific non-existent revision should fail
+        self.assertRaises(exception.DbMigrationError,
+                          self.migration_manager.upgrade, 100)
+
+        # upgrade to the "head" should succeed
+        self.assertEqual([100, 200], self.migration_manager.upgrade(None))
+
+        # let's assume the second ext has the revision, upgrade should succeed
+        self.second_ext.obj.has_revision.return_value = True
+        self.assertEqual([100, 200], self.migration_manager.upgrade(200))
+
+        # upgrade to the "head" should still succeed
+        self.assertEqual([100, 200], self.migration_manager.upgrade(None))
+
+    def test_downgrade_checks_rev_existence(self):
+        self.first_ext.obj.has_revision.return_value = False
+        self.second_ext.obj.has_revision.return_value = False
+
+        # upgrade to a specific non-existent revision should fail
+        self.assertRaises(exception.DbMigrationError,
+                          self.migration_manager.downgrade, 100)
+
+        # downgrade to the "base" should succeed
+        self.assertEqual([100, 0], self.migration_manager.downgrade(None))
+
+        # let's assume the second ext has the revision, downgrade should
+        # succeed
+        self.first_ext.obj.has_revision.return_value = True
+        self.assertEqual([100, 0], self.migration_manager.downgrade(200))
+
+        # downgrade to the "base" should still succeed
+        self.assertEqual([100, 0], self.migration_manager.downgrade(None))
+        self.assertEqual([100, 0], self.migration_manager.downgrade('base'))

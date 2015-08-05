@@ -15,6 +15,7 @@ import os
 import alembic
 from alembic import config as alembic_config
 import alembic.migration as alembic_migration
+from alembic import script as alembic_script
 
 from oslo_db.sqlalchemy.migration_cli import ext_base
 
@@ -89,3 +90,14 @@ class AlembicExtension(ext_base.MigrationExtensionBase):
         with self.engine.begin() as connection:
             self.config.attributes['connection'] = connection
             return alembic.command.stamp(self.config, revision=revision)
+
+    def has_revision(self, rev_id):
+        if rev_id in ['base', 'head']:
+            return True
+        script = alembic_script.ScriptDirectory(
+            self.config.get_main_option('alembic_repo_path'))
+        try:
+            script.get_revision(rev_id)
+            return True
+        except alembic.util.CommandError:
+            return False
