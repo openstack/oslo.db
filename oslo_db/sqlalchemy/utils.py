@@ -18,6 +18,7 @@
 
 import collections
 import contextlib
+import itertools
 import logging
 import re
 
@@ -52,6 +53,10 @@ ColumnError = exception.ColumnError
 LOG = logging.getLogger(__name__)
 
 _DBURL_REGEX = re.compile(r"[^:]+://([^:]+):([^@]+)@.+")
+
+_VALID_SORT_DIR = [
+    "-".join(x) for x in itertools.product(["asc", "desc"],
+                                           ["nullsfirst", "nullslast"])]
 
 
 def sanitize_db_url(url):
@@ -88,6 +93,8 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
     :param marker: the last item of the previous page; we returns the next
                     results after this value.
     :param sort_dir: direction in which results should be sorted (asc, desc)
+                     suffix -nullsfirst, -nullslast can be added to defined
+                     the ordering of null values
     :param sort_dirs: per-column array of sort_dirs, corresponding to sort_keys
 
     :rtype: sqlalchemy.orm.query.Query
@@ -114,21 +121,31 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
     # Add sorting
     for current_sort_key, current_sort_dir in zip(sort_keys, sort_dirs):
         try:
-            sort_dir_func = {
-                'asc': sqlalchemy.asc,
-                'desc': sqlalchemy.desc,
-            }[current_sort_dir]
-        except KeyError:
-            raise ValueError(_("Unknown sort direction, "
-                               "must be 'desc' or 'asc'"))
-        try:
-            inspect(model).\
-                all_orm_descriptors[current_sort_key]
+            inspect(model).all_orm_descriptors[current_sort_key]
         except KeyError:
             raise exception.InvalidSortKey()
         else:
             sort_key_attr = getattr(model, current_sort_key)
 
+        try:
+            main_sort_dir, __, null_sort_dir = current_sort_dir.partition("-")
+            sort_dir_func = {
+                'asc': sqlalchemy.asc,
+                'desc': sqlalchemy.desc,
+            }[main_sort_dir]
+
+            null_order_by_stmt = {
+                "": None,
+                "nullsfirst": sort_key_attr.is_(None),
+                "nullslast": sort_key_attr.isnot(None),
+            }[null_sort_dir]
+        except KeyError:
+            raise ValueError(_("Unknown sort direction, "
+                               "must be one of: %s") %
+                             ", ".join(_VALID_SORT_DIR))
+
+        if null_order_by_stmt is not None:
+            query = query.order_by(sqlalchemy.desc(null_order_by_stmt))
         query = query.order_by(sort_dir_func(sort_key_attr))
 
     # Add pagination
@@ -147,7 +164,7 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
                 crit_attrs.append((model_attr == marker_values[j]))
 
             model_attr = getattr(model, sort_keys[i])
-            if sort_dirs[i] == 'desc':
+            if sort_dirs[i].startswith('desc'):
                 crit_attrs.append((model_attr < marker_values[i]))
             else:
                 crit_attrs.append((model_attr > marker_values[i]))

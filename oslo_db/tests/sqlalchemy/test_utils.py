@@ -166,6 +166,11 @@ class TestPaginateQuery(test_base.BaseTestCase):
                           utils.paginate_query, self.query,
                           self.model, 5, ['foo'])
 
+    def test_paginate_query_attribute_error_invalid_sortkey_3(self):
+        self.assertRaises(exception.InvalidSortKey,
+                          utils.paginate_query, self.query,
+                          self.model, 5, ['asc-nullinvalid'])
+
     def test_paginate_query_assertion_error(self):
         self.mox.ReplayAll()
         self.assertRaises(AssertionError,
@@ -199,6 +204,36 @@ class TestPaginateQuery(test_base.BaseTestCase):
                              ['user_id', 'project_id'],
                              marker=self.marker,
                              sort_dirs=['asc', 'desc'])
+
+    def test_paginate_query_null(self):
+        self.mox.StubOutWithMock(self.model.user_id, 'isnot')
+        self.model.user_id.isnot(None).AndReturn('asc_null_1')
+        sqlalchemy.desc('asc_null_1').AndReturn('asc_null_2')
+        self.query.order_by('asc_null_2').AndReturn(self.query)
+
+        sqlalchemy.asc(self.model.user_id).AndReturn('asc_1')
+        self.query.order_by('asc_1').AndReturn(self.query)
+
+        self.mox.StubOutWithMock(self.model.project_id, 'is_')
+        self.model.project_id.is_(None).AndReturn('desc_null_1')
+        sqlalchemy.desc('desc_null_1').AndReturn('desc_null_2')
+        self.query.order_by('desc_null_2').AndReturn(self.query)
+
+        sqlalchemy.desc(self.model.project_id).AndReturn('desc_1')
+        self.query.order_by('desc_1').AndReturn(self.query)
+
+        self.mox.StubOutWithMock(sqlalchemy.sql, 'and_')
+        sqlalchemy.sql.and_(mock.ANY).AndReturn('some_crit')
+        sqlalchemy.sql.and_(mock.ANY, mock.ANY).AndReturn('another_crit')
+        self.mox.StubOutWithMock(sqlalchemy.sql, 'or_')
+        sqlalchemy.sql.or_('some_crit', 'another_crit').AndReturn('some_f')
+        self.query.filter('some_f').AndReturn(self.query)
+        self.query.limit(5).AndReturn(self.query)
+        self.mox.ReplayAll()
+        utils.paginate_query(self.query, self.model, 5,
+                             ['user_id', 'project_id'],
+                             marker=self.marker,
+                             sort_dirs=['asc-nullslast', 'desc-nullsfirst'])
 
     def test_paginate_query_value_error(self):
         sqlalchemy.asc(self.model.user_id).AndReturn('asc_1')
