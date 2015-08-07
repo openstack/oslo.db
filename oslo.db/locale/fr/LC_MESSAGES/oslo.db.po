@@ -3,14 +3,15 @@
 # This file is distributed under the same license as the oslo.db project.
 #
 # Translators:
+# Lucas Mascaro <mascaro.lucas@yahoo.fr>, 2015
 # Maxime COQUEREL <max.coquerel@gmail.com>, 2014-2015
 msgid ""
 msgstr ""
 "Project-Id-Version:  oslo.db\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2015-08-04 06:31+0000\n"
-"PO-Revision-Date: 2015-07-30 21:34+0000\n"
-"Last-Translator: Maxime COQUEREL <max.coquerel@gmail.com>\n"
+"POT-Creation-Date: 2015-08-07 06:19+0000\n"
+"PO-Revision-Date: 2015-08-07 04:24+0000\n"
+"Last-Translator: Lucas Mascaro <mascaro.lucas@yahoo.fr>\n"
 "Language-Team: French (http://www.transifex.com/openstack/oslodb/language/"
 "fr/)\n"
 "Plural-Forms: nplurals=2; plural=(n > 1)\n"
@@ -60,8 +61,9 @@ msgstr ""
 msgid "There is no `project_id` column in `%s` table."
 msgstr "Il n'y a pas de colonne `project_id` dans la table `%s`."
 
-msgid "Unknown sort direction, must be 'desc' or 'asc'"
-msgstr "Direction d'ordonnancement inconnue, choisir 'desc' ou 'asc'"
+#, python-format
+msgid "Unknown sort direction, must be one of: %s"
+msgstr "Ordre de tris inconnu, il doit être un de: %s"
 
 msgid "Unsupported id columns type"
 msgstr "Type de colonnes id non pris en charge"

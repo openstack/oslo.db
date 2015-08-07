@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: oslo.db 2.2.1.dev2\n"
+"Project-Id-Version: oslo.db 2.3.1.dev10\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2015-07-29 06:40+0000\n"
+"POT-Creation-Date: 2015-08-07 06:19+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -42,41 +42,42 @@ msgid ""
 "the current version of the schema manually."
 msgstr ""
 
-#: oslo_db/sqlalchemy/utils.py:122
-msgid "Unknown sort direction, must be 'desc' or 'asc'"
+#: oslo_db/sqlalchemy/utils.py:143
+#, python-format
+msgid "Unknown sort direction, must be one of: %s"
 msgstr ""
 
-#: oslo_db/sqlalchemy/utils.py:181
+#: oslo_db/sqlalchemy/utils.py:198
 #, python-format
 msgid ""
 "There is no `deleted` column in `%s` table. Project doesn't use soft-"
 "deleted feature."
 msgstr ""
 
-#: oslo_db/sqlalchemy/utils.py:195
+#: oslo_db/sqlalchemy/utils.py:212
 #, python-format
 msgid "There is no `project_id` column in `%s` table."
 msgstr ""
 
-#: oslo_db/sqlalchemy/utils.py:307
+#: oslo_db/sqlalchemy/utils.py:324
 msgid "model should be a subclass of ModelBase"
 msgstr ""
 
-#: oslo_db/sqlalchemy/utils.py:377
+#: oslo_db/sqlalchemy/utils.py:394
 #, python-format
 msgid ""
 "Please specify column %s in col_name_col_instance param. It is required "
 "because column has unsupported type by SQLite."
 msgstr ""
 
-#: oslo_db/sqlalchemy/utils.py:383
+#: oslo_db/sqlalchemy/utils.py:400
 #, python-format
 msgid ""
 "col_name_col_instance param has wrong type of column instance for column "
 "%s It should be instance of sqlalchemy.Column."
 msgstr ""
 
-#: oslo_db/sqlalchemy/utils.py:448
+#: oslo_db/sqlalchemy/utils.py:465
 msgid "Unsupported id columns type"
 msgstr ""
 
