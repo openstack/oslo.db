@@ -66,7 +66,7 @@ class DbFixture(fixtures.Fixture):
             self.test, self.test.resources, testresources._get_result()
         )
         if not hasattr(self.test, 'db'):
-            msg = "database '%s' unavailable" % self.DRIVER
+            msg = "backend '%s' unavailable" % self.DRIVER
             if self.skip_on_unavailable_db:
                 self.test.skip(msg)
             else:
