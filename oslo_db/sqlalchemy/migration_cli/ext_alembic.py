@@ -95,7 +95,7 @@ class AlembicExtension(ext_base.MigrationExtensionBase):
         if rev_id in ['base', 'head']:
             return True
         script = alembic_script.ScriptDirectory(
-            self.config.get_main_option('alembic_repo_path'))
+            self.config.get_main_option('script_location'))
         try:
             script.get_revision(rev_id)
             return True

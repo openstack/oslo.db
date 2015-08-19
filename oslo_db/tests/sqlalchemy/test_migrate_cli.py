@@ -103,6 +103,8 @@ class TestAlembicExtension(test_base.BaseTestCase):
             # since alembic_script is mocked and no exception is raised, call
             # will result in success
             self.assertIs(True, self.alembic.has_revision('test'))
+            self.alembic.config.get_main_option.assert_called_once_with(
+                'script_location')
             mocked.ScriptDirectory().get_revision.assert_called_once_with(
                 'test')
             self.assertIs(True, self.alembic.has_revision(None))
@@ -116,6 +118,8 @@ class TestAlembicExtension(test_base.BaseTestCase):
             self.alembic.config.get_main_option = mock.Mock()
             # exception is raised, the call should be false
             self.assertIs(False, self.alembic.has_revision('test'))
+            self.alembic.config.get_main_option.assert_called_once_with(
+                'script_location')
             mocked.ScriptDirectory().get_revision.assert_called_once_with(
                 'test')
 
