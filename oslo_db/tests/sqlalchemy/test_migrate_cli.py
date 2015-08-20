@@ -109,6 +109,8 @@ class TestAlembicExtension(test_base.BaseTestCase):
                 'test')
             self.assertIs(True, self.alembic.has_revision(None))
             self.assertIs(True, self.alembic.has_revision('head'))
+            # relative revision, should be True for alembic
+            self.assertIs(True, self.alembic.has_revision('+1'))
 
     def test_has_revision_negative(self, command):
         with mock.patch(('oslo_db.sqlalchemy.migration_cli.'
@@ -202,6 +204,8 @@ class TestMigrateExtension(test_base.BaseTestCase):
             mocked.Collection().version.side_effect = ValueError
             self.assertIs(False, self.migrate.has_revision('test'))
             mocked.Collection().version.assert_called_once_with('test')
+            # relative revision, should be False for migrate
+            self.assertIs(False, self.migrate.has_revision('+1'))
 
 
 class TestMigrationManager(test_base.BaseTestCase):
