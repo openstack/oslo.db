@@ -94,6 +94,15 @@ class AlembicExtension(ext_base.MigrationExtensionBase):
     def has_revision(self, rev_id):
         if rev_id in ['base', 'head']:
             return True
+
+        # Although alembic supports relative upgrades and downgrades,
+        # get_revision always returns False for relative revisions.
+        # Since only alembic supports relative revisions, assume the
+        # revision belongs to this plugin.
+        if rev_id:  # rev_id can be None, so the check is required
+            if '-' in rev_id or '+' in rev_id:
+                return True
+
         script = alembic_script.ScriptDirectory(
             self.config.get_main_option('alembic_repo_path'))
         try:
