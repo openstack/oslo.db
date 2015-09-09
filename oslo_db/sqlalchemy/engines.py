@@ -377,9 +377,12 @@ def _add_trace_comments(engine):
         os.path.dirname(sys.modules['oslo_db'].__file__),
         os.path.dirname(sys.modules['sqlalchemy'].__file__)
     ])
-    skip_paths = set([
-        os.path.dirname(sys.modules['oslo_db.tests'].__file__),
-    ])
+    try:
+        skip_paths = set([
+            os.path.dirname(sys.modules['oslo_db.tests'].__file__),
+        ])
+    except KeyError:
+        skip_paths = set()
 
     @sqlalchemy.event.listens_for(engine, "before_cursor_execute", retval=True)
     def before_cursor_execute(conn, cursor, statement, parameters, context,
