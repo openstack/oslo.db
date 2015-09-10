@@ -4,13 +4,14 @@
 #
 # Translators:
 # Adriana Chisco Landazábal <achisco94@gmail.com>, 2015
+# Miriam Godinez <miriamgc@hotmail.com>, 2015
 msgid ""
 msgstr ""
 "Project-Id-Version:  oslo.db\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2015-08-07 06:19+0000\n"
-"PO-Revision-Date: 2015-08-06 19:05+0000\n"
-"Last-Translator: openstackjenkins <jenkins@openstack.org>\n"
+"POT-Creation-Date: 2015-09-10 06:01+0000\n"
+"PO-Revision-Date: 2015-09-07 22:45+0000\n"
+"Last-Translator: Miriam Godinez <miriamgc@hotmail.com>\n"
 "Language-Team: Spanish (http://www.transifex.com/openstack/oslodb/language/"
 "es/)\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
@@ -59,6 +60,10 @@ msgstr ""
 #, python-format
 msgid "There is no `project_id` column in `%s` table."
 msgstr "No existe la columna `project_id` en la tabla `%s`."
+
+#, python-format
+msgid "Unknown sort direction, must be one of: %s"
+msgstr "Clase de dirección desconocida, debe ser una de: %s"
 
 msgid "Unsupported id columns type"
 msgstr "Tipo de identificador de columnas no soportado"
