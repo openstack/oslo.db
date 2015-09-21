@@ -17,12 +17,12 @@ API Documentation
 =================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   api/index
+   api/autoindex
 
 Indices and tables
-------------------
+==================
 
 * :ref:`genindex`
 * :ref:`modindex`
