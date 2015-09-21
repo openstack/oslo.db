@@ -166,7 +166,7 @@ class WalkVersionsMixin(object):
 
             If we have ordered migrations 123abc, 456def, 789ghi and we run
             upgrading with the `snake_walk` argument set to `True`, the
-            migrations will be applied in the following order:
+            migrations will be applied in the following order::
 
                 `123abc => 456def => 123abc =>
                  456def => 789ghi => 456def => 789ghi`
