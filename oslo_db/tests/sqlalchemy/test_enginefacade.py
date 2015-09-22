@@ -13,6 +13,7 @@
 import collections
 import contextlib
 import copy
+import pickle
 import warnings
 
 import mock
@@ -986,7 +987,7 @@ class LegacyIntegrationtest(test_base.DbTestCase):
 
 
 class ThreadingTest(test_base.DbTestCase):
-    """Test copying on new threads using real connections and sessions."""
+    """Test copy/pickle on new threads using real connections and sessions."""
 
     def _assert_ctx_connection(self, context, connection):
         self.assertIs(context.connection, connection)
@@ -1161,6 +1162,21 @@ class ThreadingTest(test_base.DbTestCase):
         context = oslo_context.RequestContext()
         with self._patch_thread_ident():
             go_one(context)
+
+    def test_contexts_picklable(self):
+        context = oslo_context.RequestContext()
+
+        with enginefacade.writer.using(context) as session:
+            self._assert_ctx_session(context, session)
+
+            pickled = pickle.dumps(context)
+
+            unpickled = pickle.loads(pickled)
+
+            with enginefacade.writer.using(unpickled) as session2:
+                self._assert_ctx_session(unpickled, session2)
+
+                assert session is not session2
 
 
 class LiveFacadeTest(test_base.DbTestCase):

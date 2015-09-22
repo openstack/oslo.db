@@ -569,6 +569,9 @@ class _TransactionContextTLocal(threading.local):
     def __deepcopy__(self, memo):
         return self
 
+    def __reduce__(self):
+        return _TransactionContextTLocal, ()
+
 
 class _TransactionContextManager(object):
     """Provide context-management and decorator patterns for transactions.
