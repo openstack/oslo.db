@@ -1,9 +1,10 @@
-===================================
-Welcome to oslo.db's documentation!
-===================================
+===============================================
+ oslo.db -- OpenStack Database Pattern Library
+===============================================
 
-The `oslo`_ db (database) handling library, it provides database connectivity
-to different database backends and various other helper utils.
+The oslo.db (database) handling library, provides database
+connectivity to different database backends and various other helper
+utils.
 
 .. toctree::
    :maxdepth: 2
@@ -27,5 +28,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-.. _oslo: https://wiki.openstack.org/wiki/Oslo

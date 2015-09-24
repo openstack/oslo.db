@@ -1,6 +1,6 @@
-=========
- oslo.db
-=========
+===============================================
+ oslo.db -- OpenStack Database Pattern Library
+===============================================
 
 .. image:: https://img.shields.io/pypi/v/oslo.db.svg
     :target: https://pypi.python.org/pypi/oslo.db/
@@ -10,8 +10,9 @@
     :target: https://pypi.python.org/pypi/oslo.db/
     :alt: Downloads
 
-The oslo db (database) handling library, it provides database connectivity
-to different database backends and various other helper utils.
+The oslo db (database) handling library, provides database
+connectivity to different database backends and various other helper
+utils.
 
 * Free software: Apache license
 * Documentation: http://docs.openstack.org/developer/oslo.db
