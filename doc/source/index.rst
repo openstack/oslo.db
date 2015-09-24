@@ -9,6 +9,7 @@ to different database backends and various other helper utils.
    :maxdepth: 2
 
    installation
+   opts
    usage
    contributing
    history
