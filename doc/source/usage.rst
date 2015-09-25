@@ -136,3 +136,11 @@ DB API backend support
     # DB-API method
     def do_something(somethind_id):
         return IMPL.do_something(somethind_id)
+
+DB migration extensions
+=======================
+
+Available extensions for :mod:`oslo_db.migration`.
+
+.. list-plugins:: oslo.db.migration
+    :detailed:

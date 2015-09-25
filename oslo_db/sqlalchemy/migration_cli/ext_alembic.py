@@ -21,6 +21,13 @@ from oslo_db.sqlalchemy.migration_cli import ext_base
 
 
 class AlembicExtension(ext_base.MigrationExtensionBase):
+    """Extension to provide alembic features.
+
+    :param engine: SQLAlchemy engine instance for a given database
+    :type engine: sqlalchemy.engine.Engine
+    :param migration_config: Stores specific configuration for migrations
+    :type migration_config: dict
+    """
 
     order = 2
 
@@ -29,13 +36,6 @@ class AlembicExtension(ext_base.MigrationExtensionBase):
         return os.path.exists(self.alembic_ini_path)
 
     def __init__(self, engine, migration_config):
-        """Extension to provide alembic features.
-
-        :param engine: SQLAlchemy engine instance for a given database
-        :type engine: sqlalchemy.engine.Engine
-        :param migration_config: Stores specific configuration for migrations
-        :type migration_config: dict
-        """
         self.alembic_ini_path = migration_config.get('alembic_ini_path', '')
         self.config = alembic_config.Config(self.alembic_ini_path)
         # TODO(viktors): Remove this, when we will use Alembic 0.7.5 or
