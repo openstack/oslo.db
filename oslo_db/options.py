@@ -152,9 +152,9 @@ def set_defaults(conf, connection=None, sqlite_db=None,
 
     :keyword connection: SQL connection string.
         Valid SQLite URL forms are:
-          * sqlite:///:memory: (or, sqlite://)
-          * sqlite:///relative/path/to/file.db
-          * sqlite:////absolute/path/to/file.db
+        * sqlite:///:memory: (or, sqlite://)
+        * sqlite:///relative/path/to/file.db
+        * sqlite:////absolute/path/to/file.db
     :type connection: str
 
     :keyword sqlite_db: path to SQLite database file.

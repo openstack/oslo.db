@@ -842,7 +842,6 @@ class LegacyEngineFacade(object):
     """A helper class for removing of global engine instances from oslo.db.
 
     .. deprecated::
-
         EngineFacade is deprecated.  Please use
         oslo.db.sqlalchemy.enginefacade for new development.
 
