@@ -5,20 +5,22 @@
 # Translators:
 # Adriana Chisco Landazábal <achisco94@gmail.com>, 2015
 # Miriam Godinez <miriamgc@hotmail.com>, 2015
+# OpenStack Infra <zanata@openstack.org>, 2015. #zanata
 msgid ""
 msgstr ""
-"Project-Id-Version:  oslo.db\n"
+"Project-Id-Version: oslo.db 2.6.1.dev18\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2015-09-10 06:01+0000\n"
-"PO-Revision-Date: 2015-09-07 22:45+0000\n"
+"POT-Creation-Date: 2015-09-26 06:13+0000\n"
+"PO-Revision-Date: 2015-09-07 10:45+0000\n"
 "Last-Translator: Miriam Godinez <miriamgc@hotmail.com>\n"
+"Language: es\n"
 "Language-Team: Spanish (http://www.transifex.com/openstack/oslodb/language/"
 "es/)\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.0\n"
+"Generated-By: Babel 2.1.1\n"
 
 msgid "Invalid Parameter: Encoding directive wasn't provided."
 msgstr "Parámetro no válido: No se proporcionó directiva de codificación."

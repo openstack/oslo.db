@@ -5,20 +5,22 @@
 # Translators:
 # Lucas Mascaro <mascaro.lucas@yahoo.fr>, 2015
 # Maxime COQUEREL <max.coquerel@gmail.com>, 2014-2015
+# OpenStack Infra <zanata@openstack.org>, 2015. #zanata
 msgid ""
 msgstr ""
-"Project-Id-Version:  oslo.db\n"
+"Project-Id-Version: oslo.db 2.6.1.dev18\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2015-08-07 06:19+0000\n"
+"POT-Creation-Date: 2015-09-26 06:13+0000\n"
 "PO-Revision-Date: 2015-08-07 04:24+0000\n"
 "Last-Translator: Lucas Mascaro <mascaro.lucas@yahoo.fr>\n"
+"Language: fr\n"
 "Language-Team: French (http://www.transifex.com/openstack/oslodb/language/"
 "fr/)\n"
 "Plural-Forms: nplurals=2; plural=(n > 1)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.0\n"
+"Generated-By: Babel 2.1.1\n"
 
 msgid "Invalid Parameter: Encoding directive wasn't provided."
 msgstr "Paramètre non valide : La directive encodage n'a pas été fourni."
