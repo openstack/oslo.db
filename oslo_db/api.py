@@ -29,6 +29,7 @@ import time
 
 from oslo_utils import excutils
 from oslo_utils import importutils
+from oslo_utils import reflection
 import six
 
 from oslo_db._i18n import _LE
@@ -144,6 +145,8 @@ class wrap_db_retry(object):
                             if isinstance(e, exception.RetryRequest):
                                 ectxt.type_ = type(e.inner_exc)
                                 ectxt.value = e.inner_exc
+                    LOG.debug("Performing DB retry for function %s",
+                              reflection.get_callable_name(f))
                     # NOTE(vsergeyev): We are using patched time module, so
                     #                  this effectively yields the execution
                     #                  context to another green thread.
