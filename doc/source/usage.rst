@@ -140,7 +140,7 @@ DB API backend support
 DB migration extensions
 =======================
 
-Available extensions for :mod:`oslo_db.migration`.
+Available extensions for `oslo_db.migration`.
 
 .. list-plugins:: oslo.db.migration
     :detailed:
