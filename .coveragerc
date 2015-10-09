@@ -1,7 +1,8 @@
 [run]
 branch = True
-source = db
-omit = db/tests/*,db/openstack/*
+source = oslo_db
+omit = oslo_db/tests/*
 
 [report]
 ignore_errors = True
+precision = 2
