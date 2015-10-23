@@ -4,21 +4,22 @@
 #
 # Translators:
 # Adriana Chisco Landazábal <achisco94@gmail.com>, 2015
+# OpenStack Infra <zanata@openstack.org>, 2015. #zanata
 msgid ""
 msgstr ""
-"Project-Id-Version: oslo.db\n"
+"Project-Id-Version: oslo.db 3.1.1.dev1\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2015-08-04 06:31+0000\n"
-"PO-Revision-Date: 2015-06-22 21:08+0000\n"
+"POT-Creation-Date: 2015-10-23 06:27+0000\n"
+"PO-Revision-Date: 2015-06-22 09:08+0000\n"
 "Last-Translator: Adriana Chisco Landazábal <achisco94@gmail.com>\n"
-"Language-Team: Spanish (http://www.transifex.com/openstack/oslodb/language/"
-"es/)\n"
+"Language-Team: Spanish\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.0\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Generated-By: Babel 2.0\n"
+"X-Generator: Zanata 3.7.1\n"
 
 msgid "'eventlet' is required for TpoolDbapiWrapper."
 msgstr "Se necesita 'eventlet' para TpoolDbapiWrapper."
