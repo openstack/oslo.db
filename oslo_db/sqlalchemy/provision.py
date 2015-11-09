@@ -312,7 +312,7 @@ class Backend(object):
         for url_str in configured_urls:
             url = sa_url.make_url(url_str)
             m = re.match(r'([^+]+?)(?:\+(.+))?$', url.drivername)
-            database_type, drivertype = m.group(1, 2)
+            database_type = m.group(1)
             Backend(database_type, url)
 
 
