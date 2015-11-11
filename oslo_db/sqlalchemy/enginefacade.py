@@ -952,6 +952,10 @@ class LegacyEngineFacade(object):
                 _conf, connection=sql_connection,
                 slave_connection=slave_connection)
 
+    def _check_factory_started(self):
+        if not self._factory._started:
+            self._factory._start()
+
     def get_engine(self, use_slave=False):
         """Get the engine instance (note, that it's shared).
 
@@ -962,6 +966,7 @@ class LegacyEngineFacade(object):
         :type use_slave: bool
 
         """
+        self._check_factory_started()
         if use_slave:
             return self._factory._reader_engine
         else:
@@ -982,6 +987,7 @@ class LegacyEngineFacade(object):
         was created). See SQLAlchemy Session docs for details.
 
         """
+        self._check_factory_started()
         if use_slave:
             return self._factory._reader_maker(**kwargs)
         else:
@@ -994,6 +1000,7 @@ class LegacyEngineFacade(object):
         be temporarily injected with some state such as a specific connection.
 
         """
+        self._check_factory_started()
         if use_slave:
             return self._factory._reader_maker
         else:

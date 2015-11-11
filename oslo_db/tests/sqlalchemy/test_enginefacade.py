@@ -997,6 +997,31 @@ class LegacyIntegrationtest(test_base.DbTestCase):
 
         self.assertNotEqual(legacy1, legacy2)
 
+    def test_legacy_not_started(self):
+
+        factory = enginefacade._TransactionFactory()
+
+        self.assertRaises(
+            exception.CantStartEngineError,
+            factory.get_legacy_facade
+        )
+
+        legacy_facade = factory.get_legacy_facade()
+        self.assertRaises(
+            exception.CantStartEngineError,
+            legacy_facade.get_session
+        )
+
+        self.assertRaises(
+            exception.CantStartEngineError,
+            legacy_facade.get_session
+        )
+
+        self.assertRaises(
+            exception.CantStartEngineError,
+            legacy_facade.get_engine
+        )
+
 
 class ThreadingTest(test_base.DbTestCase):
     """Test copy/pickle on new threads using real connections and sessions."""
