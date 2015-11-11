@@ -622,6 +622,17 @@ class _TransactionContextManager(object):
         """
         self._factory.configure(**kw)
 
+    def get_legacy_facade(self):
+        """Return a :class:`.LegacyEngineFacade` for factory from this context.
+
+        This facade will make use of the same engine and sessionmaker
+        as this factory, however will not share the same transaction context;
+        the legacy facade continues to work the old way of returning
+        a new Session each time get_session() is called.
+        """
+
+        return self._factory.get_legacy_facade()
+
     @property
     def replace(self):
         """Modifier to replace the global transaction factory with this one."""
@@ -827,7 +838,7 @@ def get_legacy_facade():
     a new Session each time get_session() is called.
 
     """
-    return _context_manager._factory.get_legacy_facade()
+    return _context_manager.get_legacy_facade()
 
 
 reader = _context_manager.reader

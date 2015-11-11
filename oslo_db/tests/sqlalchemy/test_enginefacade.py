@@ -985,6 +985,18 @@ class LegacyIntegrationtest(test_base.DbTestCase):
             enginefacade._context_manager._factory._writer_maker
         )
 
+    def test_legacy_facades_from_different_context_managers(self):
+        transaction_context1 = enginefacade.transaction_context()
+        transaction_context2 = enginefacade.transaction_context()
+
+        transaction_context1.configure(connection='sqlite:///?conn1')
+        transaction_context2.configure(connection='sqlite:///?conn2')
+
+        legacy1 = transaction_context1.get_legacy_facade()
+        legacy2 = transaction_context2.get_legacy_facade()
+
+        self.assertNotEqual(legacy1, legacy2)
+
 
 class ThreadingTest(test_base.DbTestCase):
     """Test copy/pickle on new threads using real connections and sessions."""
