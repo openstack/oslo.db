@@ -583,6 +583,60 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
             exc.args[0]
         )
 
+    def test_reader_allow_async_nested_in_async_reader(self):
+        context = oslo_context.RequestContext()
+
+        @enginefacade.reader.async
+        def go1(context):
+            context.session.execute("test1")
+            go2(context)
+
+        @enginefacade.reader.allow_async
+        def go2(context):
+            context.session.execute("test2")
+
+        go1(context)
+
+        with self._assert_engines() as engines:
+            with self._assert_makers(engines) as makers:
+                with self._assert_async_reader_session(makers) as session:
+                    session.execute("test1")
+                    session.execute("test2")
+
+    def test_reader_allow_async_nested_in_reader(self):
+        context = oslo_context.RequestContext()
+
+        @enginefacade.reader.reader
+        def go1(context):
+            context.session.execute("test1")
+            go2(context)
+
+        @enginefacade.reader.allow_async
+        def go2(context):
+            context.session.execute("test2")
+
+        go1(context)
+
+        with self._assert_engines() as engines:
+            with self._assert_makers(engines) as makers:
+                with self._assert_reader_session(makers) as session:
+                    session.execute("test1")
+                    session.execute("test2")
+
+    def test_reader_allow_async_is_reader_by_default(self):
+        context = oslo_context.RequestContext()
+
+        @enginefacade.reader.allow_async
+        def go1(context):
+            context.session.execute("test1")
+
+        go1(context)
+
+        with self._assert_engines() as engines:
+            with self._assert_makers(engines) as makers:
+                with self._assert_reader_session(makers) as session:
+                    session.execute("test1")
+
     def test_writer_nested_in_async_reader_raises(self):
         context = oslo_context.RequestContext()
 

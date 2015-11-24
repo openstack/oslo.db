@@ -528,13 +528,13 @@ class _TransactionContext(object):
         else:
             transaction.rollback()
 
-    def _produce_block(self, mode, connection, savepoint):
+    def _produce_block(self, mode, connection, savepoint, allow_async=False):
         if mode is _WRITER:
             self._writer()
         elif mode is _ASYNC_READER:
             self._async_reader()
         else:
-            self._reader()
+            self._reader(allow_async)
         if connection:
             return self._connection(savepoint)
         else:
@@ -552,10 +552,10 @@ class _TransactionContext(object):
                 "Can't upgrade an ASYNC_READER transaction "
                 "to a WRITER mid-transaction")
 
-    def _reader(self):
+    def _reader(self, allow_async=False):
         if self.mode is None:
             self.mode = _READER
-        elif self.mode is _ASYNC_READER:
+        elif self.mode is _ASYNC_READER and not allow_async:
             raise TypeError(
                 "Can't upgrade an ASYNC_READER transaction "
                 "to a READER mid-transaction")
@@ -589,7 +589,8 @@ class _TransactionContextManager(object):
             savepoint=False,
             connection=False,
             replace_global_factory=None,
-            _is_global_manager=False):
+            _is_global_manager=False,
+            allow_async=False):
 
         if root is None:
             self._root = self
@@ -606,6 +607,7 @@ class _TransactionContextManager(object):
             raise TypeError(
                 "setting savepoint and independent makes no sense.")
         self._connection = connection
+        self._allow_async = allow_async
 
     @property
     def _factory(self):
@@ -647,6 +649,27 @@ class _TransactionContextManager(object):
     def reader(self):
         """Modifier to set the transaction to READER."""
         return self._clone(mode=_READER)
+
+    @property
+    def allow_async(self):
+        """Modifier to allow async operations
+
+        Allows async operations if asynchronous session is already
+        started in this context. Marking DB API methods with READER would make
+        it impossible to use them in ASYNC_READER transactions, and marking
+        them with ASYNC_READER would require a modification of all the places
+        these DB API methods are called to force READER mode, where the latest
+        DB state is required.
+
+        In Nova DB API methods should have a 'safe' default (i.e. READER),
+        so that they can start sessions on their own, but it would also be
+        useful for them to be able to participate in an existing ASYNC_READER
+        session, if one was started up the stack.
+        """
+
+        if self._mode is _WRITER:
+            raise TypeError("Setting async on a WRITER makes no sense")
+        return self._clone(allow_async=True)
 
     @property
     def independent(self):
@@ -732,7 +755,8 @@ class _TransactionContextManager(object):
                 with current._produce_block(
                     mode=self._mode,
                     connection=self._connection,
-                    savepoint=self._savepoint) as resource:
+                    savepoint=self._savepoint,
+                    allow_async=self._allow_async) as resource:
                     yield resource
             else:
                 yield
