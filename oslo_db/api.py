@@ -139,6 +139,11 @@ class wrap_db_retry(object):
                     with excutils.save_and_reraise_exception() as ectxt:
                         if remaining > 0:
                             ectxt.reraise = not self._is_exception_expected(e)
+                            if ectxt.reraise:
+                                # We got an unexpected exception so stop
+                                # retrying, log it and raise it up to the
+                                # caller.
+                                LOG.exception(_LE('DB error.'))
                         else:
                             LOG.exception(_LE('DB exceeded retry limit.'))
                             # if it's a RetryRequest, we need to unpack it
@@ -166,7 +171,7 @@ class wrap_db_retry(object):
             # and not an error condition in case retries are
             # not exceeded
             if not isinstance(exc, exception.RetryRequest):
-                LOG.exception(_LE('DB error.'))
+                LOG.debug('DB error: %s', exc)
             return True
         return self.exception_checker(exc)
 
