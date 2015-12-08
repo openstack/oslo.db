@@ -163,7 +163,7 @@ class wrap_db_retry(object):
             # and not an error condition in case retries are
             # not exceeded
             if not isinstance(exc, exception.RetryRequest):
-                LOG.exception(_LE('DB error.'))
+                LOG.debug('DB error: %s', exc)
             return True
         return self.exception_checker(exc)
 
