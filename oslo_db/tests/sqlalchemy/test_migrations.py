@@ -199,6 +199,7 @@ class ModelsMigrationSyncMixin(test_base.DbTestCase):
             sa.Column('defaulttest4', sa.Enum('first', 'second',
                                               name='testenum'),
                       server_default="first"),
+            sa.Column('variant', sa.BigInteger()),
             sa.Column('fk_check', sa.String(36), nullable=False),
             sa.UniqueConstraint('spam', 'eggs', name='uniq_cons'),
         )
@@ -227,6 +228,8 @@ class ModelsMigrationSyncMixin(test_base.DbTestCase):
             defaulttest4 = sa.Column('defaulttest4', sa.Enum('first', 'second',
                                                              name='testenum'),
                                      server_default="first")
+            variant = sa.Column(sa.BigInteger().with_variant(
+                sa.Integer(), 'sqlite'))
             bar = sa.Column('bar', sa.Numeric(10, 5))
 
         class ModelThatShouldNotBeCompared(BASE):
@@ -320,6 +323,7 @@ class ModelsMigrationSyncMixin(test_base.DbTestCase):
             sa.Column('defaulttest4',
                       sa.Enum('first', 'second', name='testenum'),
                       server_default="first"),
+            sa.Column('variant', sa.String(10)),
             sa.Column('fk_check', sa.String(36), nullable=False),
             sa.UniqueConstraint('spam', 'foo', name='uniq_cons'),
             sa.ForeignKeyConstraint(['fk_check'], ['table.fk_check']),
@@ -343,6 +347,7 @@ class ModelsMigrationSyncMixin(test_base.DbTestCase):
         self.assertIn('defaulttest', msg)
         self.assertIn('defaulttest3', msg)
         self.assertIn('remove_fk', msg)
+        self.assertIn('variant', msg)
 
 
 class ModelsMigrationsSyncMysql(ModelsMigrationSyncMixin,

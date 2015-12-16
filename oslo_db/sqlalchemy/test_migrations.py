@@ -435,7 +435,19 @@ class ModelsMigrationsSync(object):
         if issubclass(type(meta_type), BOOLEAN_METADATA):
             return not issubclass(type(insp_type), BOOLEAN_SQL)
 
-        return None  # tells alembic to use the default comparison method
+        # Alembic <=0.8.4 do not contain logic of comparing Variant type with
+        # others.
+        if isinstance(meta_type, types.Variant):
+            orig_type = meta_col.type
+            impl_type = meta_type.load_dialect_impl(ctxt.dialect)
+            meta_col.type = impl_type
+            try:
+                return self.compare_type(ctxt, insp_col, meta_col, insp_type,
+                                         impl_type)
+            finally:
+                meta_col.type = orig_type
+
+        return ctxt.impl.compare_type(insp_col, meta_col)
 
     def compare_server_default(self, ctxt, ins_col, meta_col,
                                insp_def, meta_def, rendered_meta_def):
