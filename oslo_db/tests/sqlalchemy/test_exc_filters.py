@@ -77,6 +77,9 @@ class TestsExceptionFilter(_SQLAExceptionMatcher, oslo_test_base.BaseTestCase):
 
         """
 
+    class DataError(Error):
+        pass
+
     class OperationalError(Error):
         pass
 
@@ -692,6 +695,28 @@ class TestDeadlock(TestsExceptionFilter):
             "Error",
             orig_exception_cls=self.Error
         )
+
+
+class TestDataError(TestsExceptionFilter):
+    def _run_bad_data_test(self, dialect_name, message, error_class):
+        self._run_test(dialect_name,
+                       "INSERT INTO TABLE some_values",
+                       error_class(message),
+                       exception.DBDataError)
+
+    def test_bad_data_incorrect_string(self):
+        # Error sourced from https://bugs.launchpad.net/cinder/+bug/1393871
+        self._run_bad_data_test("mysql",
+                                '(1366, "Incorrect string value: \'\\xF0\' '
+                                'for column \'resource\' at row 1"',
+                                self.OperationalError)
+
+    def test_bad_data_out_of_range(self):
+        # Error sourced from https://bugs.launchpad.net/cinder/+bug/1463379
+        self._run_bad_data_test("mysql",
+                                '(1264, "Out of range value for column '
+                                '\'resource\' at row 1"',
+                                self.DataError)
 
 
 class IntegrationTest(test_base.DbTestCase):
