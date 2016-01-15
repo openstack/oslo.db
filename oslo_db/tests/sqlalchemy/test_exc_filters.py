@@ -57,9 +57,14 @@ class _SQLAExceptionMatcher(object):
         else:
             self.assertEqual(str(exc.orig).lower(), message.lower())
         if sql is not None:
-            self.assertEqual(exc.statement, sql)
-        if params is not None:
-            self.assertEqual(exc.params, params)
+            if params is not None:
+                if '?' in exc.statement:
+                    self.assertEqual(exc.statement, sql)
+                    self.assertEqual(exc.params, params)
+                else:
+                    self.assertEqual(exc.statement % exc.params, sql % params)
+            else:
+                self.assertEqual(exc.statement, sql)
 
 
 class TestsExceptionFilter(_SQLAExceptionMatcher, oslo_test_base.BaseTestCase):
