@@ -220,3 +220,15 @@ class DBRetryRequestCase(DBAPITestCase):
         dbapi.api_class_call1()
 
         self.assertFalse(mocked_wrap.called)
+
+    @mock.patch('oslo_db.api.LOG')
+    def test_retry_wrapper_non_db_error_not_logged(self, mock_log):
+        # Tests that if the retry wrapper hits a non-db error (raised from the
+        # wrapped function), then that exception is reraised but not logged.
+
+        @api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)
+        def some_method():
+            raise AttributeError('test')
+
+        self.assertRaises(AttributeError, some_method)
+        self.assertFalse(mock_log.called)
