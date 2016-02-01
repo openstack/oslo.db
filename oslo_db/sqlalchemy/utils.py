@@ -123,7 +123,7 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
         try:
             inspect(model).all_orm_descriptors[current_sort_key]
         except KeyError:
-            raise exception.InvalidSortKey()
+            raise exception.InvalidSortKey(current_sort_key)
         else:
             sort_key_attr = getattr(model, current_sort_key)
 
