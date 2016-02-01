@@ -183,7 +183,9 @@ class DBDataError(DBError):
 class InvalidSortKey(Exception):
     """A sort key destined for database query usage is invalid."""
 
-    message = _("Sort key supplied was not valid.")
+    def __init__(self):
+        super(InvalidSortKey, self).__init__(
+            _("Sort key supplied was not valid."))
 
 
 class ColumnError(Exception):

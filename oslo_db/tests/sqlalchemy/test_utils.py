@@ -148,6 +148,10 @@ class TestPaginateQuery(test_base.BaseTestCase):
                              ['user_id', 'project_id'],
                              sort_dirs=['asc', 'desc'])
 
+    def test_invalid_sort_key_str(self):
+        self.assertEqual("Sort key supplied was not valid.",
+                         str(exception.InvalidSortKey()))
+
     def test_paginate_query_attribute_error(self):
         sqlalchemy.asc(self.model.user_id).AndReturn('asc')
         self.query.order_by('asc').AndReturn(self.query)
