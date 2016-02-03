@@ -280,6 +280,8 @@ def _raise_mysql_table_doesnt_exist_asis(
          r".*1265.*Data truncated for column.*")
 @filters("mysql", sqla_exc.DataError,
          r".*1264.*Out of range value for column.*")
+@filters("mysql", sqla_exc.InternalError,
+         r"^.*1366.*Incorrect string value:*")
 def _raise_data_error(error, match, engine_name, is_disconnect):
     """Raise DBDataError exception for different data errors."""
 
