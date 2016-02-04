@@ -147,8 +147,9 @@ class DBInvalidUnicodeParameter(Exception):
     without encoding directive.
     """
 
-    message = _("Invalid Parameter: "
-                "Encoding directive wasn't provided.")
+    def __init__(self):
+        super(DBInvalidUnicodeParameter, self).__init__(
+            _("Invalid Parameter: Encoding directive wasn't provided."))
 
 
 class DbMigrationError(DBError):
