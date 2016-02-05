@@ -152,6 +152,11 @@ class TestPaginateQuery(test_base.BaseTestCase):
         self.assertEqual("Sort key supplied is invalid: lol",
                          str(exception.InvalidSortKey("lol")))
 
+    def test_invalid_unicode_paramater_str(self):
+        self.assertEqual(
+            "Invalid Parameter: Encoding directive wasn't provided.",
+            str(exception.DBInvalidUnicodeParameter()))
+
     def test_paginate_query_attribute_error(self):
         sqlalchemy.asc(self.model.user_id).AndReturn('asc')
         self.query.order_by('asc').AndReturn(self.query)
