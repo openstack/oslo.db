@@ -149,6 +149,8 @@ class TestPaginateQuery(test_base.BaseTestCase):
                              sort_dirs=['asc', 'desc'])
 
     def test_invalid_sort_key_str(self):
+        self.assertEqual("Sort key supplied is invalid: None",
+                         str(exception.InvalidSortKey()))
         self.assertEqual("Sort key supplied is invalid: lol",
                          str(exception.InvalidSortKey("lol")))
 
