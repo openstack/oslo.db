@@ -43,6 +43,7 @@ with `try/except` statement. This is required for consistent handling of
 database errors.
 """
 
+import debtcollector.removals
 import six
 
 from oslo_db._i18n import _
@@ -147,6 +148,13 @@ class DBInvalidUnicodeParameter(Exception):
     without encoding directive.
     """
 
+    @debtcollector.removals.removed_property
+    def message(self):
+        # NOTE(rpodolyaka): provided for compatibility with python 3k, where
+        # exceptions do not have .message attribute, while we used to have one
+        # in this particular exception class. See LP #1542961 for details.
+        return str(self)
+
     def __init__(self):
         super(DBInvalidUnicodeParameter, self).__init__(
             _("Invalid Parameter: Encoding directive wasn't provided."))
@@ -183,6 +191,13 @@ class DBDataError(DBError):
 
 class InvalidSortKey(Exception):
     """A sort key destined for database query usage is invalid."""
+
+    @debtcollector.removals.removed_property
+    def message(self):
+        # NOTE(rpodolyaka): provided for compatibility with python 3k, where
+        # exceptions do not have .message attribute, while we used to have one
+        # in this particular exception class. See LP #1542961 for details.
+        return str(self)
 
     def __init__(self, key=None):
         super(InvalidSortKey, self).__init__(
