@@ -10,8 +10,6 @@
 #  License for the specific language governing permissions and limitations
 #  under the License.
 
-import copy
-
 from oslo_config import cfg
 
 
@@ -219,4 +217,4 @@ def list_opts():
 
     :returns: a list of (group_name, opts) tuples
     """
-    return [('database', copy.deepcopy(database_opts))]
+    return [('database', database_opts)]
