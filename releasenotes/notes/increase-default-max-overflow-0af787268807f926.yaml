@@ -1,0 +1,25 @@
+---
+upgrade:
+  - |
+    The default value of ``max_overflow`` config option
+    has been increased from 10 to 50 in order to allow
+    OpenStack services heavily using DBs to better handle
+    spikes of concurrent requests and lower the probability
+    of getting a pool timeout issue.
+
+    This change potentially leads to increasing of the number
+    of open connections to an RDBMS server. Depending on the
+    configuration, you may see "too many connections" errors
+    in logs of OpenStack services / RDBMS server. The max limit of
+    connections can be set by the means of these config options:
+
+    http://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html#sysvar_max_connections
+    http://www.postgresql.org/docs/current/static/runtime-config-connection.html#GUC-MAX-CONNECTIONS
+
+    For details, please see the following LP:
+
+    https://bugs.launchpad.net/oslo.db/+bug/1535375
+
+    and the ML thread:
+
+    http://lists.openstack.org/pipermail/openstack-dev/2015-December/082717.html

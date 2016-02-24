@@ -89,6 +89,7 @@ database_opts = [
                                                   group='DATABASE')],
                help='Interval between retries of opening a SQL connection.'),
     cfg.IntOpt('max_overflow',
+               default=50,
                deprecated_opts=[cfg.DeprecatedOpt('sql_max_overflow',
                                                   group='DEFAULT'),
                                 cfg.DeprecatedOpt('sqlalchemy_max_overflow',
