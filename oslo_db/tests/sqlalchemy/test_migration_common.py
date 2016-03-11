@@ -192,6 +192,22 @@ class TestMigrationCommon(test_base.DbTestCase):
         self.assertRaises(db_exception.DBMigrationError,
                           migration.db_sync, self.engine, self.path, 'foo')
 
+    @mock.patch.object(versioning_api, 'upgrade')
+    def test_db_sync_script_not_present(self, upgrade):
+        # For non existent migration script file sqlalchemy-migrate will raise
+        # VersionNotFoundError which will be wrapped in DbMigrationError.
+        upgrade.side_effect = migrate_exception.VersionNotFoundError
+        self.assertRaises(db_exception.DbMigrationError,
+                          migration.db_sync, self.engine, self.path,
+                          self.test_version + 1)
+
+    @mock.patch.object(versioning_api, 'upgrade')
+    def test_db_sync_known_error_raised(self, upgrade):
+        upgrade.side_effect = migrate_exception.KnownError
+        self.assertRaises(db_exception.DbMigrationError,
+                          migration.db_sync, self.engine, self.path,
+                          self.test_version + 1)
+
     def test_db_sync_upgrade(self):
         init_ver = 55
         with test_utils.nested(
