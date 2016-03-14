@@ -482,11 +482,7 @@ class TestMigrationUtils(db_test_base.DbTestCase):
                                                     foo=fooColumn)
 
         table = utils.get_table(self.engine, table_name)
-        # NOTE(boris-42): There is no way to check has foo type CustomType.
-        #                 but sqlalchemy will set it to NullType. This has
-        #                 been fixed upstream in recent SA versions
-        if SA_VERSION < (0, 9, 0):
-            self.assertTrue(isinstance(table.c.foo.type, NullType))
+
         self.assertTrue(isinstance(table.c.deleted.type, Integer))
 
     def test_change_deleted_column_type_to_boolean(self):
@@ -536,12 +532,6 @@ class TestMigrationUtils(db_test_base.DbTestCase):
                       Column('foo', CustomType),
                       Column('deleted', Integer))
         table.create()
-
-        # reflection of custom types has been fixed upstream
-        if SA_VERSION < (0, 9, 0):
-            self.assertRaises(exception.ColumnError,
-                              utils.change_deleted_column_type_to_boolean,
-                              self.engine, table_name)
 
         fooColumn = Column('foo', CustomType())
         utils.change_deleted_column_type_to_boolean(self.engine, table_name,

@@ -15,11 +15,11 @@ import collections
 import logging
 import re
 
+from sqlalchemy import event
 from sqlalchemy import exc as sqla_exc
 
 from oslo_db._i18n import _LE
 from oslo_db import exception
-from oslo_db.sqlalchemy import compat
 
 
 LOG = logging.getLogger(__name__)
@@ -380,7 +380,7 @@ def handler(context):
 
 
 def register_engine(engine):
-    compat.handle_error(engine, handler)
+    event.listen(engine, "handle_error", handler)
 
 
 def handle_connect_error(engine):

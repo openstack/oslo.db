@@ -31,7 +31,6 @@ import testresources
 
 from oslo_db._i18n import _LI
 from oslo_db import exception
-from oslo_db.sqlalchemy.compat import utils as compat_utils
 from oslo_db.sqlalchemy import session
 from oslo_db.sqlalchemy import utils
 
@@ -530,7 +529,7 @@ class PostgresqlBackendImpl(BackendImpl):
                 conn.execute("DROP DATABASE %s" % ident)
 
     def drop_additional_objects(self, conn):
-        enums = compat_utils.get_postgresql_enums(conn)
+        enums = [e['name'] for e in sqlalchemy.inspect(conn).get_enums()]
 
         for e in enums:
             conn.execute("DROP TYPE %s" % e)
