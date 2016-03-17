@@ -1004,6 +1004,19 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
             getattr, context, 'transaction_ctx'
         )
 
+    def test_context_found_for_bound_method(self):
+        context = oslo_context.RequestContext()
+
+        @enginefacade.reader
+        def go(self, context):
+            context.session.execute("test")
+        go(self, context)
+
+        with self._assert_engines() as engines:
+            with self._assert_makers(engines) as makers:
+                with self._assert_reader_session(makers) as session:
+                    session.execute("test")
+
 
 class SynchronousReaderWSlaveMockFacadeTest(MockFacadeTest):
     synchronous_reader = True

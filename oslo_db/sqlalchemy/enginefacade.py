@@ -13,6 +13,7 @@
 
 import contextlib
 import functools
+import inspect
 import operator
 import threading
 import warnings
@@ -700,10 +701,15 @@ class _TransactionContextManager(object):
 
     def __call__(self, fn):
         """Decorate a function."""
+        argspec = inspect.getargspec(fn)
+        if argspec.args[0] == 'self' or argspec.args[0] == 'cls':
+            context_index = 1
+        else:
+            context_index = 0
 
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
-            context = args[0]
+            context = args[context_index]
 
             with self._transaction_scope(context):
                 return fn(*args, **kwargs)
