@@ -1012,7 +1012,7 @@ class LegacyEngineFacade(object):
                           (defaults to False)
         :type use_slave: bool
 
-        Keyword arugments will be passed to a sessionmaker instance as is (if
+        Keyword arguments will be passed to a sessionmaker instance as is (if
         passed, they will override the ones used when the sessionmaker instance
         was created). See SQLAlchemy Session docs for details.
 
