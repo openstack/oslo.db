@@ -452,6 +452,42 @@ class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
         self.assertEqual("resource_foo", matched.key_table)
 
 
+class TestDBDataErrorSQLite(_SQLAExceptionMatcher, test_base.DbTestCase):
+
+    def setUp(self):
+        super(TestDBDataErrorSQLite, self).setUp()
+
+        if six.PY3:
+            self.skip("SQLite database supports unicode value for python3")
+
+        meta = sqla.MetaData(bind=self.engine)
+
+        self.table_1 = sqla.Table(
+            "resource_foo", meta,
+            sqla.Column("name", sqla.String),
+        )
+        self.table_1.create()
+
+    def test_raise(self):
+
+        matched = self.assertRaises(
+            exception.DBDataError,
+            self.engine.execute,
+            self.table_1.insert({'name': u'\u2713'.encode('utf-8')})
+        )
+
+        self.assertInnerException(
+            matched,
+            "ProgrammingError",
+            "You must not use 8-bit bytestrings unless you use a "
+            "text_factory that can interpret 8-bit bytestrings "
+            "(like text_factory = str). It is highly recommended that "
+            "you instead just switch your application to Unicode strings.",
+            "INSERT INTO resource_foo (name) VALUES (?)",
+            (u'\u2713'.encode('utf-8'),)
+        )
+
+
 class TestConstraint(TestsExceptionFilter):
     def test_postgresql(self):
         matched = self._run_test(
