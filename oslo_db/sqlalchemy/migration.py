@@ -150,7 +150,14 @@ def db_version_control(engine, abs_path, version=None):
     :param version:  Initial database version
     """
     repository = _find_migrate_repo(abs_path)
-    versioning_api.version_control(engine, repository, version)
+
+    try:
+        versioning_api.version_control(engine, repository, version)
+    except versioning_exceptions.InvalidVersionError as ex:
+        raise exception.DbMigrationError("Invalid version : %s" % ex)
+    except versioning_exceptions.DatabaseAlreadyControlledError:
+        raise exception.DbMigrationError("Database is already controlled.")
+
     return version
 
 
