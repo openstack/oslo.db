@@ -3,7 +3,7 @@
 # process, which may cause wedges in the gate later.
 
 pbr>=1.6 # Apache-2.0
-alembic>=0.8.0 # MIT
+alembic>=0.8.4 # MIT
 Babel>=1.3 # BSD
 oslo.i18n>=2.1.0 # Apache-2.0
 oslo.config>=3.7.0 # Apache-2.0
