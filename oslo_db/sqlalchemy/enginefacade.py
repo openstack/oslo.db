@@ -142,7 +142,9 @@ class _TransactionFactory(object):
             'connection_trace': _Default(False),
             'max_retries': _Default(10),
             'retry_interval': _Default(10),
-            'thread_checkin': _Default(True)
+            'thread_checkin': _Default(True),
+            'json_serializer': _Default(None),
+            'json_deserializer': _Default(None),
         }
         self._maker_cfg = {
             'expire_on_commit': _Default(False),
