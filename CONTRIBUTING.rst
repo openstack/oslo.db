@@ -59,4 +59,31 @@ For MySQL you can use the following commands::
  mysql> GRANT ALL PRIVILEGES ON * . * TO 'openstack_citest'@'localhost';
  mysql> FLUSH PRIVILEGES;
 
+Alternatively, you can use `pifpaf`_ to run the unit tests directly without
+setting up the database yourself. You still need to have the database software
+installed on your system. The following tox environments can be used::
+
+  tox -e py27-mysql
+  tox -e py27-postgresql
+  tox -e py34-mysql
+  tox -e py34-postgresql
+  tox -e py27-all
+  tox -e py34-all
+
+The database will be set up for you locally and temporarily on each run.
+
+Another way is to start `pifpaf` manually and use it to run the tests as you
+wish::
+
+  $ eval `pifpaf -g OS_TEST_DBAPI_ADMIN_CONNECTION run postgresql`
+  $ echo $OS_TEST_DBAPI_ADMIN_CONNECTION
+  postgresql://localhost/postgres?host=/var/folders/7k/pwdhb_mj2cv4zyr0kyrlzjx40000gq/T/tmpMGqN8C&port=9824
+  $ tox -e py27
+  […]
+  $ tox -e py34
+  […]
+  # Kill pifpaf once you're done
+  $ kill $PIFPAF_PID
+
 .. _wiki: https://wiki.openstack.org/wiki/Testing#Unit_Tests
+.. _pifpaf: https://github.com/jd/pifpaf
