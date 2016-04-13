@@ -122,7 +122,6 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
 
     _init_connection_args(
         url, engine_args,
-        sqlite_fk=sqlite_fk,
         max_pool_size=max_pool_size,
         max_overflow=max_overflow,
         pool_timeout=pool_timeout
