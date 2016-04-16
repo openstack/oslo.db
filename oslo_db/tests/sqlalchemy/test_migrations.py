@@ -200,6 +200,7 @@ class ModelsMigrationSyncMixin(test_base.DbTestCase):
                                               name='testenum'),
                       server_default="first"),
             sa.Column('variant', sa.BigInteger()),
+            sa.Column('variant2', sa.BigInteger(), server_default='0'),
             sa.Column('fk_check', sa.String(36), nullable=False),
             sa.UniqueConstraint('spam', 'eggs', name='uniq_cons'),
         )
@@ -230,6 +231,8 @@ class ModelsMigrationSyncMixin(test_base.DbTestCase):
                                      server_default="first")
             variant = sa.Column(sa.BigInteger().with_variant(
                 sa.Integer(), 'sqlite'))
+            variant2 = sa.Column(sa.BigInteger().with_variant(
+                sa.Integer(), 'sqlite'), server_default='0')
             bar = sa.Column('bar', sa.Numeric(10, 5))
 
         class ModelThatShouldNotBeCompared(BASE):
