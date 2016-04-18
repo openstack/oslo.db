@@ -33,6 +33,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
+from sqlalchemy.dialects.postgresql import psycopg2
 
 from oslo_db import exception
 from oslo_db.sqlalchemy.compat import utils as compat_utils
@@ -699,6 +700,22 @@ class TestConnectionUtils(test_utils.BaseTestCase):
                                  'passwd': 'pass'}
 
         self.connect_string = 'postgresql://dude:pass@localhost/test'
+
+        # NOTE(rpodolyaka): mock the dialect parts, so that we don't depend
+        # on psycopg2 (or any other DBAPI implementation) in these tests
+
+        @classmethod
+        def fake_dbapi(cls):
+            return mock.MagicMock()
+        patch_dbapi = mock.patch.object(psycopg2.PGDialect_psycopg2, 'dbapi',
+                                        new=fake_dbapi)
+        patch_dbapi.start()
+        self.addCleanup(patch_dbapi.stop)
+
+        patch_onconnect = mock.patch.object(psycopg2.PGDialect_psycopg2,
+                                            'on_connect')
+        patch_onconnect.start()
+        self.addCleanup(patch_onconnect.stop)
 
     def test_connect_string(self):
         connect_string = utils.get_connect_string(**self.full_credentials)
