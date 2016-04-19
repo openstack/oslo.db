@@ -5,12 +5,12 @@
 # Translators:
 # Adriana Chisco Landazábal <achisco94@gmail.com>, 2015
 # Miriam Godinez <miriamgc@hotmail.com>, 2015
-# OpenStack Infra <zanata@openstack.org>, 2015. #zanata
+# Andreas Jaeger <jaegerandi@gmail.com>, 2016. #zanata
 msgid ""
 msgstr ""
-"Project-Id-Version: oslo.db 4.2.1.dev4\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2016-01-07 02:02+0000\n"
+"Project-Id-Version: oslo.db 4.6.1.dev19\n"
+"Report-Msgid-Bugs-To: https://bugs.launchpad.net/openstack-i18n/\n"
+"POT-Creation-Date: 2016-04-19 04:28+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -32,9 +32,6 @@ msgid ""
 msgstr ""
 "Por favor especifique la columna %s en el parámetro col_name_col_instance. "
 "Es necesario porque la columna tiene un tipo no soportado por SQLite."
-
-msgid "Sort key supplied was not valid."
-msgstr "La clave de ordenación proporcionada no es válida. "
 
 #, python-format
 msgid ""
