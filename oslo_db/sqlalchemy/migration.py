@@ -119,7 +119,7 @@ def db_version(engine, abs_path, init_version):
 
     :param engine:  SQLAlchemy engine instance for a given database
     :param abs_path: Absolute path to migrate repository
-    :param version:  Initial database version
+    :param init_version:  Initial database version
     """
     repository = _find_migrate_repo(abs_path)
     try:
