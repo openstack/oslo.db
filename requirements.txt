@@ -16,5 +16,5 @@ six>=1.9.0
 # NOTE(mriedem): testtools is capped so it must be installed
 # before testscenarios, which requires testtools uncapped.
 testtools!=1.2.0,<2.0.0,>=0.9.36
-testresources>=0.2.4
+testresources<2.0.0,>=0.2.4
 testscenarios>=0.4
