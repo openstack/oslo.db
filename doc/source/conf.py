@@ -36,7 +36,6 @@ extensions = [
 exclude_patterns = [
     'api/setup.rst', # workaround for https://launchpad.net/bugs/1260495
     'api/tests.*',  # avoid of docs generation from tests
-    'api/oslo.db.openstack.common.*',  # skip common modules
 ]
 
 # The suffix of source filenames.
