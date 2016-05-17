@@ -27,6 +27,7 @@ import logging
 import threading
 import time
 
+from debtcollector import removals
 from oslo_utils import excutils
 from oslo_utils import importutils
 from oslo_utils import reflection
@@ -106,6 +107,8 @@ class wrap_db_retry(object):
     :type exception_checker: callable
     """
 
+    @removals.removed_kwarg("retry_on_request",
+                            "Retry on request is always enabled")
     def __init__(self, retry_interval=0, max_retries=0,
                  inc_retry_interval=False,
                  max_retry_interval=0, retry_on_disconnect=False,
@@ -113,15 +116,13 @@ class wrap_db_retry(object):
                  exception_checker=lambda exc: False):
         super(wrap_db_retry, self).__init__()
 
-        self.db_error = ()
+        self.db_error = (exception.RetryRequest, )
         # default is that we re-raise anything unexpected
         self.exception_checker = exception_checker
         if retry_on_disconnect:
             self.db_error += (exception.DBConnectionError, )
         if retry_on_deadlock:
             self.db_error += (exception.DBDeadlock, )
-        if retry_on_request:
-            self.db_error += (exception.RetryRequest, )
         self.retry_interval = retry_interval
         self.max_retries = max_retries
         self.inc_retry_interval = inc_retry_interval
@@ -258,8 +259,7 @@ class DBAPI(object):
                 inc_retry_interval=self.inc_retry_interval,
                 max_retry_interval=self.max_retry_interval,
                 retry_on_disconnect=retry_on_disconnect,
-                retry_on_deadlock=retry_on_deadlock,
-                retry_on_request=retry_on_request)(attr)
+                retry_on_deadlock=retry_on_deadlock)(attr)
 
         return attr
 

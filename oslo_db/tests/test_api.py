@@ -200,7 +200,7 @@ class DBReconnectTestCase(DBAPITestCase):
 
 class DBRetryRequestCase(DBAPITestCase):
     def test_retry_wrapper_succeeds(self):
-        @api.wrap_db_retry(max_retries=10, retry_on_request=True)
+        @api.wrap_db_retry(max_retries=10)
         def some_method():
             pass
 
@@ -209,7 +209,7 @@ class DBRetryRequestCase(DBAPITestCase):
     def test_retry_wrapper_reaches_limit(self):
         max_retries = 10
 
-        @api.wrap_db_retry(max_retries=10, retry_on_request=True)
+        @api.wrap_db_retry(max_retries=10)
         def some_method(res):
             res['result'] += 1
             raise exception.RetryRequest(ValueError())
@@ -223,7 +223,7 @@ class DBRetryRequestCase(DBAPITestCase):
         def exception_checker(exc):
             return isinstance(exc, ValueError) and exc.args[0] < 5
 
-        @api.wrap_db_retry(max_retries=10, retry_on_request=True,
+        @api.wrap_db_retry(max_retries=10,
                            exception_checker=exception_checker)
         def some_method(res):
             res['result'] += 1
