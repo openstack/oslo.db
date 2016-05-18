@@ -207,9 +207,9 @@ class DBRetryRequestCase(DBAPITestCase):
         some_method()
 
     def test_retry_wrapper_reaches_limit(self):
-        max_retries = 10
+        max_retries = 2
 
-        @api.wrap_db_retry(max_retries=10)
+        @api.wrap_db_retry(max_retries=max_retries)
         def some_method(res):
             res['result'] += 1
             raise exception.RetryRequest(ValueError())
