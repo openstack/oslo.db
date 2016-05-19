@@ -106,7 +106,9 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                   connection_debug=0, max_pool_size=None, max_overflow=None,
                   pool_timeout=None, sqlite_synchronous=True,
                   connection_trace=False, max_retries=10, retry_interval=10,
-                  thread_checkin=True, logging_name=None):
+                  thread_checkin=True, logging_name=None,
+                  json_serializer=None,
+                  json_deserializer=None):
     """Return a new SQLAlchemy engine."""
 
     url = sqlalchemy.engine.url.make_url(sql_connection)
@@ -124,7 +126,9 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
         url, engine_args,
         max_pool_size=max_pool_size,
         max_overflow=max_overflow,
-        pool_timeout=pool_timeout
+        pool_timeout=pool_timeout,
+        json_serializer=json_serializer,
+        json_deserializer=json_deserializer,
     )
 
     engine = sqlalchemy.create_engine(url, **engine_args)
@@ -186,6 +190,8 @@ def _init_connection_args(url, engine_args, **kw):
         # it's supported for PostgreSQL 8.*. More details at:
         # http://docs.sqlalchemy.org/en/rel_0_9/dialects/postgresql.html
         engine_args['client_encoding'] = 'utf8'
+    engine_args['json_serializer'] = kw.get('json_serializer')
+    engine_args['json_deserializer'] = kw.get('json_deserializer')
 
 
 @_init_connection_args.dispatch_for("mysql")

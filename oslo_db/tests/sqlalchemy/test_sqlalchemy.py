@@ -348,6 +348,8 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
             sqlite_synchronous=mock.ANY,
             pool_timeout=mock.ANY,
             thread_checkin=mock.ANY,
+            json_serializer=None,
+            json_deserializer=None,
         )
         get_maker.assert_called_once_with(engine=create_engine(),
                                           autocommit=False,
