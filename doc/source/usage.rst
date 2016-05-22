@@ -105,7 +105,7 @@ Base class for models usage
 
 .. code:: python
 
-    from oslo.db import models
+    from oslo_db.sqlalchemy import models
 
 
     class ProjectSomething(models.TimestampMixin,
@@ -119,8 +119,8 @@ DB API backend support
 
 .. code:: python
 
-    from oslo.config import cfg
-    from oslo.db import api as db_api
+    from oslo_config import cfg
+    from oslo_db import api as db_api
 
 
     _BACKEND_MAPPING = {'sqlalchemy': 'project.db.sqlalchemy.api'}
@@ -142,5 +142,5 @@ DB migration extensions
 
 Available extensions for `oslo_db.migration`.
 
-.. list-plugins:: oslo.db.migration
+.. list-plugins:: oslo_db.sqlalchemy.migration
     :detailed:
