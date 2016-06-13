@@ -519,7 +519,7 @@ class _TransactionContext(object):
             session.commit()
         elif self.rollback_reader_sessions:
             session.rollback()
-        # In the absense of calling session.rollback(),
+        # In the absence of calling session.rollback(),
         # the next call is session.close().  This releases all
         # objects from the session into the detached state, and
         # releases the connection as well; the connection when returned

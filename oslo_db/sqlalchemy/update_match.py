@@ -72,7 +72,7 @@ def update_on_match(
                 # try again
                 return False
 
-            peristent_instance = base_query.update_on_match(
+            persistent_instance = base_query.update_on_match(
                 specimen,
                 surrogate_key,
                 values=values,
