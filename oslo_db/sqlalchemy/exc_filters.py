@@ -14,6 +14,7 @@
 import collections
 import logging
 import re
+import sys
 
 from sqlalchemy import event
 from sqlalchemy import exc as sqla_exc
@@ -383,6 +384,8 @@ def _raise_for_all_others(error, match, engine_name, is_disconnect):
     LOG.exception(_LE('DB exception wrapped.'))
     raise exception.DBError(error)
 
+ROLLBACK_CAUSE_KEY = 'oslo.db.sp_rollback_cause'
+
 
 def handler(context):
     """Iterate through available filters and invoke those which match.
@@ -416,13 +419,52 @@ def handler(context):
                                     match,
                                     context.engine.dialect.name,
                                     context.is_disconnect)
-                            except exception.DBConnectionError:
-                                context.is_disconnect = True
+                            except exception.DBError as dbe:
+                                if (
+                                    context.connection is not None and
+                                    not context.connection.closed and
+                                    not context.connection.invalidated and
+                                    ROLLBACK_CAUSE_KEY
+                                    in context.connection.info
+                                ):
+                                    dbe.cause = \
+                                        context.connection.info.pop(
+                                            ROLLBACK_CAUSE_KEY)
+
+                                if isinstance(
+                                        dbe, exception.DBConnectionError):
+                                    context.is_disconnect = True
                                 raise
 
 
 def register_engine(engine):
     event.listen(engine, "handle_error", handler)
+
+    @event.listens_for(engine, "rollback_savepoint")
+    def rollback_savepoint(conn, name, context):
+        exc_info = sys.exc_info()
+        if exc_info[1]:
+            conn.info[ROLLBACK_CAUSE_KEY] = exc_info[1]
+        # NOTE(zzzeek) this eliminates a reference cycle between tracebacks
+        # that would occur in Python 3 only, which has been shown to occur if
+        # this function were in fact part of the traceback.  That's not the
+        # case here however this is left as a defensive measure.
+        del exc_info
+
+    # try to clear the "cause" ASAP outside of savepoints,
+    # by grabbing the end of transaction events...
+    @event.listens_for(engine, "rollback")
+    @event.listens_for(engine, "commit")
+    def pop_exc_tx(conn):
+        conn.info.pop(ROLLBACK_CAUSE_KEY, None)
+
+    # .. as well as connection pool checkin (just in case).
+    # the .info dictionary lasts as long as the DBAPI connection itself
+    # and is cleared out when the connection is recycled or closed
+    # due to invalidate etc.
+    @event.listens_for(engine, "checkin")
+    def pop_exc_checkin(dbapi_conn, connection_record):
+        connection_record.info.pop(ROLLBACK_CAUSE_KEY, None)
 
 
 def handle_connect_error(engine):
