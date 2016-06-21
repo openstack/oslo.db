@@ -244,6 +244,34 @@ def _check_constraint_error(
     raise exception.DBConstraintError(table, check_name, integrity_error)
 
 
+@filters("postgresql", sqla_exc.ProgrammingError,
+         r".* constraint \"(?P<constraint>.+)\" "
+         "of relation "
+         "\"(?P<relation>.+)\" does not exist")
+@filters("mysql", sqla_exc.InternalError,
+         r".*1091,.*Can't DROP '(?P<constraint>.+)'; "
+         "check that column/key exists")
+@filters("mysql", sqla_exc.InternalError,
+         r".*1025,.*Error on rename of '.+/(?P<relation>.+)' to ")
+def _check_constraint_non_existing(
+        programming_error, match, engine_name, is_disconnect):
+    """Filter for constraint non existing errors."""
+
+    try:
+        relation = match.group("relation")
+    except IndexError:
+        relation = None
+
+    try:
+        constraint = match.group("constraint")
+    except IndexError:
+        constraint = None
+
+    raise exception.DBNonExistentConstraint(relation,
+                                            constraint,
+                                            programming_error)
+
+
 @filters("ibm_db_sa", sqla_exc.IntegrityError, r"^.*SQL0803N.*$")
 def _db2_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
     """Filter for DB2 duplicate key errors.

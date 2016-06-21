@@ -1,3 +1,5 @@
+#    -*- encoding: utf-8 -*-
+#
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
@@ -20,6 +22,7 @@ from oslotest import base as oslo_test_base
 import six
 import sqlalchemy as sqla
 from sqlalchemy import event
+import sqlalchemy.exc
 from sqlalchemy.orm import mapper
 
 from oslo_db import exception
@@ -241,6 +244,71 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
             exception.DBError
         )
         self.assertEqual("mysqldb has an attribute error", matched.args[0])
+
+
+class TestNonExistentConstraint(
+        _SQLAExceptionMatcher,
+        test_base.DbTestCase):
+
+    def setUp(self):
+        super(TestNonExistentConstraint, self).setUp()
+
+        meta = sqla.MetaData(bind=self.engine)
+
+        self.table_1 = sqla.Table(
+            "resource_foo", meta,
+            sqla.Column("id", sqla.Integer, primary_key=True),
+            mysql_engine='InnoDB',
+            mysql_charset='utf8',
+        )
+        self.table_1.create()
+
+
+class TestNonExistentConstraintPostgreSQL(
+        TestNonExistentConstraint,
+        test_base.PostgreSQLOpportunisticTestCase):
+
+    def test_raise(self):
+        matched = self.assertRaises(
+            exception.DBNonExistentConstraint,
+            self.engine.execute,
+            sqla.schema.DropConstraint(
+                sqla.ForeignKeyConstraint(["id"], ["baz.id"],
+                                          name="bar_fkey",
+                                          table=self.table_1)),
+        )
+        self.assertInnerException(
+            matched,
+            "ProgrammingError",
+            "constraint \"bar_fkey\" of relation "
+            "\"resource_foo\" does not exist\n",
+            "ALTER TABLE resource_foo DROP CONSTRAINT bar_fkey",
+        )
+        self.assertEqual("resource_foo", matched.table)
+        self.assertEqual("bar_fkey", matched.constraint)
+
+
+class TestNonExistentConstraintMySQL(
+        TestNonExistentConstraint,
+        test_base.MySQLOpportunisticTestCase):
+
+    def test_raise(self):
+        matched = self.assertRaises(
+            exception.DBNonExistentConstraint,
+            self.engine.execute,
+            sqla.schema.DropConstraint(
+                sqla.ForeignKeyConstraint(["id"], ["baz.id"],
+                                          name="bar_fkey",
+                                          table=self.table_1)),
+        )
+        # NOTE(jd) Cannot check precisely with assertInnerException since MySQL
+        # error are not the same depending on its version…
+        self.assertIsInstance(matched.inner_exception,
+                              sqlalchemy.exc.InternalError)
+        if matched.table is not None:
+            self.assertEqual("resource_foo", matched.table)
+        if matched.constraint is not None:
+            self.assertEqual("bar_fkey", matched.constraint)
 
 
 class TestReferenceErrorSQLite(_SQLAExceptionMatcher, test_base.DbTestCase):
