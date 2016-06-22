@@ -311,6 +311,73 @@ class TestNonExistentConstraintMySQL(
             self.assertEqual("bar_fkey", matched.constraint)
 
 
+class TestNonExistentTable(
+        _SQLAExceptionMatcher,
+        test_base.DbTestCase):
+
+    def setUp(self):
+        super(TestNonExistentTable, self).setUp()
+
+        self.meta = sqla.MetaData(bind=self.engine)
+
+        self.table_1 = sqla.Table(
+            "foo", self.meta,
+            sqla.Column("id", sqla.Integer, primary_key=True),
+            mysql_engine='InnoDB',
+            mysql_charset='utf8',
+        )
+
+    def test_raise(self):
+        matched = self.assertRaises(
+            exception.DBNonExistentTable,
+            self.engine.execute,
+            sqla.schema.DropTable(self.table_1),
+        )
+        self.assertInnerException(
+            matched,
+            "OperationalError",
+            "no such table: foo",
+            "\nDROP TABLE foo",
+        )
+        self.assertEqual("foo", matched.table)
+
+
+class TestNonExistentTablePostgreSQL(
+        TestNonExistentTable,
+        test_base.PostgreSQLOpportunisticTestCase):
+
+    def test_raise(self):
+        matched = self.assertRaises(
+            exception.DBNonExistentTable,
+            self.engine.execute,
+            sqla.schema.DropTable(self.table_1),
+        )
+        self.assertInnerException(
+            matched,
+            "ProgrammingError",
+            "table \"foo\" does not exist\n",
+            "\nDROP TABLE foo",
+        )
+        self.assertEqual("foo", matched.table)
+
+
+class TestNonExistentTableMySQL(
+        TestNonExistentTable,
+        test_base.MySQLOpportunisticTestCase):
+
+    def test_raise(self):
+        matched = self.assertRaises(
+            exception.DBNonExistentTable,
+            self.engine.execute,
+            sqla.schema.DropTable(self.table_1),
+        )
+        # NOTE(jd) Cannot check precisely with assertInnerException since MySQL
+        # error are not the same depending on its version…
+        self.assertIsInstance(matched.inner_exception,
+                              sqlalchemy.exc.InternalError)
+        self.assertEqual("foo", matched.table)
+
+
 class TestReferenceErrorSQLite(_SQLAExceptionMatcher, test_base.DbTestCase):
 
     def setUp(self):
