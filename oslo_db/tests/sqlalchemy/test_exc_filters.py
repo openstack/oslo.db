@@ -45,26 +45,26 @@ class _SQLAExceptionMatcher(object):
         if isinstance(exception_type, (type, tuple)):
             self.assertTrue(issubclass(exc.__class__, exception_type))
         else:
-            self.assertEqual(exc.__class__.__name__, exception_type)
+            self.assertEqual(exception_type, exc.__class__.__name__)
         if isinstance(message, tuple):
             self.assertEqual(
+                [m.lower()
+                 if isinstance(m, six.string_types) else m for m in message],
                 [a.lower()
                  if isinstance(a, six.string_types) else a
-                 for a in exc.orig.args],
-                [m.lower()
-                 if isinstance(m, six.string_types) else m for m in message]
+                 for a in exc.orig.args]
             )
         else:
-            self.assertEqual(str(exc.orig).lower(), message.lower())
+            self.assertEqual(message.lower(), str(exc.orig).lower())
         if sql is not None:
             if params is not None:
                 if '?' in exc.statement:
-                    self.assertEqual(exc.statement, sql)
-                    self.assertEqual(exc.params, params)
+                    self.assertEqual(sql, exc.statement)
+                    self.assertEqual(params, exc.params)
                 else:
-                    self.assertEqual(exc.statement % exc.params, sql % params)
+                    self.assertEqual(sql % params, exc.statement % exc.params)
             else:
-                self.assertEqual(exc.statement, sql)
+                self.assertEqual(sql, exc.statement)
 
 
 class TestsExceptionFilter(_SQLAExceptionMatcher, oslo_test_base.BaseTestCase):
