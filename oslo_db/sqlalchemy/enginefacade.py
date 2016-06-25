@@ -18,7 +18,8 @@ import operator
 import threading
 import warnings
 
-import debtcollector.removals as removals
+import debtcollector.removals
+import debtcollector.renames
 from oslo_config import cfg
 from oslo_utils import excutils
 
@@ -136,7 +137,7 @@ class _TransactionFactory(object):
             'sqlite_fk': _Default(False),
             'mysql_sql_mode': _Default('TRADITIONAL'),
             'mysql_enable_ndb': _Default(False),
-            'idle_timeout': _Default(3600),
+            'connection_recycle_time': _Default(3600),
             'connection_debug': _Default(0),
             'max_pool_size': _Default(),
             'max_overflow': _Default(),
@@ -177,6 +178,8 @@ class _TransactionFactory(object):
         self._legacy_facade = None
         self._start_lock = threading.Lock()
 
+    @debtcollector.renames.renamed_kwarg(
+        "idle_timeout", "connection_recycle_time", replace=True)
     def configure_defaults(self, **kw):
         """Apply default configurational options.
 
@@ -209,7 +212,7 @@ class _TransactionFactory(object):
 
         :param mysql_enable_ndb: enable MySQL Cluster (NDB) support
 
-        :param idle_timeout: connection pool recycle time,
+        :param connection_recycle_time: connection pool recycle time,
          defaults to 3600. Note the connection does not actually have to
          be "idle" to be recycled.
 
@@ -282,6 +285,8 @@ class _TransactionFactory(object):
         """
         self._configure(True, kw)
 
+    @debtcollector.renames.renamed_kwarg(
+        "idle_timeout", "connection_recycle_time", replace=True)
     def configure(self, **kw):
         """Apply configurational options.
 
@@ -529,7 +534,7 @@ class _TestTransactionFactory(_TransactionFactory):
 
     """
 
-    @removals.removed_kwarg(
+    @debtcollector.removals.removed_kwarg(
         'synchronous_reader',
         'argument value is propagated from the parent _TransactionFactory')
     def __init__(self, engine, maker, apply_global, from_factory=None, **kw):
@@ -1196,8 +1201,8 @@ class LegacyEngineFacade(object):
     :keyword mysql_enable_ndb: If True, transparently enables support for
                                handling MySQL Cluster (NDB).
                                (defaults to False)
-    :keyword idle_timeout: timeout before idle sql connections are reaped
-                           (defaults to 3600)
+    :keyword connection_recycle_time: Time period for connections to be
+                            recycled upon checkout (defaults to 3600)
     :keyword connection_debug: verbosity of SQL debugging information.
                                -1=Off, 0=None, 100=Everything (defaults
                                to 0)
@@ -1230,7 +1235,6 @@ class LegacyEngineFacade(object):
             "oslo_db.sqlalchemy.enginefacade",
             exception.OsloDBDeprecationWarning,
             stacklevel=2)
-
         if _factory:
             self._factory = _factory
         else:

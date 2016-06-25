@@ -84,6 +84,7 @@ pool_timeout=7
                                        ]])[0]
         self.conf(['--config-file', path])
         self.assertEqual('fake_connection', self.conf.database.connection)
+        self.assertEqual(100, self.conf.database.connection_recycle_time)
         self.assertEqual(100, self.conf.database.idle_timeout)
         self.assertEqual(99, self.conf.database.min_pool_size)
         self.assertEqual(199, self.conf.database.max_pool_size)
@@ -99,6 +100,7 @@ pool_timeout=7
                                        ]])[0]
         self.conf(['--config-file', path])
         self.assertEqual('test_sql_connection', self.conf.database.connection)
+        self.assertEqual(99, self.conf.database.connection_recycle_time)
         self.assertEqual(99, self.conf.database.idle_timeout)
 
     def test_deprecated_dbapi_parameters(self):

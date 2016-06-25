@@ -48,15 +48,25 @@ database_opts = [
                 default=False,
                 help='If True, transparently enables support for handling '
                      'MySQL Cluster (NDB).'),
-    cfg.IntOpt('idle_timeout',
-               default=3600,
-               deprecated_opts=[cfg.DeprecatedOpt('sql_idle_timeout',
-                                                  group='DEFAULT'),
-                                cfg.DeprecatedOpt('sql_idle_timeout',
-                                                  group='DATABASE'),
-                                cfg.DeprecatedOpt('idle_timeout',
-                                                  group='sql')],
-               help='Timeout before idle SQL connections are reaped.'),
+    cfg.IntOpt(
+        'connection_recycle_time',
+        default=3600,
+        deprecated_opts=[
+            cfg.DeprecatedOpt('idle_timeout',
+                              group="DATABASE"),
+            cfg.DeprecatedOpt('idle_timeout',
+                              group="database"),
+            cfg.DeprecatedOpt('sql_idle_timeout',
+                              group='DEFAULT'),
+            cfg.DeprecatedOpt('sql_idle_timeout',
+                              group='DATABASE'),
+            cfg.DeprecatedOpt('idle_timeout',
+                              group='sql')
+        ],
+        help='Connections which have been present in the connection '
+             'pool longer than this number of seconds will be replaced '
+             'with a new one the next time they are checked out from '
+             'the pool.'),
     cfg.IntOpt('min_pool_size',
                default=1,
                deprecated_opts=[cfg.DeprecatedOpt('sql_min_pool_size',

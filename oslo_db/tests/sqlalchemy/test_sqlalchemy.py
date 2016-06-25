@@ -316,6 +316,10 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
         self.assertFalse(ses.autocommit)
         self.assertTrue(ses.expire_on_commit)
 
+    def test_direct_invocation_deprecated_args(self):
+        facade = session.EngineFacade("sqlite://", idle_timeout=59)
+        self.assertEqual(59, facade.get_engine().pool._recycle)
+
     @mock.patch('oslo_db.sqlalchemy.orm.get_maker')
     @mock.patch('oslo_db.sqlalchemy.engines.create_engine')
     def test_creation_from_config(self, create_engine, get_maker):
@@ -343,7 +347,7 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
             mysql_sql_mode='TRADITIONAL',
             mysql_enable_ndb=False,
             sqlite_fk=False,
-            idle_timeout=mock.ANY,
+            connection_recycle_time=mock.ANY,
             retry_interval=mock.ANY,
             max_retries=mock.ANY,
             max_overflow=mock.ANY,

@@ -1,0 +1,15 @@
+---
+deprecations:
+  - |
+    The configuration option ``idle_timeout`` is now deprecated and has been
+    renamed to  ``connection_recycle_time``, including within the main oslo.db
+    options, as well as in the keyword arguments to
+    ``engines.create_engine()``, ``enginefacade.configure()`` and
+    ``enginefacade.configure_defaults()``. The new name more accurately
+    describes what this option does, in that it is not directly related to the
+    "idle" time of the connection itself, nor is the connection disconnected at
+    any specific time.  It refers to a rule stating that any connection which
+    has been present more than N seconds as a member of the connection pool
+    will be automatically discarded and replaced the next time it is checked
+    out from the pool.
+

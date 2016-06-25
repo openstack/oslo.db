@@ -22,6 +22,7 @@ import os
 import re
 import time
 
+import debtcollector.renames
 import six
 import sqlalchemy
 from sqlalchemy import event
@@ -121,9 +122,11 @@ def _vet_url(url):
             )
 
 
+@debtcollector.renames.renamed_kwarg(
+    "idle_timeout", "connection_recycle_time", replace=True)
 def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                   mysql_enable_ndb=False,
-                  idle_timeout=3600,
+                  connection_recycle_time=3600,
                   connection_debug=0, max_pool_size=None, max_overflow=None,
                   pool_timeout=None, sqlite_synchronous=True,
                   connection_trace=False, max_retries=10, retry_interval=10,
@@ -137,7 +140,7 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     _vet_url(url)
 
     engine_args = {
-        "pool_recycle": idle_timeout,
+        "pool_recycle": connection_recycle_time,
         'convert_unicode': True,
         'connect_args': {},
         'logging_name': logging_name
