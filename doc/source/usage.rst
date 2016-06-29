@@ -48,8 +48,7 @@ The context manager form is as follows:
 The decorator form accesses attributes off the user-defined context
 directly; the context must be decorated with the
 :func:`oslo_db.sqlalchemy.enginefacade.transaction_context_provider`
-decorator.   Each function must receive the context as the first
-positional argument:
+decorator.   Each function must receive the context argument:
 
 .. code:: python
 
@@ -80,6 +79,30 @@ positional argument:
    must be accessed within the scope of an appropriate writer/reader block
    (either the decorator or contextmanager approach). An AttributeError is
    raised otherwise.
+
+
+The decorator form can also be used with class and instance methods which
+implicitly receive the first positional argument:
+
+.. code:: python
+
+    class DatabaseAccessLayer(object):
+
+        @classmethod
+        @enginefacade.reader
+        def some_reader_api_function(cls, context):
+            return context.session.query(SomeClass).all()
+
+        @enginefacade.writer
+        def some_writer_api_function(self, context, x, y):
+            context.session.add(SomeClass(x, y))
+
+.. note:: Note that enginefacade decorators must be applied **before**
+   `classmethod`, otherwise you will get a ``TypeError`` at import time
+   (as enginefacade will try to use ``inspect.getargspec()`` on a descriptor,
+   not on a bound method, please refer to the `Data Model
+   <https://docs.python.org/3/reference/datamodel.html#data-model>`_ section
+   of the Python Language Reference for details).
 
 
 The scope of transaction and connectivity for both approaches is managed
