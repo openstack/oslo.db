@@ -589,6 +589,19 @@ def change_deleted_column_type_to_id_type(migrate_engine, table_name,
     _restore_indexes_on_deleted_columns(migrate_engine, table_name, indexes)
 
 
+def _is_deleted_column_constraint(constraint):
+    # NOTE(boris-42): There is no other way to check is CheckConstraint
+    #                 associated with deleted column.
+    if not isinstance(constraint, CheckConstraint):
+        return False
+    sqltext = str(constraint.sqltext)
+    # NOTE(zzzeek): SQLite never reflected CHECK contraints here
+    # in any case until version 1.1.   Safe to assume that any CHECK
+    # that's talking about the value of "deleted in (something)" is
+    # the boolean constraint we're looking to get rid of.
+    return bool(re.match(r".*deleted in \(.*\)", sqltext, re.I))
+
+
 def _change_deleted_column_type_to_id_type_sqlite(migrate_engine, table_name,
                                                   **col_name_col_instance):
     # NOTE(boris-42): sqlaclhemy-migrate can't drop column with check
@@ -619,25 +632,9 @@ def _change_deleted_column_type_to_id_type_sqlite(migrate_engine, table_name,
                                  default=default_deleted_value)
         columns.append(column_copy)
 
-    def is_deleted_column_constraint(constraint):
-        # NOTE(boris-42): There is no other way to check is CheckConstraint
-        #                 associated with deleted column.
-        if not isinstance(constraint, CheckConstraint):
-            return False
-        sqltext = str(constraint.sqltext)
-        # NOTE(I159): in order to omit the CHECK constraint corresponding
-        # to `deleted` column we have to test these patterns which may
-        # vary depending on the SQLAlchemy version used.
-        constraint_markers = (
-            "deleted in (0, 1)",
-            "deleted IN (:deleted_1, :deleted_2)",
-            "deleted IN (:param_1, :param_2)"
-        )
-        return any(sqltext.endswith(marker) for marker in constraint_markers)
-
     constraints = []
     for constraint in table.constraints:
-        if not is_deleted_column_constraint(constraint):
+        if not _is_deleted_column_constraint(constraint):
             constraints.append(constraint.copy())
 
     new_table = Table(table_name + "__tmp__", meta,

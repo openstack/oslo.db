@@ -24,6 +24,7 @@ from six.moves.urllib import parse
 import sqlalchemy
 from sqlalchemy.dialects import mysql
 from sqlalchemy import Boolean, Index, Integer, DateTime, String, SmallInteger
+from sqlalchemy import CheckConstraint
 from sqlalchemy import MetaData, Table, Column, ForeignKey
 from sqlalchemy.engine import reflection
 from sqlalchemy.engine import url as sa_url
@@ -545,6 +546,23 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         if SA_VERSION < (0, 9, 0):
             self.assertTrue(isinstance(table.c.foo.type, NullType))
         self.assertTrue(isinstance(table.c.deleted.type, Boolean))
+
+    def test_detect_boolean_deleted_constraint_detection(self):
+        table_name = 'abc'
+        table = Table(table_name, self.meta,
+                      Column('id', Integer, primary_key=True),
+                      Column('deleted', Boolean))
+        ck = [
+            const for const in table.constraints if
+            isinstance(const, CheckConstraint)][0]
+
+        self.assertTrue(utils._is_deleted_column_constraint(ck))
+
+        self.assertFalse(
+            utils._is_deleted_column_constraint(
+                CheckConstraint("deleted > 5")
+            )
+        )
 
     @db_test_base.backend_specific('sqlite')
     def test_change_deleted_column_type_sqlite_drops_check_constraint(self):
