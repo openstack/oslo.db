@@ -1,0 +1,89 @@
+# Andi Chandler <andi@gowling.com>, 2016. #zanata
+msgid ""
+msgstr ""
+"Project-Id-Version: oslo.db Release Notes 4.6.1.dev51\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-06-27 15:51+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2016-06-28 05:55+0000\n"
+"Last-Translator: Andi Chandler <andi@gowling.com>\n"
+"Language-Team: English (United Kingdom)\n"
+"Language: en-GB\n"
+"X-Generator: Zanata 3.7.3\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+
+msgid "2.6.0-7"
+msgstr "2.6.0-7"
+
+msgid "4.6.0"
+msgstr "4.6.0"
+
+msgid "For details, please see the following LP:"
+msgstr "For details, please see the following LP:"
+
+msgid "Introduce reno for deployer release notes."
+msgstr "Introduce reno for deployer release notes."
+
+msgid "Liberty Series Release Notes"
+msgstr "Liberty Series Release Notes"
+
+msgid "Mitaka Series Release Notes"
+msgstr "Mitaka Series Release Notes"
+
+msgid "Other Notes"
+msgstr "Other Notes"
+
+msgid ""
+"The default value of ``max_overflow`` config option has been increased from "
+"10 to 50 in order to allow OpenStack services heavily using DBs to better "
+"handle spikes of concurrent requests and lower the probability of getting a "
+"pool timeout issue."
+msgstr ""
+"The default value of ``max_overflow`` config option has been increased from "
+"10 to 50 in order to allow OpenStack services heavily using DBs to better "
+"handle spikes of concurrent requests and lower the probability of getting a "
+"pool timeout issue."
+
+msgid ""
+"This change potentially leads to increasing of the number of open "
+"connections to an RDBMS server. Depending on the configuration, you may see "
+"\"too many connections\" errors in logs of OpenStack services / RDBMS "
+"server. The max limit of connections can be set by the means of these config "
+"options:"
+msgstr ""
+"This change potentially leads to increasing of the number of open "
+"connections to an RDBMS server. Depending on the configuration, you may see "
+"\"too many connections\" errors in logs of OpenStack services / RDBMS "
+"server. The max limit of connections can be set by the means of these config "
+"options:"
+
+msgid "Unreleased Release Notes"
+msgstr "Unreleased Release Notes"
+
+msgid "Upgrade Notes"
+msgstr "Upgrade Notes"
+
+msgid "and the ML thread:"
+msgstr "and the ML thread:"
+
+msgid ""
+"http://dev.mysql.com/doc/refman/5.7/en/server-system-variables."
+"html#sysvar_max_connections http://www.postgresql.org/docs/current/static/"
+"runtime-config-connection.html#GUC-MAX-CONNECTIONS"
+msgstr ""
+"http://dev.mysql.com/doc/refman/5.7/en/server-system-variables."
+"html#sysvar_max_connections http://www.postgresql.org/docs/current/static/"
+"runtime-config-connection.html#GUC-MAX-CONNECTIONS"
+
+msgid ""
+"http://lists.openstack.org/pipermail/openstack-dev/2015-December/082717.html"
+msgstr ""
+"http://lists.openstack.org/pipermail/openstack-dev/2015-December/082717.html"
+
+msgid "https://bugs.launchpad.net/oslo.db/+bug/1535375"
+msgstr "https://bugs.launchpad.net/oslo.db/+bug/1535375"
+
+msgid "oslo.db Release Notes"
+msgstr "oslo.db Release Notes"
