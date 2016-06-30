@@ -101,6 +101,7 @@ database_opts = [
                     'SQLAlchemy.'),
     cfg.IntOpt('connection_debug',
                default=0,
+               min=0, max=100,
                deprecated_opts=[cfg.DeprecatedOpt('sql_connection_debug',
                                                   group='DEFAULT')],
                help='Verbosity of SQL debugging information: 0=None, '
