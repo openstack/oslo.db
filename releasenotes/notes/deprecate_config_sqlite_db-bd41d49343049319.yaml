@@ -1,0 +1,7 @@
+---
+deprecations:
+  - |
+    The configuration option ``sqlite_db`` is now deprecated and
+    will be removed in the future. Please use configuration
+    option ``connection`` or ``slave_connection`` to connect to the database.
+

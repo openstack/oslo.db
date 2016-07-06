@@ -15,6 +15,9 @@ from oslo_config import cfg
 
 database_opts = [
     cfg.StrOpt('sqlite_db',
+               deprecated_for_removal=True,
+               deprecated_reason='Should use config option connection or '
+                                 'slave_connection to connect the database.',
                deprecated_group='DEFAULT',
                default='oslo.sqlite',
                help='The file name to use with SQLite.'),
