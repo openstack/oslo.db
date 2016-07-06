@@ -272,6 +272,18 @@ def _check_constraint_non_existing(
                                             programming_error)
 
 
+@filters("sqlite", sqla_exc.OperationalError,
+         r".* no such table: (?P<table>.+)")
+@filters("mysql", sqla_exc.InternalError,
+         r".*1051,.*\"Unknown table '(.+\.)?(?P<table>.+)'\"")
+@filters("postgresql", sqla_exc.ProgrammingError,
+         r".* table \"(?P<table>.+)\" does not exist")
+def _check_table_non_existing(
+        programming_error, match, engine_name, is_disconnect):
+    """Filter for table non existing errors."""
+    raise exception.DBNonExistentTable(match.group("table"), programming_error)
+
+
 @filters("ibm_db_sa", sqla_exc.IntegrityError, r"^.*SQL0803N.*$")
 def _db2_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
     """Filter for DB2 duplicate key errors.
