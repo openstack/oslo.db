@@ -511,6 +511,10 @@ class TestDuplicate(TestsExceptionFilter):
             "mysql",
             '(1062, "Duplicate entry '
             '\'2-3\' for key \'uniq_tbl0a0b\'")', expected_value='2-3')
+        self._run_dupe_constraint_test(
+            "mysql",
+            '(1062, "Duplicate entry '
+            '\'\' for key \'uniq_tbl0a0b\'")', expected_value='')
 
     def test_mysql_mysqlconnector(self):
         self._run_dupe_constraint_test(
