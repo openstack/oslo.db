@@ -13,6 +13,7 @@
 """Tests for JSON SQLAlchemy types."""
 
 from sqlalchemy import Column, Integer
+from sqlalchemy.dialects import mysql
 from sqlalchemy.ext.declarative import declarative_base
 
 from oslo_db import exception as db_exc
@@ -84,3 +85,27 @@ class JsonTypesTestCase(test_base.DbTestCase):
                 JsonTable(id=i, json=test).save(self.session)
             obj = self.session.query(JsonTable).filter_by(id=i).one()
             self.assertEqual(test, obj.json)
+
+    def test_mysql_variants(self):
+        self.assertEqual(
+            str(
+                types.JsonEncodedDict(mysql_as_long=True).compile(
+                    dialect=mysql.dialect())
+            ),
+            "LONGTEXT"
+        )
+
+        self.assertEqual(
+            str(
+                types.JsonEncodedDict(mysql_as_medium=True).compile(
+                    dialect=mysql.dialect())
+            ),
+            "MEDIUMTEXT"
+        )
+
+        self.assertRaises(
+            TypeError,
+            lambda: types.JsonEncodedDict(
+                mysql_as_long=True,
+                mysql_as_medium=True)
+        )

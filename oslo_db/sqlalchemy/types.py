@@ -13,12 +13,25 @@
 import json
 
 from sqlalchemy.types import TypeDecorator, Text
+from sqlalchemy.dialects import mysql
 
 
 class JsonEncodedType(TypeDecorator):
     """Base column type for data serialized as JSON-encoded string in db."""
     type = None
     impl = Text
+
+    def __init__(self, mysql_as_long=False, mysql_as_medium=False):
+        super(JsonEncodedType, self).__init__()
+
+        if mysql_as_long and mysql_as_medium:
+            raise TypeError("mysql_as_long and mysql_as_medium are mutually "
+                            "exclusive")
+
+        if mysql_as_long:
+            self.impl = Text().with_variant(mysql.LONGTEXT(), 'mysql')
+        elif mysql_as_medium:
+            self.impl = Text().with_variant(mysql.MEDIUMTEXT(), 'mysql')
 
     def process_bind_param(self, value, dialect):
         if value is None:
