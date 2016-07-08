@@ -314,7 +314,7 @@ class TestMigrationMultipleExtensions(test_base.BaseTestCase):
         self.second_ext.obj.has_revision.return_value = False
 
         # upgrade to a specific non-existent revision should fail
-        self.assertRaises(exception.DbMigrationError,
+        self.assertRaises(exception.DBMigrationError,
                           self.migration_manager.upgrade, 100)
 
         # upgrade to the "head" should succeed
@@ -332,7 +332,7 @@ class TestMigrationMultipleExtensions(test_base.BaseTestCase):
         self.second_ext.obj.has_revision.return_value = False
 
         # upgrade to a specific non-existent revision should fail
-        self.assertRaises(exception.DbMigrationError,
+        self.assertRaises(exception.DBMigrationError,
                           self.migration_manager.downgrade, 100)
 
         # downgrade to the "base" should succeed

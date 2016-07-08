@@ -57,7 +57,7 @@ class MigrationManager(object):
         # revision=None is a special case meaning latest revision.
         rev_in_plugins = [p.has_revision(revision) for p in self._plugins]
         if not any(rev_in_plugins) and revision is not None:
-            raise exception.DbMigrationError('Revision does not exist')
+            raise exception.DBMigrationError('Revision does not exist')
 
         results = []
         for plugin, has_revision in zip(self._plugins, rev_in_plugins):
@@ -75,7 +75,7 @@ class MigrationManager(object):
         # revision=None is a special case meaning initial revision.
         rev_in_plugins = [p.has_revision(revision) for p in self._plugins]
         if not any(rev_in_plugins) and revision is not None:
-            raise exception.DbMigrationError('Revision does not exist')
+            raise exception.DBMigrationError('Revision does not exist')
 
         # downgrading should be performed in reversed order
         results = []

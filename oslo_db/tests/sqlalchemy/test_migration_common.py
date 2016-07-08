@@ -56,7 +56,7 @@ class TestMigrationCommon(test_base.DbTestCase):
 
     def test_find_migrate_repo_path_not_found(self):
         self.assertRaises(
-            db_exception.DbMigrationError,
+            db_exception.DBMigrationError,
             migration._find_migrate_repo,
             "/foo/bar/",
         )
@@ -93,7 +93,7 @@ class TestMigrationCommon(test_base.DbTestCase):
         mock_find_repo.return_value = self.return_value
         mock_version_control.side_effect = (migrate_exception.
                                             DatabaseAlreadyControlledError)
-        self.assertRaises(db_exception.DbMigrationError,
+        self.assertRaises(db_exception.DBMigrationError,
                           migration.db_version_control, self.engine,
                           self.path, self.test_version - 1)
 
@@ -104,7 +104,7 @@ class TestMigrationCommon(test_base.DbTestCase):
         mock_find_repo.return_value = self.return_value
         mock_version_control.side_effect = (migrate_exception.
                                             InvalidVersionError)
-        self.assertRaises(db_exception.DbMigrationError,
+        self.assertRaises(db_exception.DBMigrationError,
                           migration.db_version_control, self.engine,
                           self.path, self.test_version + 1)
 
@@ -135,7 +135,7 @@ class TestMigrationCommon(test_base.DbTestCase):
             mock_meta.return_value = my_meta
 
             self.assertRaises(
-                db_exception.DbMigrationError, migration.db_version,
+                db_exception.DBMigrationError, migration.db_version,
                 self.engine, self.path, self.init_version)
 
     @mock.patch.object(versioning_api, 'version_control')
@@ -153,7 +153,7 @@ class TestMigrationCommon(test_base.DbTestCase):
                                             self.init_version)
 
     def test_db_sync_wrong_version(self):
-        self.assertRaises(db_exception.DbMigrationError,
+        self.assertRaises(db_exception.DBMigrationError,
                           migration.db_sync, self.engine, self.path, 'foo')
 
     def test_db_sync_upgrade(self):

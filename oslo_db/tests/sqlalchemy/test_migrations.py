@@ -47,6 +47,10 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
         self.migration_api.db_version.assert_called_with(
             self.engine, self.REPOSITORY)
 
+    @staticmethod
+    def _fake_upgrade_boom(*args, **kwargs):
+        raise exc.DBMigrationError("boom")
+
     def test_migrate_up_fail(self):
         version = 141
         self.migration_api.db_version.return_value = version
@@ -56,9 +60,9 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
 
         with mock.patch.object(self.migration_api,
                                'upgrade',
-                               side_effect=exc.DbMigrationError):
+                               side_effect=self._fake_upgrade_boom):
             log = self.useFixture(fixtures.FakeLogger())
-            self.assertRaises(exc.DbMigrationError, self.migrate_up, version)
+            self.assertRaises(exc.DBMigrationError, self.migrate_up, version)
             self.assertEqual(expected_output, log.output)
 
     def test_migrate_up_with_data(self):

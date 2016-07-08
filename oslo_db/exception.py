@@ -198,6 +198,20 @@ class DbMigrationError(DBError):
         super(DbMigrationError, self).__init__(message)
 
 
+class DBMigrationError(DbMigrationError):
+
+    """Wrapped migration specific exception.
+
+    Raised when migrations couldn't be completed successfully.
+    """
+    def __init__(self, message):
+        super(DBMigrationError, self).__init__(message)
+
+
+debtcollector.removals.removed_class(DbMigrationError,
+                                     replacement=DBMigrationError)
+
+
 class DBConnectionError(DBError):
 
     """Wrapped connection specific exception.
