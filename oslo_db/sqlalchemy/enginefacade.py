@@ -154,7 +154,8 @@ class _TransactionFactory(object):
             'rollback_reader_sessions': False,
             }
         self._facade_cfg = {
-            'synchronous_reader': True
+            'synchronous_reader': True,
+            'on_engine_create': [],
         }
 
         # other options that are defined in oslo.db.options.database_opts
@@ -363,6 +364,8 @@ class _TransactionFactory(object):
                 "No sql_connection parameter is established")
         engine = engines.create_engine(
             sql_connection=sql_connection, **engine_kwargs)
+        for hook in self._facade_cfg['on_engine_create']:
+            hook(engine)
         sessionmaker = orm.get_maker(engine=engine, **maker_kwargs)
         return engine, sessionmaker
 
@@ -626,6 +629,10 @@ class _TransactionContextManager(object):
 
         """
         self._factory.configure(**kw)
+
+    def append_on_engine_create(self, fn):
+        """Append a listener function to _facade_cfg["on_engine_create"]"""
+        self._factory._facade_cfg['on_engine_create'].append(fn)
 
     def get_legacy_facade(self):
         """Return a :class:`.LegacyEngineFacade` for factory from this context.
