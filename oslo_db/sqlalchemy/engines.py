@@ -93,7 +93,7 @@ def _setup_logging(connection_debug=0):
     """
     if connection_debug >= 0:
         logger = logging.getLogger('sqlalchemy.engine')
-        if connection_debug >= 100:
+        if connection_debug == 100:
             logger.setLevel(logging.DEBUG)
         elif connection_debug >= 50:
             logger.setLevel(logging.INFO)

@@ -1,0 +1,7 @@
+---
+upgrade:
+  - The allowed values for the ``connection_debug`` option are now restricted to
+    the range between 0 and 100 (inclusive). Previously a number lower than 0
+    or higher than 100 could be given without error. But now, a
+    ``ConfigFileValueError`` will be raised when the option value is outside this
+    range.
