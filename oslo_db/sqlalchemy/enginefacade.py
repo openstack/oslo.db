@@ -308,6 +308,16 @@ class _TransactionFactory(object):
     def _maker_args_for_conf(self, conf):
         return self._args_for_conf(self._maker_cfg, conf)
 
+    def dispose_pool(self):
+        """Call engine.pool.dispose() on underlying Engine objects."""
+        with self._start_lock:
+            if not self._started:
+                return
+
+            self._writer_engine.pool.dispose()
+            if self._reader_engine is not self._writer_engine:
+                self._reader_engine.pool.dispose()
+
     def _start(self, conf=False, connection=None, slave_connection=None):
         with self._start_lock:
             # self._started has been checked on the outside
@@ -637,6 +647,10 @@ class _TransactionContextManager(object):
         """
 
         return self._factory.get_legacy_facade()
+
+    def dispose_pool(self):
+        """Call engine.pool.dispose() on underlying Engine objects."""
+        self._factory.dispose_pool()
 
     @property
     def replace(self):
