@@ -88,19 +88,19 @@ class JsonTypesTestCase(test_base.DbTestCase):
 
     def test_mysql_variants(self):
         self.assertEqual(
+            "LONGTEXT",
             str(
                 types.JsonEncodedDict(mysql_as_long=True).compile(
                     dialect=mysql.dialect())
-            ),
-            "LONGTEXT"
+            )
         )
 
         self.assertEqual(
+            "MEDIUMTEXT",
             str(
                 types.JsonEncodedDict(mysql_as_medium=True).compile(
                     dialect=mysql.dialect())
-            ),
-            "MEDIUMTEXT"
+            )
         )
 
         self.assertRaises(

@@ -74,7 +74,7 @@ class RegexpFilterTestCase(test_base.DbTestCase):
 
         regexp_op = RegexpTable.bar.op('REGEXP')(regexp)
         result = _session.query(RegexpTable).filter(regexp_op).all()
-        self.assertEqual([r.bar for r in result], expected)
+        self.assertEqual(expected, [r.bar for r in result])
 
     def test_regexp_filter(self):
         self._test_regexp_filter('10', ['10'])
@@ -402,15 +402,15 @@ class SQLiteConnectTest(oslo_test.BaseTestCase):
     def test_sqlite_fk_listener(self):
         engine = self._fixture(sqlite_fk=True)
         self.assertEqual(
-            engine.scalar("pragma foreign_keys"),
-            1
+            1,
+            engine.scalar("pragma foreign_keys")
         )
 
         engine = self._fixture(sqlite_fk=False)
 
         self.assertEqual(
-            engine.scalar("pragma foreign_keys"),
-            0
+            0,
+            engine.scalar("pragma foreign_keys")
         )
 
     def test_sqlite_synchronous_listener(self):
@@ -419,15 +419,15 @@ class SQLiteConnectTest(oslo_test.BaseTestCase):
         # "The default setting is synchronous=FULL." (e.g. 2)
         # http://www.sqlite.org/pragma.html#pragma_synchronous
         self.assertEqual(
-            engine.scalar("pragma synchronous"),
-            2
+            2,
+            engine.scalar("pragma synchronous")
         )
 
         engine = self._fixture(sqlite_synchronous=False)
 
         self.assertEqual(
-            engine.scalar("pragma synchronous"),
-            0
+            0,
+            engine.scalar("pragma synchronous")
         )
 
 
@@ -564,8 +564,8 @@ class CreateEngineTest(oslo_test.BaseTestCase):
         engines._init_connection_args(
             url.make_url("mysql+pymysql://u:p@host/test"), self.args,
             max_pool_size=10, max_overflow=10)
-        self.assertEqual(self.args['pool_size'], 10)
-        self.assertEqual(self.args['max_overflow'], 10)
+        self.assertEqual(10, self.args['pool_size'])
+        self.assertEqual(10, self.args['max_overflow'])
 
     def test_sqlite_memory_pool_args(self):
         for _url in ("sqlite://", "sqlite:///:memory:"):
@@ -579,8 +579,8 @@ class CreateEngineTest(oslo_test.BaseTestCase):
             self.assertTrue(
                 'max_overflow' not in self.args)
 
-            self.assertEqual(self.args['connect_args']['check_same_thread'],
-                             False)
+            self.assertEqual(False,
+                             self.args['connect_args']['check_same_thread'])
 
             # due to memory connection
             self.assertTrue('poolclass' in self.args)
@@ -603,11 +603,11 @@ class CreateEngineTest(oslo_test.BaseTestCase):
 
     def _test_mysql_connect_args_default(self, connect_args):
         if six.PY3:
-            self.assertEqual(connect_args,
-                             {'charset': 'utf8', 'use_unicode': 1})
+            self.assertEqual({'charset': 'utf8', 'use_unicode': 1},
+                             connect_args)
         else:
-            self.assertEqual(connect_args,
-                             {'charset': 'utf8', 'use_unicode': 0})
+            self.assertEqual({'charset': 'utf8', 'use_unicode': 0},
+                             connect_args)
 
     def test_mysql_connect_args_default(self):
         engines._init_connection_args(
@@ -622,8 +622,7 @@ class CreateEngineTest(oslo_test.BaseTestCase):
     def test_mysql_pymysql_connect_args_default(self):
         engines._init_connection_args(
             url.make_url("mysql+pymysql://u:p@host/test"), self.args)
-        self.assertEqual(self.args['connect_args'],
-                         {'charset': 'utf8'})
+        self.assertEqual({'charset': 'utf8'}, self.args['connect_args'])
 
     def test_mysql_mysqldb_connect_args_default(self):
         engines._init_connection_args(
@@ -633,14 +632,14 @@ class CreateEngineTest(oslo_test.BaseTestCase):
     def test_postgresql_connect_args_default(self):
         engines._init_connection_args(
             url.make_url("postgresql://u:p@host/test"), self.args)
-        self.assertEqual(self.args['client_encoding'], 'utf8')
+        self.assertEqual('utf8', self.args['client_encoding'])
         self.assertFalse(self.args['connect_args'])
 
     def test_mysqlconnector_raise_on_warnings_default(self):
         engines._init_connection_args(
             url.make_url("mysql+mysqlconnector://u:p@host/test"),
             self.args)
-        self.assertEqual(self.args['connect_args']['raise_on_warnings'], False)
+        self.assertEqual(False, self.args['connect_args']['raise_on_warnings'])
 
     def test_mysqlconnector_raise_on_warnings_override(self):
         engines._init_connection_args(

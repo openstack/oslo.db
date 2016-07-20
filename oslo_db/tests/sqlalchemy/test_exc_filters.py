@@ -802,7 +802,7 @@ class TestDeadlock(TestsExceptionFilter):
         if isinstance(matched, exception.DBError):
             matched = matched.inner_exception
 
-        self.assertEqual(matched.orig.__class__.__name__, expected_dbapi_cls)
+        self.assertEqual(expected_dbapi_cls, matched.orig.__class__.__name__)
 
     def test_mysql_pymysql_deadlock(self):
         self._run_deadlock_detect_test(
@@ -1031,7 +1031,7 @@ class TestDBDisconnected(TestsExceptionFilter):
         with self._fixture(dialect_name, exc_obj, 1, is_disconnect):
             conn = self.engine.connect()
             with conn.begin():
-                self.assertEqual(conn.scalar(sqla.select([1])), 1)
+                self.assertEqual(1, conn.scalar(sqla.select([1])))
                 self.assertFalse(conn.closed)
                 self.assertFalse(conn.invalidated)
                 self.assertTrue(conn.in_transaction())
@@ -1044,7 +1044,7 @@ class TestDBDisconnected(TestsExceptionFilter):
 
         # test implicit execution
         with self._fixture(dialect_name, exc_obj, 1):
-            self.assertEqual(self.engine.scalar(sqla.select([1])), 1)
+            self.assertEqual(1, self.engine.scalar(sqla.select([1])))
 
     def test_mysql_ping_listener_disconnected(self):
         for code in [2006, 2013, 2014, 2045, 2055]:
@@ -1151,7 +1151,7 @@ class TestDBConnectRetry(TestsExceptionFilter):
             2, -1
         )
         # conn is good
-        self.assertEqual(conn.scalar(sqla.select([1])), 1)
+        self.assertEqual(1, conn.scalar(sqla.select([1])))
 
     def test_connect_retry_past_failure(self):
         conn = self._run_test(
@@ -1160,7 +1160,7 @@ class TestDBConnectRetry(TestsExceptionFilter):
             2, 3
         )
         # conn is good
-        self.assertEqual(conn.scalar(sqla.select([1])), 1)
+        self.assertEqual(1, conn.scalar(sqla.select([1])))
 
     def test_connect_retry_not_candidate_exception(self):
         self.assertRaises(
@@ -1188,7 +1188,7 @@ class TestDBConnectRetry(TestsExceptionFilter):
             2, -1
         )
         # conn is good
-        self.assertEqual(conn.scalar(sqla.select([1])), 1)
+        self.assertEqual(1, conn.scalar(sqla.select([1])))
 
     def test_db2_error_negative(self):
         self.assertRaises(
@@ -1245,7 +1245,7 @@ class TestDBConnectPingWrapping(TestsExceptionFilter):
             self, dialect_name, exc_obj, is_disconnect=True):
         with self._fixture(dialect_name, exc_obj, 3, is_disconnect):
             conn = self.engine.connect()
-            self.assertEqual(conn.scalar(sqla.select([1])), 1)
+            self.assertEqual(1, conn.scalar(sqla.select([1])))
             conn.close()
 
         with self._fixture(dialect_name, exc_obj, 1, is_disconnect):

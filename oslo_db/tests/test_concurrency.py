@@ -63,13 +63,13 @@ class TpoolDbapiWrapperTestCase(test_utils.BaseTestCase):
 
         mock_db_api.from_config.assert_called_once_with(
             conf=self.conf, backend_mapping=FAKE_BACKEND_MAPPING)
-        self.assertEqual(self.db_api._db_api, fake_db_api)
+        self.assertEqual(fake_db_api, self.db_api._db_api)
         self.assertFalse(self.eventlet.tpool.Proxy.called)
 
         # get access to other db-api method to be sure that api didn't changed
         self.db_api.fake_call_2
 
-        self.assertEqual(self.db_api._db_api, fake_db_api)
+        self.assertEqual(fake_db_api, self.db_api._db_api)
         self.assertFalse(self.eventlet.tpool.Proxy.called)
         self.assertEqual(1, mock_db_api.from_config.call_count)
 
@@ -92,7 +92,7 @@ class TpoolDbapiWrapperTestCase(test_utils.BaseTestCase):
         mock_db_api.from_config.assert_called_once_with(
             conf=self.conf, backend_mapping=FAKE_BACKEND_MAPPING)
         self.eventlet.tpool.Proxy.assert_called_once_with(fake_db_api)
-        self.assertEqual(self.db_api._db_api, self.proxy)
+        self.assertEqual(self.proxy, self.db_api._db_api)
 
     @mock.patch('oslo_db.api.DBAPI')
     def test_db_api_without_installed_eventlet(self, mock_db_api):

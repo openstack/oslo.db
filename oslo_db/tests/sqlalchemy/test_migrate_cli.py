@@ -285,11 +285,11 @@ class TestMigrationMultipleExtensions(test_base.BaseTestCase):
 
     def test_upgrade_right_order(self):
         results = self.migration_manager.upgrade(None)
-        self.assertEqual(results, [100, 200])
+        self.assertEqual([100, 200], results)
 
     def test_downgrade_right_order(self):
         results = self.migration_manager.downgrade(None)
-        self.assertEqual(results, [100, 0])
+        self.assertEqual([100, 0], results)
 
     def test_upgrade_does_not_go_too_far(self):
         self.first_ext.obj.has_revision.return_value = True
