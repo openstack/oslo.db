@@ -47,9 +47,10 @@ import debtcollector.removals
 import six
 
 from oslo_db._i18n import _
+from oslo_utils.excutils import CausedByException
 
 
-class DBError(Exception):
+class DBError(CausedByException):
 
     """Base exception for all custom database exceptions.
 
@@ -57,9 +58,9 @@ class DBError(Exception):
         DBError or its subclasses.
     """
 
-    def __init__(self, inner_exception=None):
+    def __init__(self, inner_exception=None, cause=None):
         self.inner_exception = inner_exception
-        super(DBError, self).__init__(six.text_type(inner_exception))
+        super(DBError, self).__init__(six.text_type(inner_exception), cause)
 
 
 class DBDuplicateEntry(DBError):

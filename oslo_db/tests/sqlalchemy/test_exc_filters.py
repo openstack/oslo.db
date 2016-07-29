@@ -23,6 +23,7 @@ import six
 import sqlalchemy as sqla
 from sqlalchemy import event
 import sqlalchemy.exc
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper
 
 from oslo_db import exception
@@ -585,6 +586,73 @@ class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
         self.assertEqual("foo_fkey", matched.constraint)
         self.assertEqual("foo_id", matched.key)
         self.assertEqual("resource_foo", matched.key_table)
+
+
+class TestExceptionCauseMySQLSavepoint(test_base.MySQLOpportunisticTestCase):
+    def setUp(self):
+        super(TestExceptionCauseMySQLSavepoint, self).setUp()
+
+        Base = declarative_base()
+
+        class A(Base):
+            __tablename__ = 'a'
+
+            id = sqla.Column(sqla.Integer, primary_key=True)
+
+            __table_args__ = {'mysql_engine': 'InnoDB'}
+
+        Base.metadata.create_all(self.engine)
+
+        self.A = A
+
+    def test_cause_for_failed_flush_plus_no_savepoint(self):
+        session = self.sessionmaker()
+
+        with session.begin():
+            session.add(self.A(id=1))
+        try:
+
+            with session.begin():
+
+                try:
+                    with session.begin_nested():
+                        session.execute("rollback")
+                        session.add(self.A(id=1))
+
+                # outermost is the failed SAVEPOINT rollback
+                # from the "with session.begin_nested()"
+                except exception.DBError as dbe_inner:
+
+                    # first "cause" is the failed SAVEPOINT rollback
+                    # from inside of flush(), when it fails
+                    self.assertTrue(
+                        isinstance(
+                            dbe_inner.cause,
+                            exception.DBError
+                        )
+                    )
+
+                    # second "cause" is then the actual DB duplicate
+                    self.assertTrue(
+                        isinstance(
+                            dbe_inner.cause.cause,
+                            exception.DBDuplicateEntry
+                        )
+                    )
+        except exception.DBError as dbe_outer:
+            self.assertTrue(
+                isinstance(
+                    dbe_outer.cause,
+                    exception.DBDuplicateEntry
+                )
+            )
+
+        # resets itself afterwards
+        try:
+            with session.begin():
+                session.add(self.A(id=1))
+        except exception.DBError as dbe_outer:
+            self.assertIsNone(dbe_outer.cause)
 
 
 class TestDBDataErrorSQLite(_SQLAExceptionMatcher, test_base.DbTestCase):
