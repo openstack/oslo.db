@@ -884,7 +884,8 @@ class TestDeadlock(TestsExceptionFilter):
         self._run_deadlock_detect_test(
             "mysql",
             "(1205, 'Lock wait timeout exceeded; "
-            "try restarting transaction')"
+            "try restarting transaction')",
+            orig_exception_cls=self.InternalError
         )
 
     def test_mysql_mysqlconnector_deadlock(self):

@@ -59,7 +59,7 @@ def filters(dbname, exception_type, regex):
 # as well as sqlalchemy.exc.DBAPIError, as SQLAlchemy will reraise it
 # as this until issue #3075 is fixed.
 @filters("mysql", sqla_exc.OperationalError, r"^.*\b1213\b.*Deadlock found.*")
-@filters("mysql", sqla_exc.OperationalError,
+@filters("mysql", sqla_exc.DatabaseError,
          r"^.*\b1205\b.*Lock wait timeout exceeded.*")
 @filters("mysql", sqla_exc.InternalError, r"^.*\b1213\b.*Deadlock found.*")
 @filters("postgresql", sqla_exc.OperationalError, r"^.*deadlock detected.*")
