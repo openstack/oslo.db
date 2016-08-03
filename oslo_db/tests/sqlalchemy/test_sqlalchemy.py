@@ -351,6 +351,7 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
             thread_checkin=mock.ANY,
             json_serializer=None,
             json_deserializer=None,
+            logging_name=mock.ANY,
         )
         get_maker.assert_called_once_with(engine=create_engine(),
                                           autocommit=False,
