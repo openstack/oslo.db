@@ -286,6 +286,15 @@ class _TransactionFactory(object):
         else:
             return self._writer_maker(**kw)
 
+    def _create_factory_copy(self):
+        factory = _TransactionFactory()
+        factory._url_cfg.update(self._url_cfg)
+        factory._engine_cfg.update(self._engine_cfg)
+        factory._maker_cfg.update(self._maker_cfg)
+        factory._transaction_ctx_cfg.update(self._transaction_ctx_cfg)
+        factory._facade_cfg.update(self._facade_cfg)
+        return factory
+
     def _args_for_conf(self, default_cfg, conf):
         if conf is None:
             return dict(
@@ -307,7 +316,9 @@ class _TransactionFactory(object):
         return self._args_for_conf(self._engine_cfg, conf)
 
     def _maker_args_for_conf(self, conf):
-        return self._args_for_conf(self._maker_cfg, conf)
+        maker_args = self._args_for_conf(self._maker_cfg, conf)
+        maker_args['autocommit'] = maker_args.pop('__autocommit')
+        return maker_args
 
     def dispose_pool(self):
         """Call engine.pool.dispose() on underlying Engine objects."""
@@ -344,7 +355,6 @@ class _TransactionFactory(object):
                 url_args['slave_connection'] = slave_connection
             engine_args = self._engine_args_for_conf(conf)
             maker_args = self._maker_args_for_conf(conf)
-            maker_args['autocommit'] = maker_args.pop('__autocommit')
 
             self._writer_engine, self._writer_maker = \
                 self._setup_for_connection(
@@ -658,6 +668,81 @@ class _TransactionContextManager(object):
     def dispose_pool(self):
         """Call engine.pool.dispose() on underlying Engine objects."""
         self._factory.dispose_pool()
+
+    def make_new_manager(self):
+        """Create a new, independent _TransactionContextManager from this one.
+
+        Copies the underlying _TransactionFactory to a new one, so that
+        it can be further configured with new options.
+
+        Used for test environments where the application-wide
+        _TransactionContextManager may be used as a factory for test-local
+        managers.
+
+        """
+        new = self._clone()
+        new._root = new
+        new._root_factory = self._root_factory._create_factory_copy()
+        assert not new._factory._started
+        return new
+
+    def patch_factory(self, factory_or_manager):
+        """Patch a _TransactionFactory into this manager.
+
+        Replaces this manager's factory with the given one, and returns
+        a callable that will reset the factory back to what we
+        started with.
+
+        Only works for root factories.  Is intended for test suites
+        that need to patch in alternate database configurations.
+
+        The given argument may be a _TransactionContextManager or a
+        _TransactionFactory.
+
+        """
+
+        if isinstance(factory_or_manager, _TransactionContextManager):
+            factory = factory_or_manager._factory
+        elif isinstance(factory_or_manager, _TransactionFactory):
+            factory = factory_or_manager
+        else:
+            raise ValueError(
+                "_TransactionContextManager or "
+                "_TransactionFactory expected.")
+        assert self._root is self
+        existing_factory = self._root_factory
+        self._root_factory = factory
+
+        def reset():
+            self._root_factory = existing_factory
+
+        return reset
+
+    def patch_engine(self, engine):
+        """Patch an Engine into this manager.
+
+        Replaces this manager's factory with a _TestTransactionFactory
+        that will use the given Engine, and returns
+        a callable that will reset the factory back to what we
+        started with.
+
+        Only works for root factories.  Is intended for test suites
+        that need to patch in alternate database configurations.
+
+        """
+
+        existing_factory = self._factory
+        maker = existing_factory._writer_maker
+        maker_kwargs = existing_factory._maker_args_for_conf(cfg.CONF)
+        maker = orm.get_maker(engine=engine, **maker_kwargs)
+
+        factory = _TestTransactionFactory(
+            engine, maker,
+            apply_global=False,
+            synchronous_reader=existing_factory.
+            _facade_cfg['synchronous_reader']
+        )
+        return self.patch_factory(factory)
 
     @property
     def replace(self):
