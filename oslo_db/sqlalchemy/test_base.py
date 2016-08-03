@@ -65,9 +65,10 @@ class DbFixture(fixtures.Fixture):
             testresources.tearDownResources,
             self.test, self.test.resources, testresources._get_result()
         )
-        if not hasattr(self.test, 'db'):
-            msg = "backend '%s' unavailable" % self.DRIVER
-            if self.skip_on_unavailable_db:
+
+        if not self.test._has_db_resource():
+            msg = self.test._get_db_resource_not_available_reason()
+            if self.test.SKIP_ON_UNAVAILABLE_DB:
                 self.test.skip(msg)
             else:
                 self.test.fail(msg)
@@ -98,8 +99,16 @@ class DbTestCase(test_base.BaseTestCase):
     SCHEMA_SCOPE = None
     SKIP_ON_UNAVAILABLE_DB = True
 
+    _db_not_available = {}
     _schema_resources = {}
     _database_resources = {}
+
+    def _get_db_resource_not_available_reason(self):
+        return self._db_not_available.get(self.FIXTURE.DRIVER, None)
+
+    def _has_db_resource(self):
+        return self._database_resources.get(
+            self.FIXTURE.DRIVER, None) is not None
 
     def _resources_for_driver(self, driver, schema_scope, generate_schema):
         # testresources relies on the identity and state of the
@@ -110,12 +119,14 @@ class DbTestCase(test_base.BaseTestCase):
         # so we have to code the TestResourceManager logic into the
         # .resources attribute and ensure that the same set of test
         # variables always produces the same TestResourceManager objects.
+
         if driver not in self._database_resources:
             try:
                 self._database_resources[driver] = \
                     provision.DatabaseResource(driver)
-            except exception.BackendNotAvailable:
+            except exception.BackendNotAvailable as bne:
                 self._database_resources[driver] = None
+                self._db_not_available[driver] = str(bne)
 
         database_resource = self._database_resources[driver]
         if database_resource is None:
@@ -200,7 +211,7 @@ def backend_specific(*dialects):
             if self.engine.name not in dialects:
                 msg = ('The test "%s" can be run '
                        'only on %s. Current engine is %s.')
-                args = (reflection.get_callable_name(f), ' '.join(dialects),
+                args = (reflection.get_callable_name(f), ', '.join(dialects),
                         self.engine.name)
                 self.skip(msg % args)
             else:

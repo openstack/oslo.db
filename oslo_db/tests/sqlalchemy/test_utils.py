@@ -785,7 +785,9 @@ class TestConnectionUtils(test_utils.BaseTestCase):
             exception.BackendNotAvailable,
             provision.Backend._ensure_backend_available, self.connect_string
         )
-        self.assertEqual("Could not connect", str(exc))
+        self.assertEqual(
+            "Backend 'postgresql' is unavailable: "
+            "Could not connect", str(exc))
         self.assertEqual(
             "The postgresql backend is unavailable: %s" % err,
             log.output.strip())
@@ -802,7 +804,9 @@ class TestConnectionUtils(test_utils.BaseTestCase):
             exception.BackendNotAvailable,
             provision.Backend._ensure_backend_available, self.connect_string
         )
-        self.assertEqual("No DBAPI installed", str(exc))
+        self.assertEqual(
+            "Backend 'postgresql' is unavailable: "
+            "No DBAPI installed", str(exc))
         self.assertEqual(
             "The postgresql backend is unavailable: Can't import "
             "DBAPI module foobar", log.output.strip())
