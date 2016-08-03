@@ -1883,5 +1883,21 @@ class ConfigOptionsTest(oslo_test_base.BaseTestCase):
         )
 
 
+class TestTransactionFactoryCallback(oslo_test_base.BaseTestCase):
+
+    def test_setup_for_connection_called_with_profiler(self):
+        context_manager = enginefacade.transaction_context()
+        context_manager.configure(connection='sqlite://')
+        hook = mock.Mock()
+        context_manager.append_on_engine_create(hook)
+        self.assertEqual(
+            [hook], context_manager._factory._facade_cfg['on_engine_create'])
+
+        @context_manager.reader
+        def go(context):
+            hook.assert_called_once_with(context.session.bind)
+
+        go(oslo_context.RequestContext())
+
 # TODO(zzzeek): test configuration options, e.g. like
 # test_sqlalchemy->test_creation_from_config
