@@ -11,6 +11,8 @@
 #    under the License.
 
 import mock
+import os
+
 from oslotest import base as oslo_test_base
 from sqlalchemy import exc as sa_exc
 from sqlalchemy import inspect
@@ -18,8 +20,11 @@ from sqlalchemy import schema
 from sqlalchemy import types
 
 from oslo_db import exception
+from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import provision
-from oslo_db.sqlalchemy import test_base
+from oslo_db.sqlalchemy import test_fixtures
+from oslo_db.sqlalchemy import utils
+from oslo_db.tests.sqlalchemy import base as test_base
 
 
 class DropAllObjectsTest(test_base.DbTestCase):
@@ -66,7 +71,8 @@ class DropAllObjectsTest(test_base.DbTestCase):
             set(insp.get_table_names())
         )
 
-        self.db.backend.drop_all_objects(self.engine)
+        self._get_default_provisioned_db().\
+            backend.drop_all_objects(self.engine)
 
         insp = inspect(self.engine)
         self.assertEqual(
@@ -167,16 +173,18 @@ class RetainSchemaTest(oslo_test_base.BaseTestCase):
 
     def _run_test(self):
         try:
-            database_resource = provision.DatabaseResource(self.DRIVER)
+            database_resource = provision.DatabaseResource(
+                self.DRIVER, provision_new_database=True)
         except exception.BackendNotAvailable:
             self.skip("database not available")
 
         schema_resource = provision.SchemaResource(
             database_resource, self._gen_schema)
-        transaction_resource = provision.TransactionResource(
-            database_resource, schema_resource)
 
-        engine = transaction_resource.getResource()
+        schema = schema_resource.getResource()
+
+        conn = schema.database.engine.connect()
+        engine = utils.NonCommittingEngine(conn)
 
         with engine.connect() as conn:
             rows = conn.execute(self.test_table.select())
@@ -202,7 +210,8 @@ class RetainSchemaTest(oslo_test_base.BaseTestCase):
             rows = conn.execute(self.test_table.select())
             self.assertEqual([(2, 3)], rows.fetchall())
 
-        transaction_resource.finishedWith(engine)
+        engine._dispose()
+        schema_resource.finishedWith(schema)
 
 
 class MySQLRetainSchemaTest(RetainSchemaTest):
@@ -211,3 +220,45 @@ class MySQLRetainSchemaTest(RetainSchemaTest):
 
 class PostgresqlRetainSchemaTest(RetainSchemaTest):
     DRIVER = "postgresql"
+
+
+class AdHocURLTest(oslo_test_base.BaseTestCase):
+    def test_sqlite_setup_teardown(self):
+
+        fixture = test_fixtures.AdHocDbFixture("sqlite:///foo.db")
+
+        fixture.setUp()
+
+        self.assertEqual(
+            str(enginefacade._context_manager._factory._writer_engine.url),
+            "sqlite:///foo.db"
+            )
+
+        self.assertTrue(os.path.exists("foo.db"))
+        fixture.cleanUp()
+
+        self.assertFalse(os.path.exists("foo.db"))
+
+    def test_mysql_setup_teardown(self):
+        try:
+            mysql_backend = provision.Backend.backend_for_database_type(
+                "mysql")
+        except exception.BackendNotAvailable:
+            self.skip("mysql backend not available")
+
+        mysql_backend.create_named_database("adhoc_test")
+        self.addCleanup(
+            mysql_backend.drop_named_database, "adhoc_test"
+        )
+        url = str(mysql_backend.provisioned_database_url("adhoc_test"))
+
+        fixture = test_fixtures.AdHocDbFixture(url)
+
+        fixture.setUp()
+
+        self.assertEqual(
+            str(enginefacade._context_manager._factory._writer_engine.url),
+            url
+        )
+
+        fixture.cleanUp()

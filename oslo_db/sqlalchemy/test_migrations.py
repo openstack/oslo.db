@@ -32,6 +32,7 @@ import sqlalchemy.types as types
 
 from oslo_db._i18n import _LE
 from oslo_db import exception as exc
+from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import utils
 
 LOG = logging.getLogger(__name__)
@@ -595,7 +596,9 @@ class ModelsMigrationsSync(object):
                           ' for running of this test: %s' % e)
 
         # drop all tables after a test run
-        self.addCleanup(functools.partial(self.db.backend.drop_all_objects,
+        backend = provision.Backend.backend_for_database_type(
+            self.get_engine().name)
+        self.addCleanup(functools.partial(backend.drop_all_objects,
                                           self.get_engine()))
 
         # run migration scripts

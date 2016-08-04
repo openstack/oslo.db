@@ -30,7 +30,7 @@ from sqlalchemy.orm import mapper
 from oslo_db import exception
 from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import exc_filters
-from oslo_db.sqlalchemy import test_base
+from oslo_db.tests.sqlalchemy import base as test_base
 from oslo_db.tests import utils as test_utils
 
 _TABLE_NAME = '__tmp__test__tmp__'

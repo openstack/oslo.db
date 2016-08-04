@@ -262,6 +262,46 @@ class _TransactionFactory(object):
 
         return self._legacy_facade
 
+    def get_writer_engine(self):
+        """Return the writer engine for this factory.
+
+        Implies start.
+
+        """
+        if not self._started:
+            self._start()
+        return self._writer_engine
+
+    def get_reader_engine(self):
+        """Return the reader engine for this factory.
+
+        Implies start.
+
+        """
+        if not self._started:
+            self._start()
+        return self._reader_engine
+
+    def get_writer_maker(self):
+        """Return the writer sessionmaker for this factory.
+
+        Implies start.
+
+        """
+        if not self._started:
+            self._start()
+        return self._writer_maker
+
+    def get_reader_maker(self):
+        """Return the reader sessionmaker for this factory.
+
+        Implies start.
+
+        """
+        if not self._started:
+            self._start()
+        return self._reader_maker
+
     def _create_connection(self, mode):
         if not self._started:
             self._start()
@@ -665,6 +705,36 @@ class _TransactionContextManager(object):
         """
 
         return self._factory.get_legacy_facade()
+
+    def get_engine(self):
+        """Return the Engine in use.
+
+        This will be based on the state being WRITER or READER.
+
+        This implies a start operation.
+
+        """
+        if self._mode is _WRITER:
+            return self._factory.get_writer_engine()
+        elif self._mode is _READER:
+            return self._factory.get_reader_engine()
+        else:
+            raise ValueError("mode should be WRITER or READER")
+
+    def get_sessionmaker(self):
+        """Return the sessionmaker in use.
+
+        This will be based on the state being WRITER or READER.
+
+        This implies a start operation.
+
+        """
+        if self._mode is _WRITER:
+            return self._factory.get_writer_maker()
+        elif self._mode is _READER:
+            return self._factory.get_reader_maker()
+        else:
+            raise ValueError("mode should be WRITER or READER")
 
     def dispose_pool(self):
         """Call engine.pool.dispose() on underlying Engine objects."""

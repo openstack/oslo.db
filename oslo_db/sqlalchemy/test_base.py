@@ -13,6 +13,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import debtcollector
 import fixtures
 import testresources
 import testscenarios
@@ -35,6 +36,7 @@ from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import session
 
 
+@debtcollector.removals.removed_class("DbFixture")
 class DbFixture(fixtures.Fixture):
     """Basic database fixture.
 
@@ -90,6 +92,7 @@ class DbFixture(fixtures.Fixture):
         self.addCleanup(self.test.enginefacade.dispose_global)
 
 
+@debtcollector.removals.removed_class("DbTestCase")
 class DbTestCase(test_base.BaseTestCase):
     """Base class for testing of DB code.
 
@@ -191,6 +194,7 @@ class DbTestCase(test_base.BaseTestCase):
                 "implemented within generate_schema().")
 
 
+@debtcollector.removals.removed_class("OpportunisticTestCase")
 class OpportunisticTestCase(DbTestCase):
     """Placeholder for backwards compatibility."""
 
@@ -220,18 +224,22 @@ def backend_specific(*dialects):
     return wrap
 
 
+@debtcollector.removals.removed_class("MySQLOpportunisticFixture")
 class MySQLOpportunisticFixture(DbFixture):
     DRIVER = 'mysql'
 
 
+@debtcollector.removals.removed_class("PostgreSQLOpportunisticFixture")
 class PostgreSQLOpportunisticFixture(DbFixture):
     DRIVER = 'postgresql'
 
 
+@debtcollector.removals.removed_class("MySQLOpportunisticTestCase")
 class MySQLOpportunisticTestCase(OpportunisticTestCase):
     FIXTURE = MySQLOpportunisticFixture
 
 
+@debtcollector.removals.removed_class("PostgreSQLOpportunisticTestCase")
 class PostgreSQLOpportunisticTestCase(OpportunisticTestCase):
     FIXTURE = PostgreSQLOpportunisticFixture
 

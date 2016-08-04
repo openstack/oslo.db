@@ -76,13 +76,23 @@ class Schema(object):
 
 
 class BackendResource(testresources.TestResourceManager):
-    def __init__(self, database_type):
+    def __init__(self, database_type, ad_hoc_url=None):
         super(BackendResource, self).__init__()
         self.database_type = database_type
         self.backend = Backend.backend_for_database_type(self.database_type)
+        self.ad_hoc_url = ad_hoc_url
+        if ad_hoc_url is None:
+            self.backend = Backend.backend_for_database_type(
+                self.database_type)
+        else:
+            self.backend = Backend(self.database_type, ad_hoc_url)
+            self.backend._verify()
 
     def make(self, dependency_resources):
         return self.backend
+
+    def clean(self, resource):
+        self.backend._dispose()
 
     def isDirty(self):
         return False
@@ -100,9 +110,11 @@ class DatabaseResource(testresources.TestResourceManager):
 
     """
 
-    def __init__(self, database_type, _enginefacade=None):
+    def __init__(self, database_type, _enginefacade=None,
+                 provision_new_database=False, ad_hoc_url=None):
         super(DatabaseResource, self).__init__()
         self.database_type = database_type
+        self.provision_new_database = provision_new_database
 
         # NOTE(zzzeek) the _enginefacade is an optional argument
         # here in order to accomodate Neutron's current direct use
@@ -114,38 +126,42 @@ class DatabaseResource(testresources.TestResourceManager):
         else:
             self._enginefacade = enginefacade._context_manager
         self.resources = [
-            ('backend', BackendResource(database_type))
+            ('backend', BackendResource(database_type, ad_hoc_url))
         ]
 
     def make(self, dependency_resources):
         backend = dependency_resources['backend']
         _enginefacade = self._enginefacade.make_new_manager()
 
-        db_token = _random_ident()
-        url = backend.provisioned_database_url(db_token)
+        if self.provision_new_database:
+            db_token = _random_ident()
+            url = backend.provisioned_database_url(db_token)
+            LOG.info(
+                "CREATE BACKEND %s TOKEN %s", backend.engine.url, db_token)
+            backend.create_named_database(db_token, conditional=True)
+        else:
+            db_token = None
+            url = backend.url
 
         _enginefacade.configure(
             logging_name="%s@%s" % (self.database_type, db_token))
-
-        LOG.info(
-            "CREATE BACKEND %s TOKEN %s", backend.engine.url, db_token)
-        backend.create_named_database(db_token, conditional=True)
 
         _enginefacade._factory._start(connection=url)
         engine = _enginefacade._factory._writer_engine
         return ProvisionedDatabase(backend, _enginefacade, engine, db_token)
 
     def clean(self, resource):
-        resource.engine.dispose()
-        LOG.info(
-            "DROP BACKEND %s TOKEN %s",
-            resource.backend.engine, resource.db_token)
-        resource.backend.drop_named_database(resource.db_token)
+        if self.provision_new_database:
+            LOG.info(
+                "DROP BACKEND %s TOKEN %s",
+                resource.backend.engine, resource.db_token)
+            resource.backend.drop_named_database(resource.db_token)
 
     def isDirty(self):
         return False
 
 
+@debtcollector.removals.removed_class("TransactionResource")
 class TransactionResource(testresources.TestResourceManager):
 
     def __init__(self, database_resource, schema_resource):
@@ -299,6 +315,10 @@ class Backend(object):
                 conn.close()
                 return eng
 
+    def _dispose(self):
+        """Dispose main resources of this backend."""
+        self.impl.dispose(self.engine)
+
     def create_named_database(self, ident, conditional=False):
         """Create a database with the given name."""
 
@@ -399,6 +419,10 @@ class BackendImpl(object):
     default_engine_kwargs = {}
 
     supports_drop_fk = True
+
+    def dispose(self, engine):
+        LOG.info("DISPOSE ENGINE %s", engine)
+        engine.dispose()
 
     @classmethod
     def all_impls(cls):
@@ -566,6 +590,17 @@ class MySQLBackendImpl(BackendImpl):
 class SQLiteBackendImpl(BackendImpl):
 
     supports_drop_fk = False
+
+    def dispose(self, engine):
+        LOG.info("DISPOSE ENGINE %s", engine)
+        engine.dispose()
+        url = engine.url
+        self._drop_url_file(url, True)
+
+    def _drop_url_file(self, url, conditional):
+        filename = url.database
+        if filename and (not conditional or os.access(filename, os.F_OK)):
+            os.remove(filename)
 
     def create_opportunistic_driver_url(self):
         return "sqlite://"

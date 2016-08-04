@@ -33,10 +33,11 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from oslo_db import exception
 from oslo_db import options as db_options
+from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import models
 from oslo_db.sqlalchemy import session
-from oslo_db.sqlalchemy import test_base
+from oslo_db.tests.sqlalchemy import base as test_base
 
 
 BASE = declarative_base()
@@ -65,8 +66,8 @@ class RegexpFilterTestCase(test_base.DbTestCase):
         self.addCleanup(test_table.drop)
 
     def _test_regexp_filter(self, regexp, expected):
-        _session = self.sessionmaker()
-        with _session.begin():
+        with enginefacade.writer.using(test_base.context):
+            _session = test_base.context.session
             for i in ['10', '20', u'♥']:
                 tbl = RegexpTable()
                 tbl.update({'bar': i})
