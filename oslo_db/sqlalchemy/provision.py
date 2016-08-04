@@ -1,3 +1,4 @@
+# Copyright 2014 Red Hat
 # Copyright 2013 Mirantis.inc
 # All Rights Reserved.
 #
@@ -16,6 +17,7 @@
 """Provision test environment for specific DB backends"""
 
 import abc
+import debtcollector
 import logging
 import os
 import random
@@ -31,6 +33,7 @@ import testresources
 
 from oslo_db._i18n import _LI
 from oslo_db import exception
+from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import session
 from oslo_db.sqlalchemy import utils
 
@@ -38,7 +41,38 @@ LOG = logging.getLogger(__name__)
 
 
 class ProvisionedDatabase(object):
-    pass
+    """Represents a database engine pointing to a DB ready to run tests.
+
+    backend: an instance of :class:`.Backend`
+
+    enginefacade: an instance of :class:`._TransactionFactory`
+
+    engine: a SQLAlchemy :class:`.Engine`
+
+    db_token: if provision_new_database were used, this is the randomly
+              generated name of the database.  Note that with SQLite memory
+              connections, this token is ignored.   For a database that
+              wasn't actually created, will be None.
+
+    """
+
+    __slots__ = 'backend', 'enginefacade', 'engine', 'db_token'
+
+    def __init__(self, backend, enginefacade, engine, db_token):
+        self.backend = backend
+        self.enginefacade = enginefacade
+        self.engine = engine
+        self.db_token = db_token
+
+
+class Schema(object):
+    """"Represents a database schema that has or will be populated.
+
+    This is a marker object as required by testresources but otherwise
+    serves no purpose.
+
+    """
+    __slots__ = 'database',
 
 
 class BackendResource(testresources.TestResourceManager):
@@ -55,23 +89,51 @@ class BackendResource(testresources.TestResourceManager):
 
 
 class DatabaseResource(testresources.TestResourceManager):
+    """Database resource which connects and disconnects to a URL.
 
-    def __init__(self, database_type):
+    For SQLite, this means the database is created implicitly, as a result
+    of SQLite's usual behavior.  If the database is a file-based URL,
+    it will remain after the resource has been torn down.
+
+    For all other kinds of databases, the resource indicates to connect
+    and disconnect from that database.
+
+    """
+
+    def __init__(self, database_type, _enginefacade=None):
         super(DatabaseResource, self).__init__()
         self.database_type = database_type
+
+        # NOTE(zzzeek) the _enginefacade is an optional argument
+        # here in order to accomodate Neutron's current direct use
+        # of the DatabaseResource object.  Within oslo_db's use,
+        # the "enginefacade" will always be passed in from the
+        # test and/or fixture.
+        if _enginefacade:
+            self._enginefacade = _enginefacade
+        else:
+            self._enginefacade = enginefacade._context_manager
         self.resources = [
             ('backend', BackendResource(database_type))
         ]
 
     def make(self, dependency_resources):
-        dependency_resources['db_token'] = db_token = _random_ident()
         backend = dependency_resources['backend']
+        _enginefacade = self._enginefacade.make_new_manager()
+
+        db_token = _random_ident()
+        url = backend.provisioned_database_url(db_token)
+
+        _enginefacade.configure(
+            logging_name="%s@%s" % (self.database_type, db_token))
+
         LOG.info(
             "CREATE BACKEND %s TOKEN %s", backend.engine.url, db_token)
         backend.create_named_database(db_token, conditional=True)
-        dependency_resources['engine'] = \
-            backend.provisioned_engine(db_token)
-        return ProvisionedDatabase()
+
+        _enginefacade._factory._start(connection=url)
+        engine = _enginefacade._factory._writer_engine
+        return ProvisionedDatabase(backend, _enginefacade, engine, db_token)
 
     def clean(self, resource):
         resource.engine.dispose()
@@ -102,10 +164,6 @@ class TransactionResource(testresources.TestResourceManager):
 
     def isDirty(self):
         return True
-
-
-class Schema(object):
-    pass
 
 
 class SchemaResource(testresources.TestResourceManager):
@@ -271,20 +329,26 @@ class Backend(object):
 
         return self.impl.database_exists(self.engine, ident)
 
+    def provisioned_database_url(self, ident):
+        """Given the identifier of an anoymous database, return a URL.
+
+        For hostname-based URLs, this typically involves switching just the
+        'database' portion of the URL with the given name and creating
+        a URL.
+
+        For SQLite URLs, the identifier may be used to create a filename
+        or may be ignored in the case of a memory database.
+
+        """
+        return self.impl.provisioned_database_url(self.url, ident)
+
+    @debtcollector.removals.remove()
     def provisioned_engine(self, ident):
         """Given the URL of a particular database backend and the string
 
         name of a particular 'database' within that backend, return
         an Engine instance whose connections will refer directly to the
         named database.
-
-        For hostname-based URLs, this typically involves switching just the
-        'database' portion of the URL with the given name and creating
-        an engine.
-
-        For URLs that instead deal with DSNs, the rules may be more custom;
-        for example, the engine may need to connect to the root URL and
-        then emit a command to switch to the named database.
 
         """
         return self.impl.provisioned_engine(self.url, ident)
@@ -427,6 +491,28 @@ class BackendImpl(object):
     def drop_additional_objects(self, conn):
         pass
 
+    def provisioned_database_url(self, base_url, ident):
+        """Return a provisioned database URL.
+
+        Given the URL of a particular database backend and the string
+        name of a particular 'database' within that backend, return
+        an URL which refers directly to the named database.
+
+        For hostname-based URLs, this typically involves switching just the
+        'database' portion of the URL with the given name and creating
+        an engine.
+
+        For URLs that instead deal with DSNs, the rules may be more custom;
+        for example, the engine may need to connect to the root URL and
+        then emit a command to switch to the named database.
+
+        """
+
+        url = sa_url.make_url(str(base_url))
+        url.database = ident
+        return url
+
+    @debtcollector.removals.remove()
     def provisioned_engine(self, base_url, ident):
         """Return a provisioned engine.
 
@@ -444,9 +530,8 @@ class BackendImpl(object):
         then emit a command to switch to the named database.
 
         """
+        url = self.provisioned_database_url(base_url, ident)
 
-        url = sa_url.make_url(str(base_url))
-        url.database = ident
         return session.create_engine(
             url,
             logging_name="%s@%s" % (self.drivername, ident),
@@ -457,6 +542,7 @@ class BackendImpl(object):
 @BackendImpl.impl.dispatch_for("mysql")
 class MySQLBackendImpl(BackendImpl):
 
+    # only used for deprecated provisioned_engine() function.
     default_engine_kwargs = {'mysql_sql_mode': 'TRADITIONAL'}
 
     def create_opportunistic_driver_url(self):
@@ -485,18 +571,14 @@ class SQLiteBackendImpl(BackendImpl):
         return "sqlite://"
 
     def create_named_database(self, engine, ident, conditional=False):
-        url = self._provisioned_database_url(engine.url, ident)
+        url = self.provisioned_database_url(engine.url, ident)
         filename = url.database
         if filename and (not conditional or not os.access(filename, os.F_OK)):
             eng = sqlalchemy.create_engine(url)
             eng.connect().close()
 
-    def provisioned_engine(self, base_url, ident):
-        return session.create_engine(
-            self._provisioned_database_url(base_url, ident))
-
     def drop_named_database(self, engine, ident, conditional=False):
-        url = self._provisioned_database_url(engine.url, ident)
+        url = self.provisioned_database_url(engine.url, ident)
         filename = url.database
         if filename and (not conditional or os.access(filename, os.F_OK)):
             os.remove(filename)
@@ -506,7 +588,7 @@ class SQLiteBackendImpl(BackendImpl):
         filename = url.database
         return not filename or os.access(filename, os.F_OK)
 
-    def _provisioned_database_url(self, base_url, ident):
+    def provisioned_database_url(self, base_url, ident):
         if base_url.database:
             return sa_url.make_url("sqlite:////tmp/%s.db" % ident)
         else:
