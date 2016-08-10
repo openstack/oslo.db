@@ -145,6 +145,7 @@ class _TransactionFactory(object):
             'thread_checkin': _Default(True),
             'json_serializer': _Default(None),
             'json_deserializer': _Default(None),
+            'logging_name': _Default(None)
         }
         self._maker_cfg = {
             'expire_on_commit': _Default(False),
