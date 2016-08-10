@@ -10,6 +10,7 @@
 #  License for the specific language governing permissions and limitations
 #  under the License.
 
+from debtcollector import removals
 from oslo_config import cfg
 
 
@@ -142,6 +143,9 @@ database_opts = [
 ]
 
 
+@removals.removed_kwarg("sqlite_db",
+                        "Config option sqlite_db is deprecated for removal,"
+                        "please use option `connection`.")
 def set_defaults(conf, connection=None, sqlite_db=None,
                  max_pool_size=None, max_overflow=None,
                  pool_timeout=None):
