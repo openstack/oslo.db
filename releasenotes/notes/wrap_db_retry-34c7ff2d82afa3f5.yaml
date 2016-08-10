@@ -1,0 +1,6 @@
+---
+fixes:
+    - Decorator ``oslo_db.api.wrap_db_retry`` now defaults to 10 retries.
+      Previously the number of attempts was 0, and users had to explicitly
+      pass ``max_retry_interval`` value greater than 0 to actually enable
+      retries on errors.
