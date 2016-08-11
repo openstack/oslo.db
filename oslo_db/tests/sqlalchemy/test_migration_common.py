@@ -65,7 +65,7 @@ class TestMigrationCommon(test_base.DbTestCase):
     def test_find_migrate_repo_called_once(self):
         my_repository = migration._find_migrate_repo(self.path)
         self.repository.assert_called_once_with(self.path)
-        self.assertEqual(my_repository, self.return_value)
+        self.assertEqual(self.return_value, my_repository)
 
     def test_find_migrate_repo_called_few_times(self):
         repo1 = migration._find_migrate_repo(self.path)
@@ -82,7 +82,7 @@ class TestMigrationCommon(test_base.DbTestCase):
             version = migration.db_version_control(
                 self.engine, self.path, self.test_version)
 
-            self.assertEqual(version, self.test_version)
+            self.assertEqual(self.test_version, version)
             mock_version_control.assert_called_once_with(
                 self.engine, self.return_value, self.test_version)
 
@@ -111,7 +111,7 @@ class TestMigrationCommon(test_base.DbTestCase):
     def test_db_version_return(self):
         ret_val = migration.db_version(self.engine, self.path,
                                        self.init_version)
-        self.assertEqual(ret_val, self.test_version)
+        self.assertEqual(self.test_version, ret_val)
 
     def test_db_version_raise_not_controlled_error_first(self):
         with mock.patch.object(migration, 'db_version_control') as mock_ver:
@@ -122,7 +122,7 @@ class TestMigrationCommon(test_base.DbTestCase):
 
             ret_val = migration.db_version(self.engine, self.path,
                                            self.init_version)
-            self.assertEqual(ret_val, self.test_version)
+            self.assertEqual(self.test_version, ret_val)
             mock_ver.assert_called_once_with(self.engine, self.path,
                                              version=self.init_version)
 

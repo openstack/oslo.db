@@ -115,10 +115,10 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
                          int(self.REPOSITORY.latest) + 1)
         upgraded = [mock.call(v, with_data=True)
                     for v in versions]
-        self.assertEqual(self.migrate_up.call_args_list, upgraded)
+        self.assertEqual(upgraded, self.migrate_up.call_args_list)
 
         downgraded = [mock.call(v - 1) for v in reversed(versions)]
-        self.assertEqual(self.migrate_down.call_args_list, downgraded)
+        self.assertEqual(downgraded, self.migrate_down.call_args_list)
 
     @mock.patch.object(migrate.WalkVersionsMixin, 'migrate_up')
     @mock.patch.object(migrate.WalkVersionsMixin, 'migrate_down')
@@ -143,7 +143,7 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
             downgraded_2.append(mock.call(v - 1))
             downgraded_2.append(mock.call(v - 1))
         downgraded = downgraded_1 + downgraded_2
-        self.assertEqual(self.migrate_down.call_args_list, downgraded)
+        self.assertEqual(downgraded, self.migrate_down.call_args_list)
 
     @mock.patch.object(migrate.WalkVersionsMixin, 'migrate_up')
     @mock.patch.object(migrate.WalkVersionsMixin, 'migrate_down')
@@ -163,7 +163,7 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
         self.assertEqual(upgraded, self.migrate_up.call_args_list)
 
         downgraded = [mock.call(v - 1, with_data=True) for v in versions]
-        self.assertEqual(self.migrate_down.call_args_list, downgraded)
+        self.assertEqual(downgraded, self.migrate_down.call_args_list)
 
     @mock.patch.object(migrate.WalkVersionsMixin, 'migrate_up')
     @mock.patch.object(migrate.WalkVersionsMixin, 'migrate_down')
@@ -511,7 +511,7 @@ class TestOldCheckForeignKeys(test_base.DbTestCase):
             )
             for cmd, fk, tname, fk_info in diffs
         ]
-        self.assertEqual(diffs, compare_to)
+        self.assertEqual(compare_to, diffs)
 
     def test_fk_added(self):
         self._fk_added_fixture()

@@ -122,7 +122,7 @@ class RetainSchemaTest(oslo_test_base.BaseTestCase):
 
         with engine.connect() as conn:
             rows = conn.execute(self.test_table.select())
-            self.assertEqual(rows.fetchall(), [])
+            self.assertEqual([], rows.fetchall())
 
             trans = conn.begin()
             conn.execute(
@@ -132,7 +132,7 @@ class RetainSchemaTest(oslo_test_base.BaseTestCase):
             trans.rollback()
 
             rows = conn.execute(self.test_table.select())
-            self.assertEqual(rows.fetchall(), [])
+            self.assertEqual([], rows.fetchall())
 
             trans = conn.begin()
             conn.execute(
@@ -142,7 +142,7 @@ class RetainSchemaTest(oslo_test_base.BaseTestCase):
             trans.commit()
 
             rows = conn.execute(self.test_table.select())
-            self.assertEqual(rows.fetchall(), [(2, 3)])
+            self.assertEqual([(2, 3)], rows.fetchall())
 
         transaction_resource.finishedWith(engine)
 

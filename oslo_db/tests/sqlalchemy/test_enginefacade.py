@@ -1821,9 +1821,9 @@ class LiveFacadeTest(test_base.DbTestCase):
 
         session = self.sessionmaker(autocommit=True)
         self.assertEqual(
+            [("u1_commit",)],
             session.query(
-                self.User.name).order_by(self.User.name).all(),
-            [("u1_commit",)]
+                self.User.name).order_by(self.User.name).all()
         )
 
     def test_replace_scope(self):

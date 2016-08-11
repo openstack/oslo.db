@@ -52,13 +52,13 @@ class ModelBaseTest(test_base.DbTestCase):
 
     def test_modelbase_set(self):
         self.mb['world'] = 'hello'
-        self.assertEqual(self.mb['world'], 'hello')
+        self.assertEqual('hello', self.mb['world'])
 
     def test_modelbase_update(self):
         h = {'a': '1', 'b': '2'}
         self.mb.update(h)
         for key in h.keys():
-            self.assertEqual(self.mb[key], h[key])
+            self.assertEqual(h[key], self.mb[key])
 
     def test_modelbase_contains(self):
         mb = models.ModelBase()
@@ -92,8 +92,8 @@ class ModelBaseTest(test_base.DbTestCase):
             'b': '2',
         }
         self.ekm.update(h)
-        self.assertEqual(dict(self.ekm.items()), expected)
-        self.assertEqual(dict(self.ekm.iteritems()), expected)
+        self.assertEqual(expected, dict(self.ekm.items()))
+        self.assertEqual(expected, dict(self.ekm.iteritems()))
 
     def test_modelbase_dict(self):
         h = {'a': '1', 'b': '2'}
@@ -105,7 +105,7 @@ class ModelBaseTest(test_base.DbTestCase):
             'b': '2',
         }
         self.ekm.update(h)
-        self.assertEqual(dict(self.ekm), expected)
+        self.assertEqual(expected, dict(self.ekm))
 
     def test_modelbase_iter(self):
         expected = {
@@ -125,12 +125,11 @@ class ModelBaseTest(test_base.DbTestCase):
         self.assertEqual(len(expected), found_items)
 
     def test_modelbase_keys(self):
-        self.assertEqual(set(self.ekm.keys()),
-                         set(('id', 'smth', 'name')))
+        self.assertEqual(set(('id', 'smth', 'name')), set(self.ekm.keys()))
 
         self.ekm.update({'a': '1', 'b': '2'})
-        self.assertEqual(set(self.ekm.keys()),
-                         set(('a', 'b', 'id', 'smth', 'name')))
+        self.assertEqual(set(('a', 'b', 'id', 'smth', 'name')),
+                         set(self.ekm.keys()))
 
     def test_modelbase_several_iters(self):
         mb = ExtraKeysModel()
@@ -138,22 +137,23 @@ class ModelBaseTest(test_base.DbTestCase):
         it2 = iter(mb)
 
         self.assertFalse(it1 is it2)
-        self.assertEqual(dict(it1), dict(mb))
-        self.assertEqual(dict(it2), dict(mb))
+        self.assertEqual(dict(mb), dict(it1))
+        self.assertEqual(dict(mb), dict(it2))
 
     def test_extra_keys_empty(self):
         """Test verifies that by default extra_keys return empty list."""
-        self.assertEqual(self.mb._extra_keys, [])
+        self.assertEqual([], self.mb._extra_keys)
 
     def test_extra_keys_defined(self):
         """Property _extra_keys will return list with attributes names."""
-        self.assertEqual(self.ekm._extra_keys, ['name'])
+        self.assertEqual(['name'], self.ekm._extra_keys)
 
     def test_model_with_extra_keys(self):
         data = dict(self.ekm)
-        self.assertEqual(data, {'smth': None,
-                                'id': None,
-                                'name': 'NAME'})
+        self.assertEqual({'smth': None,
+                          'id': None,
+                          'name': 'NAME'},
+                         data)
 
 
 class ExtraKeysModel(BASE, models.ModelBase):
