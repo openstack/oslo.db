@@ -10,7 +10,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
 from oslotest import base as oslo_test_base
+from sqlalchemy import exc as sa_exc
 from sqlalchemy import inspect
 from sqlalchemy import schema
 from sqlalchemy import types
@@ -71,6 +73,62 @@ class DropAllObjectsTest(test_base.DbTestCase):
             [],
             insp.get_table_names()
         )
+
+
+class BackendNotAvailableTest(oslo_test_base.BaseTestCase):
+    def test_no_dbapi(self):
+        backend = provision.Backend(
+            "postgresql", "postgresql+nosuchdbapi://hostname/dsn")
+
+        with mock.patch(
+                "sqlalchemy.create_engine",
+                mock.Mock(side_effect=ImportError("nosuchdbapi"))):
+
+            # NOTE(zzzeek): Call and test the _verify function twice, as it
+            # exercises a different code path on subsequent runs vs.
+            # the first run
+            ex = self.assertRaises(
+                exception.BackendNotAvailable,
+                backend._verify)
+            self.assertEqual(
+                "Backend 'postgresql+nosuchdbapi' is unavailable: "
+                "No DBAPI installed", str(ex))
+
+            ex = self.assertRaises(
+                exception.BackendNotAvailable,
+                backend._verify)
+            self.assertEqual(
+                "Backend 'postgresql+nosuchdbapi' is unavailable: "
+                "No DBAPI installed", str(ex))
+
+    def test_cant_connect(self):
+        backend = provision.Backend(
+            "postgresql", "postgresql+nosuchdbapi://hostname/dsn")
+
+        with mock.patch(
+                "sqlalchemy.create_engine",
+                mock.Mock(return_value=mock.Mock(connect=mock.Mock(
+                    side_effect=sa_exc.OperationalError(
+                        "can't connect", None, None))
+                ))
+        ):
+
+            # NOTE(zzzeek): Call and test the _verify function twice, as it
+            # exercises a different code path on subsequent runs vs.
+            # the first run
+            ex = self.assertRaises(
+                exception.BackendNotAvailable,
+                backend._verify)
+            self.assertEqual(
+                "Backend 'postgresql+nosuchdbapi' is unavailable: "
+                "Could not connect", str(ex))
+
+            ex = self.assertRaises(
+                exception.BackendNotAvailable,
+                backend._verify)
+            self.assertEqual(
+                "Backend 'postgresql+nosuchdbapi' is unavailable: "
+                "Could not connect", str(ex))
 
 
 class MySQLDropAllObjectsTest(

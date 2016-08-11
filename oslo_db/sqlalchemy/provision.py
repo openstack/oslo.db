@@ -157,7 +157,6 @@ class Backend(object):
         self.engine = None
         self.impl = BackendImpl.impl(database_type)
         self.current_dbs = set()
-        Backend.backends_by_database_type[database_type] = self
 
     @classmethod
     def backend_for_database_type(cls, database_type):
@@ -167,7 +166,8 @@ class Backend(object):
         try:
             backend = cls.backends_by_database_type[database_type]
         except KeyError:
-            raise exception.BackendNotAvailable(database_type)
+            raise exception.BackendNotAvailable(
+                "Backend '%s' is unavailable: No such backend" % database_type)
         else:
             return backend._verify()
 
@@ -197,14 +197,15 @@ class Backend(object):
         if not self.verified:
             try:
                 eng = self._ensure_backend_available(self.url)
-            except exception.BackendNotAvailable:
+            except exception.BackendNotAvailable as bne:
+                self._no_engine_reason = str(bne)
                 raise
             else:
                 self.engine = eng
             finally:
                 self.verified = True
         if self.engine is None:
-            raise exception.BackendNotAvailable(self.database_type)
+            raise exception.BackendNotAvailable(self._no_engine_reason)
         return self
 
     @classmethod
@@ -219,7 +220,9 @@ class Backend(object):
             LOG.info(
                 _LI("The %(dbapi)s backend is unavailable: %(err)s"),
                 dict(dbapi=url.drivername, err=i_e))
-            raise exception.BackendNotAvailable("No DBAPI installed")
+            raise exception.BackendNotAvailable(
+                "Backend '%s' is unavailable: No DBAPI installed" %
+                url.drivername)
         else:
             try:
                 conn = eng.connect()
@@ -231,7 +234,9 @@ class Backend(object):
                     _LI("The %(dbapi)s backend is unavailable: %(err)s"),
                     dict(dbapi=url.drivername, err=d_e)
                 )
-                raise exception.BackendNotAvailable("Could not connect")
+                raise exception.BackendNotAvailable(
+                    "Backend '%s' is unavailable: Could not connect" %
+                    url.drivername)
             else:
                 conn.close()
                 return eng
@@ -312,7 +317,8 @@ class Backend(object):
             url = sa_url.make_url(url_str)
             m = re.match(r'([^+]+?)(?:\+(.+))?$', url.drivername)
             database_type = m.group(1)
-            Backend(database_type, url)
+            Backend.backends_by_database_type[database_type] = \
+                Backend(database_type, url)
 
 
 @six.add_metaclass(abc.ABCMeta)
