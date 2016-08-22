@@ -147,7 +147,8 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
     the lexicographical ordering:
     (k1 > X1) or (k1 == X1 && k2 > X2) or (k1 == X1 && k2 == X2 && k3 > X3)
 
-    We also have to cope with different sort_directions.
+    We also have to cope with different sort_directions and cases where k2,
+    k3, ... are nullable.
 
     Typically, the id of the last row is used as the client-facing pagination
     marker, then the actual marker object must be fetched from the db and
@@ -224,18 +225,24 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
         criteria_list = []
         for i in range(len(sort_keys)):
             crit_attrs = []
-            for j in range(i):
-                model_attr = getattr(model, sort_keys[j])
-                crit_attrs.append((model_attr == marker_values[j]))
+            # NOTE: We skip the marker value comparison if marker_values[i] is
+            #       None, for two reasons: 1) the comparison operators below
+            #       ('<', '>') are not applicable on None value; 2) this is
+            #       safe because we can assume the primary key is included in
+            #       sort_key, thus checked as (one of) marker values.
+            if marker_values[i] is not None:
+                for j in range(i):
+                    model_attr = getattr(model, sort_keys[j])
+                    crit_attrs.append((model_attr == marker_values[j]))
 
-            model_attr = getattr(model, sort_keys[i])
-            if sort_dirs[i].startswith('desc'):
-                crit_attrs.append((model_attr < marker_values[i]))
-            else:
-                crit_attrs.append((model_attr > marker_values[i]))
+                model_attr = getattr(model, sort_keys[i])
+                if sort_dirs[i].startswith('desc'):
+                    crit_attrs.append((model_attr < marker_values[i]))
+                else:
+                    crit_attrs.append((model_attr > marker_values[i]))
 
-            criteria = sqlalchemy.sql.and_(*crit_attrs)
-            criteria_list.append(criteria)
+                criteria = sqlalchemy.sql.and_(*crit_attrs)
+                criteria_list.append(criteria)
 
         f = sqlalchemy.sql.or_(*criteria_list)
         query = query.filter(f)
