@@ -77,6 +77,7 @@ class FakeTable(Base):
     user_id = Column(String(50), primary_key=True)
     project_id = Column(String(50))
     snapshot_id = Column(String(50))
+    updated_at = Column(DateTime, nullable=True)
 
     # mox is comparing in some awkward way that
     # in this case requires the same identity of object
@@ -171,7 +172,8 @@ class TestPaginateQuery(test_base.BaseTestCase):
         self.mox.StubOutWithMock(sqlalchemy, 'desc')
         self.marker = FakeTable(user_id='user',
                                 project_id='p',
-                                snapshot_id='s')
+                                snapshot_id='s',
+                                updated_at=None)
         self.model = FakeTable
 
     def test_paginate_query_no_pagination_no_sort_dirs(self):
@@ -298,6 +300,35 @@ class TestPaginateQuery(test_base.BaseTestCase):
         self.mox.ReplayAll()
         utils.paginate_query(self.query, self.model, 5,
                              ['user_id', 'project_id'],
+                             marker=self.marker,
+                             sort_dirs=['asc-nullslast', 'desc-nullsfirst'])
+
+    def test_paginate_query_marker_null(self):
+        self.mox.StubOutWithMock(self.model.user_id, 'isnot')
+        self.model.user_id.isnot(None).AndReturn('asc_null_1')
+        sqlalchemy.desc('asc_null_1').AndReturn('asc_null_2')
+        self.query.order_by('asc_null_2').AndReturn(self.query)
+
+        sqlalchemy.asc(self.model.user_id).AndReturn('asc_1')
+        self.query.order_by('asc_1').AndReturn(self.query)
+
+        self.mox.StubOutWithMock(self.model.updated_at, 'is_')
+        self.model.updated_at.is_(None).AndReturn('desc_null_1')
+        sqlalchemy.desc('desc_null_1').AndReturn('desc_null_2')
+        self.query.order_by('desc_null_2').AndReturn(self.query)
+
+        sqlalchemy.desc(self.model.updated_at).AndReturn('desc_1')
+        self.query.order_by('desc_1').AndReturn(self.query)
+
+        self.mox.StubOutWithMock(sqlalchemy.sql, 'and_')
+        sqlalchemy.sql.and_(mock.ANY).AndReturn('some_crit')
+        self.mox.StubOutWithMock(sqlalchemy.sql, 'or_')
+        sqlalchemy.sql.or_('some_crit').AndReturn('some_f')
+        self.query.filter('some_f').AndReturn(self.query)
+        self.query.limit(5).AndReturn(self.query)
+        self.mox.ReplayAll()
+        utils.paginate_query(self.query, self.model, 5,
+                             ['user_id', 'updated_at'],
                              marker=self.marker,
                              sort_dirs=['asc-nullslast', 'desc-nullsfirst'])
 
