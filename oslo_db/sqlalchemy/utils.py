@@ -66,6 +66,48 @@ def sanitize_db_url(url):
     return url
 
 
+def _get_unique_keys(model):
+    """Get a list of sets of unique model keys.
+
+    :param model: the ORM model class
+    :rtype: list of sets of strings
+    :return: unique model keys
+    """
+    # extract result from cache if present
+    info = model.__table__.info
+    if 'oslodb_unique_keys' in info:
+        return info['oslodb_unique_keys']
+
+    res = []
+    try:
+        constraints = model.__table__.constraints
+    except AttributeError:
+        constraints = []
+    for constraint in constraints:
+        # filter out any CheckConstraints
+        if isinstance(constraint, (sqlalchemy.UniqueConstraint,
+                                   sqlalchemy.PrimaryKeyConstraint)):
+            res.append({c.name for c in constraint.columns})
+    try:
+        indexes = model.__table__.indexes
+    except AttributeError:
+        indexes = []
+    for index in indexes:
+        if index.unique:
+            res.append({c.name for c in index.columns})
+    # cache result for next calls with the same model
+    info['oslodb_unique_keys'] = res
+    return res
+
+
+def _stable_sorting_order(model, sort_keys):
+    sort_keys_set = set(sort_keys)
+    for unique_keys in _get_unique_keys(model):
+        if unique_keys.issubset(sort_keys_set):
+            return True
+    return False
+
+
 # copy from glance/db/sqlalchemy/api.py
 def paginate_query(query, model, limit, sort_keys, marker=None,
                    sort_dir=None, sort_dirs=None):
@@ -100,11 +142,9 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
     :rtype: sqlalchemy.orm.query.Query
     :return: The query with sorting/pagination added.
     """
-
-    if 'id' not in sort_keys:
-        # TODO(justinsb): If this ever gives a false-positive, check
-        # the actual primary key, rather than assuming its id
-        LOG.warning(_LW('Id not in sort_keys; is sort_keys unique?'))
+    if not _stable_sorting_order(model, sort_keys):
+        LOG.warning(_LW('Unique keys not in sort_keys. '
+                        'The sorting order may be unstable.'))
 
     assert(not (sort_dir and sort_dirs))
 
