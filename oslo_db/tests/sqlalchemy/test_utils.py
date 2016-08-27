@@ -93,6 +93,28 @@ class FakeTable(Base):
         pass
 
 
+class FakeTableWithMultipleKeys(Base):
+    __tablename__ = 'fake_table_multiple_keys'
+
+    key1 = Column(String(50), primary_key=True)
+    key2 = Column(String(50), primary_key=True)
+    key3 = Column(String(50))
+
+
+class FakeTableWithIndexes(Base):
+    __tablename__ = 'fake_table_unique_index'
+
+    id = Column(String(50), primary_key=True)
+    key1 = Column(String(50))
+    key2 = Column(String(50))
+    key3 = Column(String(50))
+
+    __table_args__ = (
+        Index('idx_unique', 'key1', 'key2', unique=True),
+        Index('idx_unique', 'key1', 'key3', unique=False),
+    )
+
+
 class FakeModel(object):
     def __init__(self, values):
         self.values = values
@@ -274,6 +296,74 @@ class TestPaginateQuery(test_base.BaseTestCase):
         utils.paginate_query(self.query, self.model, 5,
                              ['user_id', 'some_hybrid'],
                              sort_dirs=['asc', 'desc'])
+
+
+class Test_UnstableSortingOrder(test_base.BaseTestCase):
+    def test_multiple_primary_keys_stable(self):
+        self.assertTrue(
+            utils._stable_sorting_order(
+                FakeTableWithMultipleKeys, ['key1', 'key2']))
+
+    def test_multiple_primary_keys_unstable(self):
+        self.assertFalse(
+            utils._stable_sorting_order(
+                FakeTableWithMultipleKeys, ['key1', 'key3']))
+
+    def test_unique_index_stable(self):
+        self.assertTrue(
+            utils._stable_sorting_order(
+                FakeTableWithIndexes, ['key1', 'key2']))
+
+    def test_unique_index_unstable(self):
+        self.assertFalse(
+            utils._stable_sorting_order(
+                FakeTableWithIndexes, ['key1', 'key3']))
+
+
+class TestGetUniqueKeys(test_base.BaseTestCase):
+    def test_multiple_primary_keys(self):
+        self.assertEqual(
+            [{'key1', 'key2'}],
+            utils.get_unique_keys(FakeTableWithMultipleKeys))
+
+    def test_unique_index(self):
+        self.assertEqual(
+            [{'id'}, {'key1', 'key2'}],
+            utils.get_unique_keys(FakeTableWithIndexes))
+
+    def test_cache(self):
+
+        class CacheTable(object):
+            info = {}
+            constraints_called = 0
+            indexes_called = 0
+
+            @property
+            def constraints(self):
+                self.constraints_called += 1
+                return []
+
+            @property
+            def indexes(self):
+                self.indexes_called += 1
+                return []
+
+        class CacheModel(object):
+            __table__ = CacheTable()
+
+        model = CacheModel()
+        self.assertNotIn('oslodb_unique_keys', CacheTable.info)
+        utils.get_unique_keys(model)
+
+        self.assertIn('oslodb_unique_keys', CacheTable.info)
+        self.assertEqual(1, model.__table__.constraints_called)
+        self.assertEqual(1, model.__table__.indexes_called)
+
+        for i in range(10):
+            utils.get_unique_keys(model)
+
+        self.assertEqual(1, model.__table__.constraints_called)
+        self.assertEqual(1, model.__table__.indexes_called)
 
 
 class TestPaginateQueryActualSQL(test_base.BaseTestCase):
