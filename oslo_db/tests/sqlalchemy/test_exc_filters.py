@@ -512,16 +512,11 @@ class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
             self.table_2.insert({'id': 1, 'foo_id': 2})
         )
 
-        self.assertInnerException(
-            matched,
-            "IntegrityError",
-            (1452, "Cannot add or update a child row: a "
-             "foreign key constraint fails (`{0}`.`resource_entity`, "
-             "CONSTRAINT `foo_fkey` FOREIGN KEY (`foo_id`) REFERENCES "
-             "`resource_foo` (`id`))".format(self.engine.url.database)),
-            "INSERT INTO resource_entity (id, foo_id) VALUES (%s, %s)",
-            (1, 2)
-        )
+        # NOTE(jd) Cannot check precisely with assertInnerException since MySQL
+        # error are not the same depending on its version…
+        self.assertIsInstance(matched.inner_exception,
+                              sqlalchemy.exc.IntegrityError)
+        self.assertEqual(matched.inner_exception.orig.args[0], 1452)
         self.assertEqual("resource_entity", matched.table)
         self.assertEqual("foo_fkey", matched.constraint)
         self.assertEqual("foo_id", matched.key)
@@ -540,19 +535,11 @@ class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
                 self.table_2.insert({'id': 1, 'foo_id': 2})
             )
 
-        self.assertInnerException(
-            matched,
-            "IntegrityError",
-            (
-                1452,
-                'Cannot add or update a child row: a '
-                'foreign key constraint fails ("{0}"."resource_entity", '
-                'CONSTRAINT "foo_fkey" FOREIGN KEY ("foo_id") REFERENCES '
-                '"resource_foo" ("id"))'.format(self.engine.url.database)
-            ),
-            "INSERT INTO resource_entity (id, foo_id) VALUES (%s, %s)",
-            (1, 2)
-        )
+        # NOTE(jd) Cannot check precisely with assertInnerException since MySQL
+        # error are not the same depending on its version…
+        self.assertIsInstance(matched.inner_exception,
+                              sqlalchemy.exc.IntegrityError)
+        self.assertEqual(matched.inner_exception.orig.args[0], 1452)
         self.assertEqual("resource_entity", matched.table)
         self.assertEqual("foo_fkey", matched.constraint)
         self.assertEqual("foo_id", matched.key)
@@ -567,21 +554,11 @@ class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
             self.engine.execute,
             self.table_1.delete()
         )
-        self.assertInnerException(
-            matched,
-            "IntegrityError",
-            (
-                1451,
-                "Cannot delete or update a parent row: a foreign key "
-                "constraint fails (`{0}`.`resource_entity`, "
-                "constraint `foo_fkey` "
-                "foreign key (`foo_id`) references "
-                "`resource_foo` (`id`))".format(self.engine.url.database)
-            ),
-            "DELETE FROM resource_foo",
-            (),
-        )
-
+        # NOTE(jd) Cannot check precisely with assertInnerException since MySQL
+        # error are not the same depending on its version…
+        self.assertIsInstance(matched.inner_exception,
+                              sqlalchemy.exc.IntegrityError)
+        self.assertEqual(1451, matched.inner_exception.orig.args[0])
         self.assertEqual("resource_entity", matched.table)
         self.assertEqual("foo_fkey", matched.constraint)
         self.assertEqual("foo_id", matched.key)
