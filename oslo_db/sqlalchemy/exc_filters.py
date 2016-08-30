@@ -197,7 +197,7 @@ def _sqlite_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
          "is (not present in|still referenced from) table "
          "\"(?P<key_table>[^\"]+)\".")
 @filters("mysql", sqla_exc.IntegrityError,
-         r".* u?'Cannot (add|delete) or update a (child|parent) row: "
+         r".*Cannot (add|delete) or update a (child|parent) row: "
          'a foreign key constraint fails \([`"].+[`"]\.[`"](?P<table>.+)[`"], '
          'CONSTRAINT [`"](?P<constraint>.+)[`"] FOREIGN KEY '
          '\([`"](?P<key>.+)[`"]\) REFERENCES [`"](?P<key_table>.+)[`"] ')
@@ -276,7 +276,7 @@ def _check_constraint_non_existing(
 @filters("sqlite", sqla_exc.OperationalError,
          r".* no such table: (?P<table>.+)")
 @filters("mysql", sqla_exc.InternalError,
-         r".*1051,.*\"Unknown table '(.+\.)?(?P<table>.+)'\"")
+         r".*1051,.*Unknown table '(.+\.)?(?P<table>.+)'\"")
 @filters("postgresql", sqla_exc.ProgrammingError,
          r".* table \"(?P<table>.+)\" does not exist")
 def _check_table_non_existing(
