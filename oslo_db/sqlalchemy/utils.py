@@ -31,6 +31,7 @@ from sqlalchemy import Column
 from sqlalchemy.engine import Connectable
 from sqlalchemy.engine import reflection
 from sqlalchemy.engine import url as sa_url
+from sqlalchemy import exc
 from sqlalchemy import func
 from sqlalchemy import Index
 from sqlalchemy import inspect
@@ -71,16 +72,26 @@ def _get_unique_keys(model):
 
     :param model: the ORM model class
     :rtype: list of sets of strings
-    :return: unique model keys
+    :return: unique model keys or None if unable to find them
     """
+
+    try:
+        mapper = inspect(model)
+    except exc.NoInspectionAvailable:
+        return None
+    else:
+        table = mapper.mapped_table
+        if table is None:
+            return None
+
     # extract result from cache if present
-    info = model.__table__.info
+    info = table.info
     if 'oslodb_unique_keys' in info:
         return info['oslodb_unique_keys']
 
     res = []
     try:
-        constraints = model.__table__.constraints
+        constraints = table.constraints
     except AttributeError:
         constraints = []
     for constraint in constraints:
@@ -89,7 +100,7 @@ def _get_unique_keys(model):
                                    sqlalchemy.PrimaryKeyConstraint)):
             res.append({c.name for c in constraint.columns})
     try:
-        indexes = model.__table__.indexes
+        indexes = table.indexes
     except AttributeError:
         indexes = []
     for index in indexes:
@@ -101,8 +112,16 @@ def _get_unique_keys(model):
 
 
 def _stable_sorting_order(model, sort_keys):
+    """Check whetever the sorting order is stable.
+
+    :return: True if it is stable, False if it's not, None if it's impossible
+    to determine.
+    """
+    keys = _get_unique_keys(model)
+    if keys is None:
+        return None
     sort_keys_set = set(sort_keys)
-    for unique_keys in _get_unique_keys(model):
+    for unique_keys in keys:
         if unique_keys.issubset(sort_keys_set):
             return True
     return False
@@ -142,7 +161,7 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
     :rtype: sqlalchemy.orm.query.Query
     :return: The query with sorting/pagination added.
     """
-    if not _stable_sorting_order(model, sort_keys):
+    if _stable_sorting_order(model, sort_keys) is False:
         LOG.warning(_LW('Unique keys not in sort_keys. '
                         'The sorting order may be unstable.'))
 

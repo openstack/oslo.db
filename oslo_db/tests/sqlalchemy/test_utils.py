@@ -31,6 +31,7 @@ from sqlalchemy.engine import url as sa_url
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import mapper
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
@@ -113,6 +114,20 @@ class FakeTableWithIndexes(Base):
         Index('idx_unique', 'key1', 'key2', unique=True),
         Index('idx_unique', 'key1', 'key3', unique=False),
     )
+
+
+class FakeTableClassicalyMapped(object):
+    pass
+
+
+fake_table = Table(
+    'fake_table_classically_mapped',
+    Base.metadata,
+    Column('id', Integer, primary_key=True),
+    Column('key', String(50))
+)
+
+mapper(FakeTableClassicalyMapped, fake_table)
 
 
 class FakeModel(object):
@@ -304,10 +319,18 @@ class Test_UnstableSortingOrder(test_base.BaseTestCase):
             utils._stable_sorting_order(
                 FakeTableWithMultipleKeys, ['key1', 'key2']))
 
+    def test_classically_mapped_primary_keys_stable(self):
+        self.assertTrue(
+            utils._stable_sorting_order(FakeTableClassicalyMapped, ['id']))
+
     def test_multiple_primary_keys_unstable(self):
         self.assertFalse(
             utils._stable_sorting_order(
                 FakeTableWithMultipleKeys, ['key1', 'key3']))
+
+    def test_unknown_primary_keys_stable(self):
+        self.assertIsNone(
+            utils._stable_sorting_order(object, ['key1', 'key2']))
 
     def test_unique_index_stable(self):
         self.assertTrue(
@@ -331,6 +354,9 @@ class TestGetUniqueKeys(test_base.BaseTestCase):
             [{'id'}, {'key1', 'key2'}],
             utils._get_unique_keys(FakeTableWithIndexes))
 
+    def test_unknown_primary_keys(self):
+        self.assertIsNone(utils._get_unique_keys(object))
+
     def test_cache(self):
 
         class CacheTable(object):
@@ -349,21 +375,24 @@ class TestGetUniqueKeys(test_base.BaseTestCase):
                 return []
 
         class CacheModel(object):
-            __table__ = CacheTable()
+            pass
 
+        table = CacheTable()
+        mock_inspect = mock.Mock(return_value=mock.Mock(mapped_table=table))
         model = CacheModel()
         self.assertNotIn('oslodb_unique_keys', CacheTable.info)
-        utils._get_unique_keys(model)
+        with mock.patch("oslo_db.sqlalchemy.utils.inspect", mock_inspect):
+            utils._get_unique_keys(model)
 
         self.assertIn('oslodb_unique_keys', CacheTable.info)
-        self.assertEqual(1, model.__table__.constraints_called)
-        self.assertEqual(1, model.__table__.indexes_called)
+        self.assertEqual(1, table.constraints_called)
+        self.assertEqual(1, table.indexes_called)
 
         for i in range(10):
             utils._get_unique_keys(model)
 
-        self.assertEqual(1, model.__table__.constraints_called)
-        self.assertEqual(1, model.__table__.indexes_called)
+        self.assertEqual(1, table.constraints_called)
+        self.assertEqual(1, table.indexes_called)
 
 
 class TestPaginateQueryActualSQL(test_base.BaseTestCase):
