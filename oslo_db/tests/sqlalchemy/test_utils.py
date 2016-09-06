@@ -94,6 +94,16 @@ class FakeTable(Base):
         pass
 
 
+class FakeTableJoinedInh(FakeTable):
+    __tablename__ = 'fake_table_inh'
+
+    id = Column(String(50), ForeignKey('fake_table.user_id'))
+
+
+class FakeTableSingleInh(FakeTable):
+    __mapper_args__ = {'polymorphic_identity': 'foo'}
+
+
 class FakeTableWithMultipleKeys(Base):
     __tablename__ = 'fake_table_multiple_keys'
 
@@ -328,6 +338,16 @@ class Test_UnstableSortingOrder(test_base.BaseTestCase):
             utils._stable_sorting_order(
                 FakeTableWithMultipleKeys, ['key1', 'key3']))
 
+    def test_joined_inh_stable(self):
+        self.assertTrue(
+            utils._stable_sorting_order(FakeTableJoinedInh, ['user_id'])
+        )
+
+    def test_single_inh_stable(self):
+        self.assertTrue(
+            utils._stable_sorting_order(FakeTableSingleInh, ['user_id'])
+        )
+
     def test_unknown_primary_keys_stable(self):
         self.assertIsNone(
             utils._stable_sorting_order(object, ['key1', 'key2']))
@@ -378,7 +398,10 @@ class TestGetUniqueKeys(test_base.BaseTestCase):
             pass
 
         table = CacheTable()
-        mock_inspect = mock.Mock(return_value=mock.Mock(mapped_table=table))
+        mapper_mock = mock.Mock(mapped_table=table, local_table=table)
+        mapper_mock.base_mapper = mapper_mock
+        mock_inspect = mock.Mock(
+            return_value=mapper_mock)
         model = CacheModel()
         self.assertNotIn('oslodb_unique_keys', CacheTable.info)
         with mock.patch("oslo_db.sqlalchemy.utils.inspect", mock_inspect):

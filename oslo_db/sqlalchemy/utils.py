@@ -80,18 +80,22 @@ def _get_unique_keys(model):
     except exc.NoInspectionAvailable:
         return None
     else:
-        table = mapper.mapped_table
-        if table is None:
+        local_table = mapper.local_table
+        base_table = mapper.base_mapper.local_table
+
+        if local_table is None:
             return None
 
     # extract result from cache if present
-    info = table.info
-    if 'oslodb_unique_keys' in info:
-        return info['oslodb_unique_keys']
+    has_info = hasattr(local_table, 'info')
+    if has_info:
+        info = local_table.info
+        if 'oslodb_unique_keys' in info:
+            return info['oslodb_unique_keys']
 
     res = []
     try:
-        constraints = table.constraints
+        constraints = base_table.constraints
     except AttributeError:
         constraints = []
     for constraint in constraints:
@@ -100,14 +104,15 @@ def _get_unique_keys(model):
                                    sqlalchemy.PrimaryKeyConstraint)):
             res.append({c.name for c in constraint.columns})
     try:
-        indexes = table.indexes
+        indexes = base_table.indexes
     except AttributeError:
         indexes = []
     for index in indexes:
         if index.unique:
             res.append({c.name for c in index.columns})
     # cache result for next calls with the same model
-    info['oslodb_unique_keys'] = res
+    if has_info:
+        info['oslodb_unique_keys'] = res
     return res
 
 
