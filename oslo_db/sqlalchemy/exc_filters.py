@@ -284,6 +284,8 @@ def _raise_mysql_table_doesnt_exist_asis(
          r"^.*1366.*Incorrect string value:*")
 @filters("sqlite", sqla_exc.ProgrammingError,
          r"(?i).*You must not use 8-bit bytestrings*")
+@filters("mysql", sqla_exc.DataError,
+         r".*1406.*Data too long for column.*")
 def _raise_data_error(error, match, engine_name, is_disconnect):
     """Raise DBDataError exception for different data errors."""
 

@@ -754,6 +754,12 @@ class TestDataError(TestsExceptionFilter):
                                 '\'resource\' at row 1"',
                                 self.DataError)
 
+    def test_data_too_long_for_column(self):
+        self._run_bad_data_test("mysql",
+                                '(1406, "Data too long for column '
+                                '\'resource\' at row 1"',
+                                self.DataError)
+
 
 class IntegrationTest(test_base.DbTestCase):
     """Test an actual error-raising round trips against the database."""
