@@ -285,6 +285,24 @@ def _check_table_non_existing(
     raise exception.DBNonExistentTable(match.group("table"), programming_error)
 
 
+@filters("mysql", sqla_exc.InternalError,
+         r".*1049,.*Unknown database '(?P<database>.+)'\"")
+@filters("mysql", sqla_exc.OperationalError,
+         r".*1049,.*Unknown database '(?P<database>.+)'\"")
+@filters("postgresql", sqla_exc.OperationalError,
+         r".*database \"(?P<database>.+)\" does not exist")
+@filters("sqlite", sqla_exc.OperationalError,
+         ".*unable to open database file.*")
+def _check_database_non_existing(
+        error, match, engine_name, is_disconnect):
+    try:
+        database = match.group("database")
+    except IndexError:
+        database = None
+
+    raise exception.DBNonExistentDatabase(database, error)
+
+
 @filters("ibm_db_sa", sqla_exc.IntegrityError, r"^.*SQL0803N.*$")
 def _db2_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
     """Filter for DB2 duplicate key errors.

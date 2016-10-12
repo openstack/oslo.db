@@ -21,6 +21,7 @@ import mock
 from oslotest import base as oslo_test_base
 import six
 import sqlalchemy as sqla
+from sqlalchemy.engine import url as sqla_url
 from sqlalchemy import event
 import sqlalchemy.exc
 from sqlalchemy.ext.declarative import declarative_base
@@ -377,6 +378,69 @@ class TestNonExistentTableMySQL(
         self.assertIsInstance(matched.inner_exception,
                               sqlalchemy.exc.InternalError)
         self.assertEqual("foo", matched.table)
+
+
+class TestNonExistentDatabase(
+        _SQLAExceptionMatcher,
+        test_base.DbTestCase):
+
+    def setUp(self):
+        super(TestNonExistentDatabase, self).setUp()
+
+        url = sqla_url.make_url(str(self.engine.url))
+        url.database = 'non_existent_database'
+        self.url = url
+
+    def test_raise(self):
+        matched = self.assertRaises(
+            exception.DBNonExistentDatabase,
+            engines.create_engine,
+            sqla_url.make_url(
+                'sqlite:////non_existent_dir/non_existent_database')
+        )
+        self.assertIsNone(matched.database)
+        self.assertInnerException(
+            matched,
+            sqlalchemy.exc.OperationalError,
+            'unable to open database file',
+        )
+
+
+class TestNonExistentDatabaseMySQL(
+        TestNonExistentDatabase,
+        test_base.MySQLOpportunisticTestCase):
+
+    def test_raise(self):
+        matched = self.assertRaises(
+            exception.DBNonExistentDatabase,
+            engines.create_engine,
+            self.url
+        )
+        self.assertEqual('non_existent_database', matched.database)
+        # NOTE(rpodolyaka) cannot check precisely with assertInnerException
+        # since MySQL errors are not the same depending on its version
+        self.assertIsInstance(
+            matched.inner_exception,
+            (sqlalchemy.exc.InternalError, sqlalchemy.exc.OperationalError),
+        )
+
+
+class TestNonExistentDatabasePostgreSQL(
+        TestNonExistentDatabase,
+        test_base.PostgreSQLOpportunisticTestCase):
+
+    def test_raise(self):
+        matched = self.assertRaises(
+            exception.DBNonExistentDatabase,
+            engines.create_engine,
+            self.url
+        )
+        self.assertEqual('non_existent_database', matched.database)
+        self.assertInnerException(
+            matched,
+            sqlalchemy.exc.OperationalError,
+            'fatal:  database "non_existent_database" does not exist\n',
+        )
 
 
 class TestReferenceErrorSQLite(_SQLAExceptionMatcher, test_base.DbTestCase):
