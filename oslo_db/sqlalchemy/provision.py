@@ -433,7 +433,7 @@ class BackendImpl(object):
     def create_opportunistic_driver_url(self):
         """Produce a string url known as the 'opportunistic' URL.
 
-        This URL is one that corresponds to an established Openstack
+        This URL is one that corresponds to an established OpenStack
         convention for a pre-established database login, which, when
         detected as available in the local environment, is automatically
         used as a test platform for a specific type of driver.
