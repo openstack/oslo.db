@@ -593,7 +593,7 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         utils.change_deleted_column_type_to_id_type(self.engine, table_name)
 
         table = utils.get_table(self.engine, table_name)
-        self.assertTrue(isinstance(table.c.deleted.type, Integer))
+        self.assertIsInstance(table.c.deleted.type, Integer)
 
     def test_change_deleted_column_type_to_id_type_string(self):
         table_name = 'abc'
@@ -604,7 +604,7 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         utils.change_deleted_column_type_to_id_type(self.engine, table_name)
 
         table = utils.get_table(self.engine, table_name)
-        self.assertTrue(isinstance(table.c.deleted.type, String))
+        self.assertIsInstance(table.c.deleted.type, String)
 
     @db_test_base.backend_specific('sqlite')
     def test_change_deleted_column_type_to_id_type_custom(self):
@@ -627,7 +627,7 @@ class TestMigrationUtils(db_test_base.DbTestCase):
 
         table = utils.get_table(self.engine, table_name)
 
-        self.assertTrue(isinstance(table.c.deleted.type, Integer))
+        self.assertIsInstance(table.c.deleted.type, Integer)
 
     def test_change_deleted_column_type_to_boolean(self):
         expected_types = {'mysql': mysql.TINYINT,
@@ -686,8 +686,8 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         #                 but sqlalchemy will set it to NullType. This has
         #                 been fixed upstream in recent SA versions
         if SA_VERSION < (0, 9, 0):
-            self.assertTrue(isinstance(table.c.foo.type, NullType))
-        self.assertTrue(isinstance(table.c.deleted.type, Boolean))
+            self.assertIsInstance(table.c.foo.type, NullType)
+        self.assertIsInstance(table.c.deleted.type, Boolean)
 
     def test_detect_boolean_deleted_constraint_detection(self):
         table_name = 'abc'
