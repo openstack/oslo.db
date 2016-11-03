@@ -75,6 +75,21 @@ decorator.   Each function must receive the context argument:
         results = some_reader_api_function(context)
         some_writer_api_function(context, 5, 10)
 
+
+``connection`` modifier can be used when a :class:`.Session` object is not
+needed, e.g. when `SQLAlchemy Core <http://docs.sqlalchemy.org/en/latest/core/>`_
+is preferred:
+
+.. code:: python
+
+    @enginefacade.reader.connection
+    def _refresh_from_db(context, cache):
+        sel = sa.select([table.c.id, table.c.name])
+        res = context.connection.execute(sel).fetchall()
+        cache.id_cache = {r[1]: r[0] for r in res}
+        cache.str_cache = {r[0]: r[1] for r in res}
+
+
 .. note::  The ``context.session`` and ``context.connection`` attributes
    must be accessed within the scope of an appropriate writer/reader block
    (either the decorator or contextmanager approach). An AttributeError is
