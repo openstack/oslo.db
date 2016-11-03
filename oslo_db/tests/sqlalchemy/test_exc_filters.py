@@ -305,7 +305,8 @@ class TestNonExistentConstraintMySQL(
         # NOTE(jd) Cannot check precisely with assertInnerException since MySQL
         # error are not the same depending on its version…
         self.assertIsInstance(matched.inner_exception,
-                              sqlalchemy.exc.InternalError)
+                              (sqlalchemy.exc.InternalError,
+                               sqlalchemy.exc.OperationalError))
         if matched.table is not None:
             self.assertEqual("resource_foo", matched.table)
         if matched.constraint is not None:
@@ -375,7 +376,8 @@ class TestNonExistentTableMySQL(
         # NOTE(jd) Cannot check precisely with assertInnerException since MySQL
         # error are not the same depending on its version…
         self.assertIsInstance(matched.inner_exception,
-                              sqlalchemy.exc.InternalError)
+                              (sqlalchemy.exc.InternalError,
+                               sqlalchemy.exc.OperationalError))
         self.assertEqual("foo", matched.table)
 
 

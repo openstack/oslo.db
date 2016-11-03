@@ -252,6 +252,9 @@ def _check_constraint_error(
 @filters("mysql", sqla_exc.InternalError,
          r".*1091,.*Can't DROP '(?P<constraint>.+)'; "
          "check that column/key exists")
+@filters("mysql", sqla_exc.OperationalError,
+         r".*1091,.*Can't DROP '(?P<constraint>.+)'; "
+         "check that column/key exists")
 @filters("mysql", sqla_exc.InternalError,
          r".*1025,.*Error on rename of '.+/(?P<relation>.+)' to ")
 def _check_constraint_non_existing(
@@ -276,6 +279,8 @@ def _check_constraint_non_existing(
 @filters("sqlite", sqla_exc.OperationalError,
          r".* no such table: (?P<table>.+)")
 @filters("mysql", sqla_exc.InternalError,
+         r".*1051,.*Unknown table '(.+\.)?(?P<table>.+)'\"")
+@filters("mysql", sqla_exc.OperationalError,
          r".*1051,.*Unknown table '(.+\.)?(?P<table>.+)'\"")
 @filters("postgresql", sqla_exc.ProgrammingError,
          r".* table \"(?P<table>.+)\" does not exist")
@@ -329,6 +334,14 @@ def _raise_data_error(error, match, engine_name, is_disconnect):
     """Raise DBDataError exception for different data errors."""
 
     raise exception.DBDataError(error)
+
+
+@filters("mysql", sqla_exc.OperationalError,
+         r".*\(1305,\s+\'SAVEPOINT\s+(.+)\s+does not exist\'\)")
+def _raise_savepoints_as_dberrors(error, match, engine_name, is_disconnect):
+    # NOTE(rpodolyaka): this is a special case of an OperationalError that used
+    # to be an InternalError. It's expected to be wrapped into oslo.db error.
+    raise exception.DBError(error)
 
 
 @filters("*", sqla_exc.OperationalError, r".*")
