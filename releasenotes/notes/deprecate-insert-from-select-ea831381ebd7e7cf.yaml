@@ -1,0 +1,6 @@
+---
+deprecations:
+  - class ``InsertFromSelect`` from module ``oslo_db.sqlalchemy.utils`` is
+    deprecated in favor of ``sqlalchemy.sql.expression.Insert.from_select()``
+    method of Insert expression, that is available in SQLAlchemy versions
+    1.0.0 and newer

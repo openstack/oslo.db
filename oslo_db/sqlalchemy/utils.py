@@ -22,6 +22,7 @@ import itertools
 import logging
 import re
 
+import debtcollector
 from oslo_utils import timeutils
 import six
 import sqlalchemy
@@ -415,12 +416,13 @@ def get_table(engine, name):
     return Table(name, metadata, autoload=True)
 
 
+@debtcollector.removals.removed_class(
+    'InsertFromSelect',
+    replacement='sqlalchemy.sql.expression.Insert.from_select',
+    message='this functionality is provided out-of-box by SQLAlchemy >= 1.0.0'
+)
 class InsertFromSelect(object):
     """Form the base for `INSERT INTO table (SELECT ... )` statement.
-
-    DEPRECATED: this class is deprecated and will be removed from oslo_db
-    in a few releases. Use default SQLAlchemy insert from select implementation
-    instead
 
     :param table: table to insert records
     :param select: select query
