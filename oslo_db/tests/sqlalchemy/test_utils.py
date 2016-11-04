@@ -501,7 +501,7 @@ class TestMigrationUtils(db_test_base.DbTestCase):
 
         self.assertEqual(len(expected_ids), len(real_ids))
         for id_ in expected_ids:
-            self.assertTrue(id_ in real_ids)
+            self.assertIn(id_, real_ids)
 
     def test_drop_dup_entries_in_file_conn(self):
         table_name = "__test_tmp_table__"
@@ -541,7 +541,7 @@ class TestMigrationUtils(db_test_base.DbTestCase):
                    self.engine.execute(rows_select).fetchall()]
         self.assertEqual(len(expected_values), len(row_ids))
         for value in expected_values:
-            self.assertTrue(value['id'] in row_ids)
+            self.assertIn(value['id'], row_ids)
 
         deleted_rows_select = base_select.where(
             table.c.deleted == table.c.id)
@@ -551,7 +551,7 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         self.assertEqual(len(values) - len(row_ids),
                          len(deleted_rows_ids))
         for value in soft_deleted_values:
-            self.assertTrue(value['id'] in deleted_rows_ids)
+            self.assertIn(value['id'], deleted_rows_ids)
 
     def test_change_deleted_column_type_does_not_drop_index(self):
         table_name = 'abc'

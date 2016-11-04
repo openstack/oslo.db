@@ -66,9 +66,9 @@ class ModelBaseTest(test_base.DbTestCase):
         mb.update(h)
         for key in h.keys():
             # Test 'in' syntax (instead of using .assertIn)
-            self.assertTrue(key in mb)
+            self.assertIn(key, mb)
 
-        self.assertFalse('non-existent-key' in mb)
+        self.assertNotIn('non-existent-key', mb)
 
     def test_modelbase_contains_exc(self):
         class ErrorModel(models.ModelBase):
@@ -79,7 +79,7 @@ class ModelBaseTest(test_base.DbTestCase):
         model = ErrorModel()
         model.update({'attr': 5})
 
-        self.assertTrue('attr' in model)
+        self.assertIn('attr', model)
         self.assertRaises(ValueError, lambda: 'bug' in model)
 
     def test_modelbase_items_iteritems(self):

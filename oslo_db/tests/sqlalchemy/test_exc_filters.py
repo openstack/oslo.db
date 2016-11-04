@@ -1099,7 +1099,7 @@ class IntegrationTest(test_base.DbTestCase):
         foo = self.Foo(counter=sqla.func.imfake(123))
         _session.add(foo)
         matched = self.assertRaises(sqla.exc.OperationalError, _session.flush)
-        self.assertTrue("no such function" in str(matched))
+        self.assertIn("no such function", str(matched))
 
     def test_query_wrapper_operational_error(self):
         """test an operational error from query.all() raised as-is."""
@@ -1111,7 +1111,7 @@ class IntegrationTest(test_base.DbTestCase):
         q = _session.query(self.Foo).filter(
             self.Foo.counter == sqla.func.imfake(123))
         matched = self.assertRaises(sqla.exc.OperationalError, q.all)
-        self.assertTrue("no such function" in str(matched))
+        self.assertIn("no such function", str(matched))
 
 
 class TestDBDisconnected(TestsExceptionFilter):

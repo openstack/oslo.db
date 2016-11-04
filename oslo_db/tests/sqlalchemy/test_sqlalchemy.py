@@ -219,7 +219,7 @@ class MySQLDefaultModeTestCase(test_base.MySQLOpportunisticTestCase):
                 "SHOW VARIABLES LIKE 'sql_mode'"
             ).first()[1]
 
-        self.assertTrue("TRADITIONAL" in sql_mode)
+        self.assertIn("TRADITIONAL", sql_mode)
 
 
 class MySQLModeTestCase(test_base.MySQLOpportunisticTestCase):
@@ -439,12 +439,12 @@ class MysqlConnectTest(test_base.MySQLOpportunisticTestCase):
 
     def _assert_sql_mode(self, engine, sql_mode_present, sql_mode_non_present):
         mode = engine.execute("SHOW VARIABLES LIKE 'sql_mode'").fetchone()[1]
-        self.assertTrue(
-            sql_mode_present in mode
+        self.assertIn(
+            sql_mode_present, mode
         )
         if sql_mode_non_present:
-            self.assertTrue(
-                sql_mode_non_present not in mode
+            self.assertNotIn(
+                sql_mode_non_present, mode
             )
 
     def test_set_mode_traditional(self):
@@ -575,16 +575,16 @@ class CreateEngineTest(oslo_test.BaseTestCase):
                 max_pool_size=10, max_overflow=10)
 
             # queuepool arguments are not peresnet
-            self.assertTrue(
-                'pool_size' not in self.args)
-            self.assertTrue(
-                'max_overflow' not in self.args)
+            self.assertNotIn(
+                'pool_size', self.args)
+            self.assertNotIn(
+                'max_overflow', self.args)
 
             self.assertEqual(False,
                              self.args['connect_args']['check_same_thread'])
 
             # due to memory connection
-            self.assertTrue('poolclass' in self.args)
+            self.assertIn('poolclass', self.args)
 
     def test_sqlite_file_pool_args(self):
         engines._init_connection_args(
@@ -592,15 +592,15 @@ class CreateEngineTest(oslo_test.BaseTestCase):
             max_pool_size=10, max_overflow=10)
 
         # queuepool arguments are not peresnet
-        self.assertTrue('pool_size' not in self.args)
-        self.assertTrue(
-            'max_overflow' not in self.args)
+        self.assertNotIn('pool_size', self.args)
+        self.assertNotIn(
+            'max_overflow', self.args)
 
         self.assertFalse(self.args['connect_args'])
 
         # NullPool is the default for file based connections,
         # no need to specify this
-        self.assertTrue('poolclass' not in self.args)
+        self.assertNotIn('poolclass', self.args)
 
     def _test_mysql_connect_args_default(self, connect_args):
         if six.PY3:
@@ -650,7 +650,7 @@ class CreateEngineTest(oslo_test.BaseTestCase):
             self.args
         )
 
-        self.assertFalse('raise_on_warnings' in self.args['connect_args'])
+        self.assertNotIn('raise_on_warnings', self.args['connect_args'])
 
     def test_thread_checkin(self):
         with mock.patch("sqlalchemy.event.listens_for"):
