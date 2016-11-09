@@ -18,8 +18,8 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from oslo_db import exception as db_exc
 from oslo_db.sqlalchemy import models
-from oslo_db.sqlalchemy import test_base
 from oslo_db.sqlalchemy import types
+from oslo_db.tests.sqlalchemy import base as test_base
 
 
 BASE = declarative_base()

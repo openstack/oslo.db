@@ -33,7 +33,7 @@ from oslo_db import options
 from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import engines as oslo_engines
 from oslo_db.sqlalchemy import orm
-from oslo_db.sqlalchemy import test_base
+from oslo_db.tests.sqlalchemy import base as test_base
 
 
 enginefacade.transaction_context_provider(oslo_context.RequestContext)

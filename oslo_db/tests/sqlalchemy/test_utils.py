@@ -42,8 +42,8 @@ from oslo_db.sqlalchemy.compat import utils as compat_utils
 from oslo_db.sqlalchemy import models
 from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import session
-from oslo_db.sqlalchemy import test_base as db_test_base
 from oslo_db.sqlalchemy import utils
+from oslo_db.tests.sqlalchemy import base as db_test_base
 from oslo_db.tests import utils as test_utils
 
 

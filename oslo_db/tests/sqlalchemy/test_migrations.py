@@ -23,8 +23,8 @@ import sqlalchemy as sa
 import sqlalchemy.ext.declarative as sa_decl
 
 from oslo_db import exception as exc
-from oslo_db.sqlalchemy import test_base
 from oslo_db.sqlalchemy import test_migrations as migrate
+from oslo_db.tests.sqlalchemy import base as test_base
 
 
 class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):

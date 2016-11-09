@@ -24,7 +24,7 @@ import sqlalchemy
 
 from oslo_db import exception as db_exception
 from oslo_db.sqlalchemy import migration
-from oslo_db.sqlalchemy import test_base
+from oslo_db.tests.sqlalchemy import base as test_base
 from oslo_db.tests import utils as test_utils
 
 

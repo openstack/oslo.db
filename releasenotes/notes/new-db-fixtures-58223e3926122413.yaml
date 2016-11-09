@@ -1,0 +1,5 @@
+---
+deprecations:
+  - base test classes from ``oslo_db.sqlalchemy.test_base`` are deprecated in
+    favor of new fixtures introduced in ``oslo_db.sqlalchemy.test_fixtures``
+    module
