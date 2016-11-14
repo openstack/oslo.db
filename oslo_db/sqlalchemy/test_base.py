@@ -126,7 +126,8 @@ class DbTestCase(test_base.BaseTestCase):
         if driver not in self._database_resources:
             try:
                 self._database_resources[driver] = \
-                    provision.DatabaseResource(driver)
+                    provision.DatabaseResource(driver,
+                                               provision_new_database=True)
             except exception.BackendNotAvailable as bne:
                 self._database_resources[driver] = None
                 self._db_not_available[driver] = str(bne)

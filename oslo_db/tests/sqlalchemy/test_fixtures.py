@@ -196,3 +196,19 @@ class EnginefacadeIntegrationTest(oslo_test_base.BaseTestCase):
         fixture.cleanUp()
         fixture._clear_cleanups()  # so the real cleanUp works
         self.assertFalse(normal_mgr._factory._started)
+
+
+class LegacyBaseClassTest(oslo_test_base.BaseTestCase):
+    def test_new_db_is_provisioned_by_default(self):
+        classes = [
+            legacy_test_base.MySQLOpportunisticTestCase,
+            legacy_test_base.PostgreSQLOpportunisticTestCase
+        ]
+        for base_cls in classes:
+            class SomeTest(base_cls):
+                def runTest(self):
+                    pass
+            st = SomeTest()
+
+            db_resource = dict(st.resources)['db']
+            self.assertTrue(db_resource.provision_new_database)
