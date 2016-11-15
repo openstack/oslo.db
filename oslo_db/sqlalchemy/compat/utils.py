@@ -19,6 +19,7 @@ SQLA_VERSION = tuple(
     for num in sqlalchemy.__version__.split(".")
 )
 
+sqla_110 = SQLA_VERSION >= (1, 1, 0)
 sqla_100 = SQLA_VERSION >= (1, 0, 0)
 sqla_097 = SQLA_VERSION >= (0, 9, 7)
 sqla_094 = SQLA_VERSION >= (0, 9, 4)
