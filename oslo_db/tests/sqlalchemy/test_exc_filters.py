@@ -28,6 +28,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper
 
 from oslo_db import exception
+from oslo_db.sqlalchemy.compat import utils as compat_utils
 from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import exc_filters
 from oslo_db.tests.sqlalchemy import base as test_base
@@ -666,22 +667,36 @@ class TestExceptionCauseMySQLSavepoint(test_base.MySQLOpportunisticTestCase):
                 # from the "with session.begin_nested()"
                 except exception.DBError as dbe_inner:
 
-                    # first "cause" is the failed SAVEPOINT rollback
-                    # from inside of flush(), when it fails
-                    self.assertTrue(
-                        isinstance(
-                            dbe_inner.cause,
-                            exception.DBError
+                    if not compat_utils.sqla_110:
+                        # first "cause" is the failed SAVEPOINT rollback
+                        # from inside of flush(), when it fails
+                        self.assertTrue(
+                            isinstance(
+                                dbe_inner.cause,
+                                exception.DBError
+                            )
                         )
-                    )
 
-                    # second "cause" is then the actual DB duplicate
-                    self.assertTrue(
-                        isinstance(
-                            dbe_inner.cause.cause,
-                            exception.DBDuplicateEntry
+                        # second "cause" is then the actual DB duplicate
+                        self.assertTrue(
+                            isinstance(
+                                dbe_inner.cause.cause,
+                                exception.DBDuplicateEntry
+                            )
                         )
-                    )
+                    else:
+                        # in SQLA 1.1, the rollback() method of Session
+                        # catches the error and repairs the state of the
+                        # session even though the SAVEPOINT was lost;
+                        # the net result here is that one exception is thrown
+                        # instead of two.  This is SQLAlchemy ticket #3680
+                        self.assertTrue(
+                            isinstance(
+                                dbe_inner.cause,
+                                exception.DBDuplicateEntry
+                            )
+                        )
+
         except exception.DBError as dbe_outer:
             self.assertTrue(
                 isinstance(
