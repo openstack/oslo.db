@@ -14,9 +14,9 @@
 # under the License.
 
 import debtcollector
+import debtcollector.moves
 import fixtures
 import testresources
-import testscenarios
 
 try:
     from oslotest import base as test_base
@@ -25,8 +25,6 @@ except ImportError:
                     ' test-requirements')
 
 
-import os
-
 from oslo_utils import reflection
 import six
 
@@ -34,6 +32,7 @@ from oslo_db import exception
 from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import session
+from oslo_db.sqlalchemy.test_fixtures import optimize_package_test_loader
 
 
 @debtcollector.removals.removed_class("DbFixture")
@@ -245,39 +244,5 @@ class PostgreSQLOpportunisticTestCase(OpportunisticTestCase):
     FIXTURE = PostgreSQLOpportunisticFixture
 
 
-def optimize_db_test_loader(file_):
-    """Package level load_tests() function.
-
-    Will apply an optimizing test suite to all sub-tests, which groups DB
-    tests and other resources appropriately.
-
-    Place this in an __init__.py package file within the root of the test
-    suite, at the level where testresources loads it as a package::
-
-        from oslo_db.sqlalchemy import test_base
-
-        load_tests = test_base.optimize_db_test_loader(__file__)
-
-    Alternatively, the directive can be placed into a test module directly.
-
-    """
-
-    this_dir = os.path.dirname(file_)
-
-    def load_tests(loader, found_tests, pattern):
-        # pattern is None if the directive is placed within
-        # a test module directly, as well as within certain test
-        # discovery patterns
-
-        if pattern is not None:
-            pkg_tests = loader.discover(start_dir=this_dir, pattern=pattern)
-
-        result = testresources.OptimisingTestSuite()
-        found_tests = testscenarios.load_tests_apply_scenarios(
-            loader, found_tests, pattern)
-        result.addTest(found_tests)
-
-        if pattern is not None:
-            result.addTest(pkg_tests)
-        return result
-    return load_tests
+optimize_db_test_loader = debtcollector.moves.moved_function(
+    optimize_package_test_loader, "optimize_db_test_loader", __name__)

@@ -11,13 +11,18 @@
 #    under the License.
 
 import mock
+import os
 import testresources
+import testscenarios
+import unittest
 
 from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import test_base as legacy_test_base
 from oslo_db.sqlalchemy import test_fixtures
 from oslotest import base as oslo_test_base
+
+start_dir = os.path.dirname(__file__)
 
 
 class BackendSkipTest(oslo_test_base.BaseTestCase):
@@ -212,3 +217,82 @@ class LegacyBaseClassTest(oslo_test_base.BaseTestCase):
 
             db_resource = dict(st.resources)['db']
             self.assertTrue(db_resource.provision_new_database)
+
+
+class TestLoadHook(unittest.TestCase):
+    """Test the 'load_tests' hook supplied by test_base.
+
+    The purpose of this loader is to organize tests into an
+    OptimisingTestSuite using the standard unittest load_tests hook.
+    The hook needs to detect if it is being invoked at the module
+    level or at the package level.  It has to behave completely differently
+    in these two cases.
+
+    """
+
+    def test_module_level(self):
+        load_tests = test_fixtures.optimize_module_test_loader()
+
+        loader = unittest.TestLoader()
+
+        found_tests = loader.discover(start_dir, pattern="test_fixtures.py")
+        new_loader = load_tests(loader, found_tests, "test_fixtures.py")
+
+        self.assertTrue(
+            isinstance(new_loader, testresources.OptimisingTestSuite)
+        )
+
+        actual_tests = unittest.TestSuite(
+            testscenarios.generate_scenarios(found_tests)
+        )
+
+        self.assertEqual(
+            new_loader.countTestCases(), actual_tests.countTestCases()
+        )
+
+    def test_package_level(self):
+        self._test_package_level(test_fixtures.optimize_package_test_loader)
+
+    def test_package_level_legacy(self):
+        self._test_package_level(legacy_test_base.optimize_db_test_loader)
+
+    def _test_package_level(self, fn):
+        load_tests = fn(
+            os.path.join(start_dir, "__init__.py"))
+
+        loader = unittest.TestLoader()
+
+        new_loader = load_tests(
+            loader, unittest.suite.TestSuite(), "test_fixtures.py")
+
+        self.assertTrue(
+            isinstance(new_loader, testresources.OptimisingTestSuite)
+        )
+
+        actual_tests = unittest.TestSuite(
+            testscenarios.generate_scenarios(
+                loader.discover(start_dir, pattern="test_fixtures.py"))
+        )
+
+        self.assertEqual(
+            new_loader.countTestCases(), actual_tests.countTestCases()
+        )
+
+
+class TestWScenarios(unittest.TestCase):
+    """a 'do nothing' test suite.
+
+    Should generate exactly four tests when testscenarios is used.
+
+    """
+
+    def test_one(self):
+        pass
+
+    def test_two(self):
+        pass
+
+    scenarios = [
+        ('scenario1', dict(scenario='scenario 1')),
+        ('scenario2', dict(scenario='scenario 2'))
+    ]
