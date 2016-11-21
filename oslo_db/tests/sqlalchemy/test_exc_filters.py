@@ -1179,6 +1179,14 @@ class TestDBDisconnected(TestsExceptionFilter):
         with self._fixture(dialect_name, exc_obj, 1):
             self.assertEqual(1, self.engine.scalar(sqla.select([1])))
 
+    def test_mariadb_error_1927(self):
+        for code in [1927]:
+            self._test_ping_listener_disconnected(
+                "mysql",
+                self.InternalError('%d Connection was killed' % code),
+                is_disconnect=False
+            )
+
     def test_mysql_ping_listener_disconnected(self):
         for code in [2006, 2013, 2014, 2045, 2055]:
             self._test_ping_listener_disconnected(
