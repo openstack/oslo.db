@@ -1071,12 +1071,27 @@ class TestUtils(db_test_base.DbTestCase):
         self.test_table.create()
         self.addCleanup(meta.drop_all)
 
+    def test_get_indexes(self):
+        Index('index_a', self.test_table.c.a).create(self.engine)
+        Index('index_b', self.test_table.c.b).create(self.engine)
+        indexes = utils.get_indexes(self.engine, "test_table")
+        indexes = [(index['name'], index['column_names']) for index in indexes]
+        self.assertIn(('index_a', ['a']), indexes)
+        self.assertIn(('index_b', ['b']), indexes)
+
     def test_index_exists(self):
         self.assertFalse(utils.index_exists(self.engine, 'test_table',
                                             'new_index'))
         Index('new_index', self.test_table.c.a).create(self.engine)
         self.assertTrue(utils.index_exists(self.engine, 'test_table',
                                            'new_index'))
+
+    def test_index_exists_on_columns(self):
+        columns = [self.test_table.c.a, self.test_table.c.b]
+        Index('new_index', *columns).create(self.engine)
+        self.assertTrue(utils.index_exists_on_columns(self.engine,
+                                                      'test_table',
+                                                      ('a', 'b')))
 
     def test_add_index(self):
         self.assertFalse(utils.index_exists(self.engine, 'test_table',
