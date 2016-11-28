@@ -84,9 +84,20 @@ class SoftDeleteInteger(TypeDecorator):
     layer by the means of a custom SQLAlchemy type decorator makes sure we
     always pass a proper integer value to a DBAPI implementation.
 
+    This is not a general purpose boolean integer type as it specifically
+    allows for arbitrary positive integers outside of the boolean int range
+    (0, 1, False, True), so that it's possible to have compound unique
+    constraints over multiple columns including ``deleted`` (e.g. to
+    soft-delete flavors with the same name in Nova without triggering
+    a constraint violation): ``deleted`` is set to be equal to a PK
+    int value on deletion, 0 denotes a non-deleted row.
+
     """
 
     impl = Integer
 
     def process_bind_param(self, value, dialect):
-        return int(value)
+        if value is None:
+            return None
+        else:
+            return int(value)

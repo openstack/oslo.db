@@ -229,3 +229,13 @@ class SoftDeleteMixinTest(test_base.DbTestCase):
         m = SoftDeletedModel(id=1, smth='test', deleted=False)
         self.session.add(m)
         self.session.commit()
+
+    def test_deleted_set_to_null(self):
+        m = SoftDeletedModel(id=123456, smth='test')
+        self.session.add(m)
+        self.session.commit()
+
+        m.deleted = None
+        self.session.commit()
+
+        self.assertIsNone(m.deleted)
