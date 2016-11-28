@@ -12,7 +12,7 @@
 
 import json
 
-from sqlalchemy.types import TypeDecorator, Text
+from sqlalchemy.types import Integer, TypeDecorator, Text
 from sqlalchemy.dialects import mysql
 
 
@@ -73,3 +73,20 @@ class JsonEncodedList(JsonEncodedType):
     http://docs.sqlalchemy.org/en/rel_1_0/orm/extensions/mutable.html
     """
     type = list
+
+
+class SoftDeleteInteger(TypeDecorator):
+    """Coerce a bound param to be a proper integer before passing it to DBAPI.
+
+    Some backends like PostgreSQL are very strict about types and do not
+    perform automatic type casts, e.g. when trying to INSERT a boolean value
+    like ``false`` into an integer column. Coercing of the bound param in DB
+    layer by the means of a custom SQLAlchemy type decorator makes sure we
+    always pass a proper integer value to a DBAPI implementation.
+
+    """
+
+    impl = Integer
+
+    def process_bind_param(self, value, dialect):
+        return int(value)
