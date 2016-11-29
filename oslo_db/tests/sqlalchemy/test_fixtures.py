@@ -16,6 +16,7 @@ import testresources
 import testscenarios
 import unittest
 
+from oslo_db import exception
 from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import test_base as legacy_test_base
@@ -204,19 +205,30 @@ class EnginefacadeIntegrationTest(oslo_test_base.BaseTestCase):
 
 
 class LegacyBaseClassTest(oslo_test_base.BaseTestCase):
-    def test_new_db_is_provisioned_by_default(self):
-        classes = [
-            legacy_test_base.MySQLOpportunisticTestCase,
+    def test_new_db_is_provisioned_by_default_pg(self):
+        self._test_new_db_is_provisioned_by_default(
             legacy_test_base.PostgreSQLOpportunisticTestCase
-        ]
-        for base_cls in classes:
-            class SomeTest(base_cls):
-                def runTest(self):
-                    pass
-            st = SomeTest()
+        )
 
-            db_resource = dict(st.resources)['db']
-            self.assertTrue(db_resource.provision_new_database)
+    def test_new_db_is_provisioned_by_default_mysql(self):
+        self._test_new_db_is_provisioned_by_default(
+            legacy_test_base.MySQLOpportunisticTestCase
+        )
+
+    def _test_new_db_is_provisioned_by_default(self, base_cls):
+        try:
+            provision.DatabaseResource(base_cls.FIXTURE.DRIVER)
+        except exception.BackendNotAvailable:
+            self.skip("Backend %s is not available" %
+                      base_cls.FIXTURE.DRIVER)
+
+        class SomeTest(base_cls):
+            def runTest(self):
+                pass
+        st = SomeTest()
+
+        db_resource = dict(st.resources)['db']
+        self.assertTrue(db_resource.provision_new_database)
 
 
 class TestLoadHook(unittest.TestCase):
