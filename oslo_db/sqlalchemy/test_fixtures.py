@@ -324,7 +324,8 @@ class SimpleDbFixture(BaseDbFixture):
         return self._dependency_resources["_db_%s" % self.ident]
 
     def _generate_database_resource(self, _enginefacade):
-        return provision.DatabaseResource(self.driver, _enginefacade)
+        return provision.DatabaseResource(self.driver, _enginefacade,
+                                          provision_new_database=False)
 
     def _setUp(self):
         super(SimpleDbFixture, self)._setUp()
@@ -392,7 +393,8 @@ class AdHocDbFixture(SimpleDbFixture):
 
     def _generate_database_resource(self, _enginefacade):
         return provision.DatabaseResource(
-            self.driver, _enginefacade, ad_hoc_url=self.url)
+            self.driver, _enginefacade, ad_hoc_url=self.url,
+            provision_new_database=False)
 
     def _cleanup(self):
         self._teardown_resources()

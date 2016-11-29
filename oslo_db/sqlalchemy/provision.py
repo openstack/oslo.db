@@ -111,7 +111,7 @@ class DatabaseResource(testresources.TestResourceManager):
     """
 
     def __init__(self, database_type, _enginefacade=None,
-                 provision_new_database=False, ad_hoc_url=None):
+                 provision_new_database=True, ad_hoc_url=None):
         super(DatabaseResource, self).__init__()
         self.database_type = database_type
         self.provision_new_database = provision_new_database
