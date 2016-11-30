@@ -470,21 +470,21 @@ def _get_not_supported_column(col_name_col_instance, column_name):
     return column
 
 
-def drop_old_duplicate_entries_from_table(migrate_engine, table_name,
+def drop_old_duplicate_entries_from_table(engine, table_name,
                                           use_soft_delete, *uc_column_names):
     """Drop all old rows having the same values for columns in uc_columns.
 
     This method drop (or mark ad `deleted` if use_soft_delete is True) old
     duplicate rows form table with name `table_name`.
 
-    :param migrate_engine:  Sqlalchemy engine
+    :param engine:          Sqlalchemy engine
     :param table_name:      Table with duplicates
     :param use_soft_delete: If True - values will be marked as `deleted`,
                             if False - values will be removed from table
     :param uc_column_names: Unique constraint columns
     """
     meta = MetaData()
-    meta.bind = migrate_engine
+    meta.bind = engine
 
     table = Table(table_name, meta, autoload=True)
     columns_for_group_by = [table.c[name] for name in uc_column_names]
@@ -496,7 +496,7 @@ def drop_old_duplicate_entries_from_table(migrate_engine, table_name,
         columns_for_select, group_by=columns_for_group_by,
         having=func.count(table.c.id) > 1)
 
-    for row in migrate_engine.execute(duplicated_rows_select).fetchall():
+    for row in engine.execute(duplicated_rows_select).fetchall():
         # NOTE(boris-42): Do not remove row that has the biggest ID.
         delete_condition = table.c.id != row[0]
         is_none = None  # workaround for pyflakes
@@ -506,7 +506,7 @@ def drop_old_duplicate_entries_from_table(migrate_engine, table_name,
 
         rows_to_delete_select = sqlalchemy.sql.select(
             [table.c.id]).where(delete_condition)
-        for row in migrate_engine.execute(rows_to_delete_select).fetchall():
+        for row in engine.execute(rows_to_delete_select).fetchall():
             LOG.info(_LI("Deleting duplicated row with id: %(id)s from table: "
                          "%(table)s"), dict(id=row[0], table=table_name))
 
@@ -520,7 +520,7 @@ def drop_old_duplicate_entries_from_table(migrate_engine, table_name,
                 })
         else:
             delete_statement = table.delete().where(delete_condition)
-        migrate_engine.execute(delete_statement)
+        engine.execute(delete_statement)
 
 
 def _get_default_deleted_value(table):
@@ -531,10 +531,10 @@ def _get_default_deleted_value(table):
     raise exception.ColumnError(_("Unsupported id columns type"))
 
 
-def _restore_indexes_on_deleted_columns(migrate_engine, table_name, indexes):
-    table = get_table(migrate_engine, table_name)
+def _restore_indexes_on_deleted_columns(engine, table_name, indexes):
+    table = get_table(engine, table_name)
 
-    real_indexes = get_indexes(migrate_engine, table_name)
+    real_indexes = get_indexes(engine, table_name)
     existing_index_names = dict(
         [(index['name'], index['column_names']) for index in real_indexes])
 
@@ -546,21 +546,20 @@ def _restore_indexes_on_deleted_columns(migrate_engine, table_name, indexes):
         if name in existing_index_names:
             column_names = [table.c[c] for c in existing_index_names[name]]
             old_index = Index(name, *column_names, unique=index["unique"])
-            old_index.drop(migrate_engine)
+            old_index.drop(engine)
 
         column_names = [table.c[c] for c in index['column_names']]
         new_index = Index(index["name"], *column_names, unique=index["unique"])
-        new_index.create(migrate_engine)
+        new_index.create(engine)
 
 
-def change_deleted_column_type_to_boolean(migrate_engine, table_name,
+def change_deleted_column_type_to_boolean(engine, table_name,
                                           **col_name_col_instance):
-    if migrate_engine.name == "sqlite":
+    if engine.name == "sqlite":
         return _change_deleted_column_type_to_boolean_sqlite(
-            migrate_engine, table_name, **col_name_col_instance)
-    indexes = get_indexes(migrate_engine, table_name)
-
-    table = get_table(migrate_engine, table_name)
+            engine, table_name, **col_name_col_instance)
+    indexes = get_indexes(engine, table_name)
+    table = get_table(engine, table_name)
 
     old_deleted = Column('old_deleted', Boolean, default=False)
     old_deleted.create(table, populate_default=False)
@@ -573,13 +572,12 @@ def change_deleted_column_type_to_boolean(migrate_engine, table_name,
     table.c.deleted.drop()
     table.c.old_deleted.alter(name="deleted")
 
-    _restore_indexes_on_deleted_columns(migrate_engine, table_name, indexes)
+    _restore_indexes_on_deleted_columns(engine, table_name, indexes)
 
 
-def _change_deleted_column_type_to_boolean_sqlite(migrate_engine, table_name,
+def _change_deleted_column_type_to_boolean_sqlite(engine, table_name,
                                                   **col_name_col_instance):
-    table = get_table(migrate_engine, table_name)
-
+    table = get_table(engine, table_name)
     columns = []
     for column in table.columns:
         column_copy = None
@@ -601,7 +599,7 @@ def _change_deleted_column_type_to_boolean_sqlite(migrate_engine, table_name,
     new_table.create()
 
     indexes = []
-    for index in get_indexes(migrate_engine, table_name):
+    for index in get_indexes(engine, table_name):
         column_names = [new_table.c[c] for c in index['column_names']]
         indexes.append(Index(index["name"], *column_names,
                              unique=index["unique"]))
@@ -614,11 +612,11 @@ def _change_deleted_column_type_to_boolean_sqlite(migrate_engine, table_name,
             c_select.append(table.c.deleted == table.c.id)
 
     ins = InsertFromSelect(new_table, sqlalchemy.sql.select(c_select))
-    migrate_engine.execute(ins)
+    engine.execute(ins)
 
     table.drop()
     for index in indexes:
-        index.create(migrate_engine)
+        index.create(engine)
 
     new_table.rename(table_name)
     new_table.update().\
@@ -627,14 +625,13 @@ def _change_deleted_column_type_to_boolean_sqlite(migrate_engine, table_name,
         execute()
 
 
-def change_deleted_column_type_to_id_type(migrate_engine, table_name,
+def change_deleted_column_type_to_id_type(engine, table_name,
                                           **col_name_col_instance):
-    if migrate_engine.name == "sqlite":
+    if engine.name == "sqlite":
         return _change_deleted_column_type_to_id_type_sqlite(
-            migrate_engine, table_name, **col_name_col_instance)
-    indexes = get_indexes(migrate_engine, table_name)
-
-    table = get_table(migrate_engine, table_name)
+            engine, table_name, **col_name_col_instance)
+    indexes = get_indexes(engine, table_name)
+    table = get_table(engine, table_name)
 
     new_deleted = Column('new_deleted', table.c.id.type,
                          default=_get_default_deleted_value(table))
@@ -648,7 +645,7 @@ def change_deleted_column_type_to_id_type(migrate_engine, table_name,
     table.c.deleted.drop()
     table.c.new_deleted.alter(name="deleted")
 
-    _restore_indexes_on_deleted_columns(migrate_engine, table_name, indexes)
+    _restore_indexes_on_deleted_columns(engine, table_name, indexes)
 
 
 def _is_deleted_column_constraint(constraint):
@@ -664,7 +661,7 @@ def _is_deleted_column_constraint(constraint):
     return bool(re.match(r".*deleted in \(.*\)", sqltext, re.I))
 
 
-def _change_deleted_column_type_to_id_type_sqlite(migrate_engine, table_name,
+def _change_deleted_column_type_to_id_type_sqlite(engine, table_name,
                                                   **col_name_col_instance):
     # NOTE(boris-42): sqlaclhemy-migrate can't drop column with check
     #                 constraints in sqlite DB and our `deleted` column has
@@ -675,7 +672,7 @@ def _change_deleted_column_type_to_id_type_sqlite(migrate_engine, table_name,
     #                 2) Copy all data from old to new table.
     #                 3) Drop old table.
     #                 4) Rename new table to old table name.
-    meta = MetaData(bind=migrate_engine)
+    meta = MetaData(bind=engine)
     table = Table(table_name, meta, autoload=True)
     default_deleted_value = _get_default_deleted_value(table)
 
@@ -703,17 +700,17 @@ def _change_deleted_column_type_to_id_type_sqlite(migrate_engine, table_name,
     new_table.create()
 
     indexes = []
-    for index in get_indexes(migrate_engine, table_name):
+    for index in get_indexes(engine, table_name):
         column_names = [new_table.c[c] for c in index['column_names']]
         indexes.append(Index(index["name"], *column_names,
                              unique=index["unique"]))
 
     ins = InsertFromSelect(new_table, table.select())
-    migrate_engine.execute(ins)
+    engine.execute(ins)
 
     table.drop()
     for index in indexes:
-        index.create(migrate_engine)
+        index.create(engine)
 
     new_table.rename(table_name)
     deleted = True  # workaround for pyflakes
@@ -804,14 +801,14 @@ def get_indexes(engine, table_name):
     return indexes
 
 
-def index_exists(migrate_engine, table_name, index_name):
+def index_exists(engine, table_name, index_name):
     """Check if given index exists.
 
-    :param migrate_engine: sqlalchemy engine
-    :param table_name:     name of the table
-    :param index_name:     name of the index
+    :param engine:     sqlalchemy engine
+    :param table_name: name of the table
+    :param index_name: name of the index
     """
-    indexes = get_indexes(migrate_engine, table_name)
+    indexes = get_indexes(engine, table_name)
     index_names = [index['name'] for index in indexes]
     return index_name in index_names
 
@@ -831,16 +828,16 @@ def index_exists_on_columns(engine, table_name, columns):
     return False
 
 
-def add_index(migrate_engine, table_name, index_name, idx_columns):
+def add_index(engine, table_name, index_name, idx_columns):
     """Create an index for given columns.
 
-    :param migrate_engine: sqlalchemy engine
-    :param table_name:     name of the table
-    :param index_name:     name of the index
-    :param idx_columns:    tuple with names of columns that will be indexed
+    :param engine:      sqlalchemy engine
+    :param table_name:  name of the table
+    :param index_name:  name of the index
+    :param idx_columns: tuple with names of columns that will be indexed
     """
-    table = get_table(migrate_engine, table_name)
-    if not index_exists(migrate_engine, table_name, index_name):
+    table = get_table(engine, table_name)
+    if not index_exists(engine, table_name, index_name):
         index = Index(
             index_name, *[getattr(table.c, col) for col in idx_columns]
         )
@@ -849,14 +846,14 @@ def add_index(migrate_engine, table_name, index_name, idx_columns):
         raise ValueError("Index '%s' already exists!" % index_name)
 
 
-def drop_index(migrate_engine, table_name, index_name):
+def drop_index(engine, table_name, index_name):
     """Drop index with given name.
 
-    :param migrate_engine: sqlalchemy engine
-    :param table_name:     name of the table
-    :param index_name:     name of the index
+    :param engine:     sqlalchemy engine
+    :param table_name: name of the table
+    :param index_name: name of the index
     """
-    table = get_table(migrate_engine, table_name)
+    table = get_table(engine, table_name)
     for index in table.indexes:
         if index.name == index_name:
             index.drop()
@@ -865,24 +862,24 @@ def drop_index(migrate_engine, table_name, index_name):
         raise ValueError("Index '%s' not found!" % index_name)
 
 
-def change_index_columns(migrate_engine, table_name, index_name, new_columns):
+def change_index_columns(engine, table_name, index_name, new_columns):
     """Change set of columns that are indexed by given index.
 
-    :param migrate_engine: sqlalchemy engine
-    :param table_name:     name of the table
-    :param index_name:     name of the index
-    :param new_columns:    tuple with names of columns that will be indexed
+    :param engine:      sqlalchemy engine
+    :param table_name:  name of the table
+    :param index_name:  name of the index
+    :param new_columns: tuple with names of columns that will be indexed
     """
-    drop_index(migrate_engine, table_name, index_name)
-    add_index(migrate_engine, table_name, index_name, new_columns)
+    drop_index(engine, table_name, index_name)
+    add_index(engine, table_name, index_name, new_columns)
 
 
 def column_exists(engine, table_name, column):
     """Check if table has given column.
 
-    :param engine:         sqlalchemy engine
-    :param table_name:     name of the table
-    :param column:         name of the colmn
+    :param engine:     sqlalchemy engine
+    :param table_name: name of the table
+    :param column:     name of the colmn
     """
     t = get_table(engine, table_name)
     return column in t.c
