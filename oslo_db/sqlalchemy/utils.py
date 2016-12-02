@@ -534,8 +534,7 @@ def _get_default_deleted_value(table):
 def _restore_indexes_on_deleted_columns(migrate_engine, table_name, indexes):
     table = get_table(migrate_engine, table_name)
 
-    insp = reflection.Inspector.from_engine(migrate_engine)
-    real_indexes = insp.get_indexes(table_name)
+    real_indexes = get_indexes(migrate_engine, table_name)
     existing_index_names = dict(
         [(index['name'], index['column_names']) for index in real_indexes])
 
@@ -559,8 +558,7 @@ def change_deleted_column_type_to_boolean(migrate_engine, table_name,
     if migrate_engine.name == "sqlite":
         return _change_deleted_column_type_to_boolean_sqlite(
             migrate_engine, table_name, **col_name_col_instance)
-    insp = reflection.Inspector.from_engine(migrate_engine)
-    indexes = insp.get_indexes(table_name)
+    indexes = get_indexes(migrate_engine, table_name)
 
     table = get_table(migrate_engine, table_name)
 
@@ -580,7 +578,6 @@ def change_deleted_column_type_to_boolean(migrate_engine, table_name,
 
 def _change_deleted_column_type_to_boolean_sqlite(migrate_engine, table_name,
                                                   **col_name_col_instance):
-    insp = reflection.Inspector.from_engine(migrate_engine)
     table = get_table(migrate_engine, table_name)
 
     columns = []
@@ -604,7 +601,7 @@ def _change_deleted_column_type_to_boolean_sqlite(migrate_engine, table_name,
     new_table.create()
 
     indexes = []
-    for index in insp.get_indexes(table_name):
+    for index in get_indexes(migrate_engine, table_name):
         column_names = [new_table.c[c] for c in index['column_names']]
         indexes.append(Index(index["name"], *column_names,
                              unique=index["unique"]))
@@ -635,8 +632,7 @@ def change_deleted_column_type_to_id_type(migrate_engine, table_name,
     if migrate_engine.name == "sqlite":
         return _change_deleted_column_type_to_id_type_sqlite(
             migrate_engine, table_name, **col_name_col_instance)
-    insp = reflection.Inspector.from_engine(migrate_engine)
-    indexes = insp.get_indexes(table_name)
+    indexes = get_indexes(migrate_engine, table_name)
 
     table = get_table(migrate_engine, table_name)
 
@@ -679,7 +675,6 @@ def _change_deleted_column_type_to_id_type_sqlite(migrate_engine, table_name,
     #                 2) Copy all data from old to new table.
     #                 3) Drop old table.
     #                 4) Rename new table to old table name.
-    insp = reflection.Inspector.from_engine(migrate_engine)
     meta = MetaData(bind=migrate_engine)
     table = Table(table_name, meta, autoload=True)
     default_deleted_value = _get_default_deleted_value(table)
@@ -708,7 +703,7 @@ def _change_deleted_column_type_to_id_type_sqlite(migrate_engine, table_name,
     new_table.create()
 
     indexes = []
-    for index in insp.get_indexes(table_name):
+    for index in get_indexes(migrate_engine, table_name):
         column_names = [new_table.c[c] for c in index['column_names']]
         indexes.append(Index(index["name"], *column_names,
                              unique=index["unique"]))
@@ -797,6 +792,18 @@ def get_db_connection_info(conn_pieces):
     return (user, password, database, host)
 
 
+def get_indexes(engine, table_name):
+    """Get all index list from a given table.
+
+    :param engine: sqlalchemy engine
+    :param table_name: name of the table
+    """
+
+    inspector = reflection.Inspector.from_engine(engine)
+    indexes = inspector.get_indexes(table_name)
+    return indexes
+
+
 def index_exists(migrate_engine, table_name, index_name):
     """Check if given index exists.
 
@@ -804,10 +811,24 @@ def index_exists(migrate_engine, table_name, index_name):
     :param table_name:     name of the table
     :param index_name:     name of the index
     """
-    inspector = reflection.Inspector.from_engine(migrate_engine)
-    indexes = inspector.get_indexes(table_name)
+    indexes = get_indexes(migrate_engine, table_name)
     index_names = [index['name'] for index in indexes]
     return index_name in index_names
+
+
+def index_exists_on_columns(engine, table_name, columns):
+    """Check if an index on given columns exists.
+
+    :param engine: sqlalchemy engine
+    :param table_name: name of the table
+    :param columns: a list type of columns that will be checked
+    """
+    if not isinstance(columns, list):
+        columns = list(columns)
+    for index in get_indexes(engine, table_name):
+        if index['column_names'] == columns:
+            return True
+    return False
 
 
 def add_index(migrate_engine, table_name, index_name, idx_columns):
