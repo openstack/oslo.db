@@ -595,11 +595,10 @@ class ModelsMigrationsSync(object):
             self.skipTest('sqlalchemy>=0.8.4 and alembic>=0.6.3 are required'
                           ' for running of this test: %s' % e)
 
-        # drop all tables after a test run
-        backend = provision.Backend.backend_for_database_type(
-            self.get_engine().name)
-        self.addCleanup(functools.partial(backend.drop_all_objects,
-                                          self.get_engine()))
+        # drop all objects after a test run
+        engine = self.get_engine()
+        backend = provision.Backend(engine.name, engine.url)
+        self.addCleanup(functools.partial(backend.drop_all_objects, engine))
 
         # run migration scripts
         self.db_sync(self.get_engine())
