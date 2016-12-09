@@ -62,6 +62,8 @@ def filters(dbname, exception_type, regex):
 @filters("mysql", sqla_exc.DatabaseError,
          r"^.*\b1205\b.*Lock wait timeout exceeded.*")
 @filters("mysql", sqla_exc.InternalError, r"^.*\b1213\b.*Deadlock found.*")
+@filters("mysql", sqla_exc.InternalError,
+         r"^.*\b1213\b.*detected deadlock/conflict.*")
 @filters("postgresql", sqla_exc.OperationalError, r"^.*deadlock detected.*")
 @filters("postgresql", sqla_exc.DBAPIError, r"^.*deadlock detected.*")
 @filters("ibm_db_sa", sqla_exc.DBAPIError, r"^.*SQL0911N.*")
