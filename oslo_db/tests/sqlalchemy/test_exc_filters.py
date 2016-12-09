@@ -859,6 +859,14 @@ class TestDeadlock(TestsExceptionFilter):
             "transaction')"
         )
 
+    def test_mysql_pymysql_wsrep_deadlock(self):
+        self._run_deadlock_detect_test(
+            "mysql",
+            "(1213, 'WSREP detected deadlock/conflict and aborted the "
+            "transaction. Try restarting the transaction')",
+            orig_exception_cls=self.InternalError
+        )
+
     def test_mysql_pymysql_galera_deadlock(self):
         self._run_deadlock_detect_test(
             "mysql",
