@@ -13,10 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import uuid
-
 import fixtures
 import mock
+from oslo_utils import uuidutils
 from oslotest import base as test_base
 from oslotest import moxstubout
 import six
@@ -757,7 +756,7 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         select_table_name = "__test_select_from_table__"
         uuidstrs = []
         for unused in range(10):
-            uuidstrs.append(uuid.uuid4().hex)
+            uuidstrs.append(uuidutils.generate_uuid(dashed=False))
         insert_table = Table(
             insert_table_name, self.meta,
             Column('id', Integer, primary_key=True,
@@ -797,7 +796,7 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         select_table_name = "__test_select_from_table__"
         uuidstrs = []
         for unused in range(10):
-            uuidstrs.append(uuid.uuid4().hex)
+            uuidstrs.append(uuidutils.generate_uuid(dashed=False))
         insert_table = Table(
             insert_table_name, self.meta,
             Column('id', Integer, primary_key=True,
@@ -837,7 +836,7 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         select_table_name = "__test_select_from_table__"
         uuidstrs = []
         for unused in range(10):
-            uuidstrs.append(uuid.uuid4().hex)
+            uuidstrs.append(uuidutils.generate_uuid(dashed=False))
         insert_table = Table(
             insert_table_name, self.meta,
             Column('id', Integer, primary_key=True,
