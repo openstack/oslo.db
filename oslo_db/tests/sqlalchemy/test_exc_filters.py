@@ -1102,6 +1102,14 @@ class TestDBDisconnected(TestsExceptionFilter):
                 is_disconnect=False
             )
 
+    def test_packet_sequence_wrong_error(self):
+        self._test_ping_listener_disconnected(
+            "mysql",
+            self.InternalError(
+                'Packet sequence number wrong - got 35 expected 1'),
+            is_disconnect=False
+        )
+
     def test_mysql_ping_listener_disconnected(self):
         for code in [2006, 2013, 2014, 2045, 2055]:
             self._test_ping_listener_disconnected(
