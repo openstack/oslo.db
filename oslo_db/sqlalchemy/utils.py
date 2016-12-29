@@ -118,7 +118,7 @@ def get_unique_keys(model):
 
 
 def _stable_sorting_order(model, sort_keys):
-    """Check whetever the sorting order is stable.
+    """Check whether the sorting order is stable.
 
     :return: True if it is stable, False if it's not, None if it's impossible
     to determine.
