@@ -32,6 +32,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import mapper
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.expression import cast
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 from sqlalchemy.dialects.postgresql import psycopg2
@@ -77,6 +78,7 @@ class FakeTable(Base):
     project_id = Column(String(50))
     snapshot_id = Column(String(50))
     updated_at = Column(DateTime, nullable=True)
+    enabled = Column(Boolean, default=True)
 
     # mox is comparing in some awkward way that
     # in this case requires the same identity of object
@@ -449,6 +451,25 @@ class TestGetUniqueKeys(test_base.BaseTestCase):
 
 
 class TestPaginateQueryActualSQL(test_base.BaseTestCase):
+
+    def test_paginate_with_boolean_sort(self):
+        s = Session()
+        q = s.query(FakeTable)
+        q = utils.paginate_query(q, FakeTable, 5, ['enabled'],
+                                 sort_dirs=['asc'],
+                                 marker=FakeTable(user_id='hello',
+                                                  enabled=False))
+        expected_core_sql = (
+            select([FakeTable]).
+            order_by(sqlalchemy.asc(FakeTable.enabled)).
+            where(cast(FakeTable.enabled, Integer) > 0).
+            limit(5)
+        )
+
+        self.assertEqual(
+            str(expected_core_sql.compile()),
+            str(q.statement.compile())
+        )
 
     def test_paginate_on_hybrid_assert_stmt(self):
         s = Session()

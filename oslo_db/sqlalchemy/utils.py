@@ -38,6 +38,7 @@ from sqlalchemy import Index
 from sqlalchemy import inspect
 from sqlalchemy import Integer
 from sqlalchemy import MetaData
+from sqlalchemy.sql.expression import cast
 from sqlalchemy.sql.expression import literal_column
 from sqlalchemy.sql import text
 from sqlalchemy import String
@@ -236,11 +237,15 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
                     crit_attrs.append((model_attr == marker_values[j]))
 
                 model_attr = getattr(model, sort_keys[i])
+                val = marker_values[i]
+                # sqlalchemy doesn't like booleans in < >. bug/1656947
+                if isinstance(model_attr.type, Boolean):
+                    val = int(val)
+                    model_attr = cast(model_attr, Integer)
                 if sort_dirs[i].startswith('desc'):
-                    crit_attrs.append((model_attr < marker_values[i]))
+                    crit_attrs.append((model_attr < val))
                 else:
-                    crit_attrs.append((model_attr > marker_values[i]))
-
+                    crit_attrs.append((model_attr > val))
                 criteria = sqlalchemy.sql.and_(*crit_attrs)
                 criteria_list.append(criteria)
 
