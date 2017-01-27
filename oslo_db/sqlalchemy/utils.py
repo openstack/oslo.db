@@ -1139,6 +1139,36 @@ def get_non_innodb_tables(connectable, skip_tables=('migrate_version',
     return [i[0] for i in noninnodb]
 
 
+def get_non_ndbcluster_tables(connectable, skip_tables=None):
+    """Get a list of tables which don't use MySQL Cluster (NDB) storage engine.
+
+    :param connectable: a SQLAlchemy Engine or Connection instance
+    :param skip_tables: a list of tables which might have a different
+                        storage engine
+    """
+    query_str = """
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = :database AND
+              engine != 'ndbcluster'
+    """
+
+    params = {}
+    if skip_tables:
+        params = dict(
+            ('skip_%s' % i, table_name)
+            for i, table_name in enumerate(skip_tables)
+        )
+
+        placeholders = ', '.join(':' + p for p in params)
+        query_str += ' AND table_name NOT IN (%s)' % placeholders
+
+    params['database'] = connectable.engine.url.database
+    query = text(query_str)
+    nonndbcluster = connectable.execute(query, **params)
+    return [i[0] for i in nonndbcluster]
+
+
 class NonCommittingConnectable(object):
     """A ``Connectable`` substitute which rolls all operations back.
 

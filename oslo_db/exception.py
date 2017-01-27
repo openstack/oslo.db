@@ -243,6 +243,10 @@ class DBDataError(DBError):
     """
 
 
+class DBNotSupportedError(DBError):
+    """Raised when a database backend has raised sqla.exc.NotSupportedError"""
+
+
 class InvalidSortKey(Exception):
     """A sort key destined for database query usage is invalid."""
 

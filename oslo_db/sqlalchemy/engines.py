@@ -32,6 +32,7 @@ from sqlalchemy.sql.expression import select
 from oslo_db import exception
 
 from oslo_db.sqlalchemy import exc_filters
+from oslo_db.sqlalchemy import ndb
 from oslo_db.sqlalchemy import utils
 
 LOG = logging.getLogger(__name__)
@@ -101,6 +102,7 @@ def _setup_logging(connection_debug=0):
 
 
 def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
+                  mysql_enable_ndb=False,
                   idle_timeout=3600,
                   connection_debug=0, max_pool_size=None, max_overflow=None,
                   pool_timeout=None, sqlite_synchronous=True,
@@ -131,6 +133,9 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     )
 
     engine = sqlalchemy.create_engine(url, **engine_args)
+
+    if mysql_enable_ndb:
+        ndb.enable_ndb_support(engine)
 
     _init_events(
         engine,
@@ -264,6 +269,9 @@ def _init_events(engine, mysql_sql_mode=None, **kw):
                     "MySQL SQL mode is '%s', "
                     "consider enabling TRADITIONAL or STRICT_ALL_TABLES",
                     realmode)
+
+    if ndb.ndb_status(engine):
+        ndb.init_ndb_events(engine)
 
 
 @_init_events.dispatch_for("sqlite")
