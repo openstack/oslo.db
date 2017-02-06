@@ -59,4 +59,8 @@ For MySQL you can use the following commands::
  mysql> GRANT ALL PRIVILEGES ON * . * TO 'openstack_citest'@'localhost';
  mysql> FLUSH PRIVILEGES;
 
+See the script ``tools/test-setup.sh`` on how the databases are set up
+excactly in the OpenStack CI infrastructure and use that for your
+set up.
+
 .. _wiki: https://wiki.openstack.org/wiki/Testing#Unit_Tests
