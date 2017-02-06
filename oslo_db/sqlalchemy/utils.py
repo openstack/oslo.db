@@ -155,6 +155,11 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
     marker, then the actual marker object must be fetched from the db and
     passed in to us as marker.
 
+    The "offset" parameter is intentionally avoided. As offset requires a
+    full scan through the preceding results each time, criteria-based
+    pagination is preferred. See http://use-the-index-luke.com/no-offset
+    for further background.
+
     :param query: the query object to which we should add paging/sorting
     :param model: the ORM model class
     :param limit: maximum number of items to return
