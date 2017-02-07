@@ -59,6 +59,10 @@ For MySQL you can use the following commands::
  mysql> GRANT ALL PRIVILEGES ON * . * TO 'openstack_citest'@'localhost';
  mysql> FLUSH PRIVILEGES;
 
+See the script ``tools/test-setup.sh`` on how the databases are set up
+excactly in the OpenStack CI infrastructure and use that for your
+set up.
+
 Alternatively, you can use `pifpaf`_ to run the unit tests directly without
 setting up the database yourself. You still need to have the database software
 installed on your system. The following tox environments can be used::
