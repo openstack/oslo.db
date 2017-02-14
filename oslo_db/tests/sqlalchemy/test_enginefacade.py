@@ -1160,7 +1160,10 @@ class PatchFactoryTest(oslo_test_base.BaseTestCase):
 
     def test_patch_engine(self):
         normal_mgr = enginefacade.transaction_context()
-        normal_mgr.configure(connection="sqlite:///foo.db")
+        normal_mgr.configure(
+            connection="sqlite:///foo.db",
+            rollback_reader_sessions=True
+        )
 
         @normal_mgr.writer
         def go1(context):
@@ -1179,6 +1182,17 @@ class PatchFactoryTest(oslo_test_base.BaseTestCase):
                 s1.bind.url,
                 "sqlite:///bar.db")
 
+            self.assertTrue(
+                enginefacade._transaction_ctx_for_context(
+                    context).rollback_reader_sessions
+            )
+
+            # ensure this defaults to True
+            self.assertTrue(
+                enginefacade._transaction_ctx_for_context(
+                    context).factory.synchronous_reader
+            )
+
         def create_engine(sql_connection, **kw):
             return mock.Mock(url=sql_connection)
 
@@ -1194,6 +1208,40 @@ class PatchFactoryTest(oslo_test_base.BaseTestCase):
                 normal_mgr._factory._writer_engine, mock_engine)
             reset()
             go1(context)
+
+    def test_patch_not_started(self):
+        normal_mgr = enginefacade.transaction_context()
+        normal_mgr.configure(
+            connection="sqlite:///foo.db",
+            rollback_reader_sessions=True
+        )
+
+        @normal_mgr.writer
+        def go1(context):
+            s1 = context.session
+
+            self.assertEqual(
+                s1.bind.url,
+                "sqlite:///bar.db")
+
+            self.assertTrue(
+                enginefacade._transaction_ctx_for_context(
+                    context).rollback_reader_sessions
+            )
+
+        def create_engine(sql_connection, **kw):
+            return mock.Mock(url=sql_connection)
+
+        with mock.patch(
+                "oslo_db.sqlalchemy.engines.create_engine", create_engine):
+            mock_engine = create_engine("sqlite:///bar.db")
+
+            context = oslo_context.RequestContext()
+            reset = normal_mgr.patch_engine(mock_engine)
+            go1(context)
+            self.assertIs(
+                normal_mgr._factory._writer_engine, mock_engine)
+            reset()
 
     def test_new_manager_from_config(self):
         normal_mgr = enginefacade.transaction_context()

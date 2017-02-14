@@ -86,8 +86,7 @@ class DbFixture(fixtures.Fixture):
         self.addCleanup(setattr, self.test, 'engine', None)
 
         self.test.enginefacade = enginefacade._TestTransactionFactory(
-            self.test.engine, self.test.sessionmaker, apply_global=True,
-            synchronous_reader=True)
+            self.test.engine, self.test.sessionmaker, apply_global=True)
         self.addCleanup(self.test.enginefacade.dispose_global)
 
 

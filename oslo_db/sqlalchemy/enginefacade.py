@@ -18,6 +18,7 @@ import operator
 import threading
 import warnings
 
+import debtcollector.removals as removals
 from oslo_config import cfg
 
 from oslo_db import exception
@@ -516,16 +517,25 @@ class _TestTransactionFactory(_TransactionFactory):
     within the global :class:`._TransactionContextManager`.
 
     """
-    def __init__(self, engine, maker, apply_global, synchronous_reader):
+
+    @removals.removed_kwarg(
+        'synchronous_reader',
+        'argument value is propagated from the parent _TransactionFactory')
+    def __init__(self, engine, maker, apply_global, from_factory=None, **kw):
+        # NOTE(zzzeek): **kw needed for backwards compability
         self._reader_engine = self._writer_engine = engine
         self._reader_maker = self._writer_maker = maker
         self._started = True
         self._legacy_facade = None
-        self.synchronous_reader = synchronous_reader
 
-        self._facade_cfg = _context_manager._factory._facade_cfg
-        self._transaction_ctx_cfg = \
-            _context_manager._factory._transaction_ctx_cfg
+        if from_factory is None:
+            from_factory = _context_manager._factory
+
+        self._facade_cfg = from_factory._facade_cfg
+        self._transaction_ctx_cfg = from_factory._transaction_ctx_cfg
+
+        self.synchronous_reader = self._facade_cfg['synchronous_reader']
+
         if apply_global:
             self.existing_factory = _context_manager._factory
             _context_manager._root_factory = self
@@ -852,6 +862,8 @@ class _TransactionContextManager(object):
         """
 
         existing_factory = self._factory
+        if not existing_factory._started:
+            existing_factory._start()
         maker = existing_factory._writer_maker
         maker_kwargs = existing_factory._maker_args_for_conf(cfg.CONF)
         maker = orm.get_maker(engine=engine, **maker_kwargs)
@@ -859,8 +871,7 @@ class _TransactionContextManager(object):
         factory = _TestTransactionFactory(
             engine, maker,
             apply_global=False,
-            synchronous_reader=existing_factory.
-            _facade_cfg['synchronous_reader']
+            from_factory=existing_factory
         )
         return self.patch_factory(factory)
 
