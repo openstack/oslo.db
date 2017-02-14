@@ -389,6 +389,12 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
             makers, enginefacade._WRITER,
             connection, assert_calls)
 
+    def _emit_sub_writer_session(self, session):
+        return self._emit_sub_session(enginefacade._WRITER, session)
+
+    def _emit_sub_reader_session(self, session):
+        return self._emit_sub_session(enginefacade._READER, session)
+
     @contextlib.contextmanager
     def _assert_session(
             self, makers, writer, connection=None, assert_calls=True):
@@ -417,6 +423,13 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
             self.assertEqual(
                 session.mock_calls,
                 self.sessions.element_for_writer(writer).mock_calls)
+
+    @contextlib.contextmanager
+    def _emit_sub_session(self, writer, session):
+        yield session
+        if enginefacade._context_manager.\
+                _factory._transaction_ctx_cfg['flush_on_subtransaction']:
+            session.flush()
 
     def test_dispose_pool(self):
         facade = enginefacade.transaction_context()
@@ -770,6 +783,23 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
             with self._assert_makers(engines) as makers:
                 with self._assert_reader_session(makers) as session:
                     session.execute("test1")
+
+    def test_using_flush_on_nested(self):
+        enginefacade.configure(flush_on_nested=True)
+
+        context = oslo_context.RequestContext()
+
+        with enginefacade.writer.using(context) as session:
+            with enginefacade.writer.using(context) as session:
+                self._assert_ctx_session(context, session)
+                session.execute("test1")
+
+        with self._assert_engines() as engines:
+            with self._assert_makers(engines) as makers:
+                with self._assert_writer_session(makers) as session:
+                    with self._emit_sub_writer_session(
+                            session) as session:
+                        session.execute("test1")
 
     def test_using_writer(self):
         context = oslo_context.RequestContext()
@@ -1555,6 +1585,7 @@ class LiveFacadeTest(test_base.DbTestCase):
             'user', metadata,
             Column('id', Integer, primary_key=True),
             Column('name', String(30)),
+            Column('favorite_color', String(10), default='yellow'),
             mysql_engine='InnoDB'
         )
         self.user_table = user_table
@@ -1605,6 +1636,33 @@ class LiveFacadeTest(test_base.DbTestCase):
             None,
             session.query(self.User.name).scalar()
         )
+
+    def test_flush_on_subtransaction(self):
+        facade = enginefacade.transaction_context()
+        facade.configure(
+            connection=self.engine.url,
+            flush_on_subtransaction=True)
+        facade.patch_engine(self.engine)
+        context = oslo_context.RequestContext()
+
+        with facade.writer.using(context):
+            with facade.writer.using(context):
+                u = self.User(name="u1")
+                context.session.add(u)
+            self.assertEqual('yellow', u.favorite_color)
+
+    def test_flush_on_subtransaction_default_off(self):
+        context = oslo_context.RequestContext()
+        facade = enginefacade.transaction_context()
+        facade.configure(connection=self.engine.url)
+        facade.patch_engine(self.engine)
+
+        with facade.writer.using(context):
+            with facade.writer.using(context):
+                u = self.User(name="u1")
+                context.session.add(u)
+            self.assertIsNone(u.favorite_color)
+        self.assertEqual('yellow', u.favorite_color)
 
     def test_context_deepcopy_on_session(self):
         context = oslo_context.RequestContext()

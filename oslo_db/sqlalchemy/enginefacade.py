@@ -154,6 +154,7 @@ class _TransactionFactory(object):
         }
         self._transaction_ctx_cfg = {
             'rollback_reader_sessions': False,
+            'flush_on_subtransaction': False,
             }
         self._facade_cfg = {
             'synchronous_reader': True,
@@ -263,6 +264,13 @@ class _TransactionFactory(object):
          replication lag is present; defaults to True.  When False, a
          @reader context works the same as @async_reader and will select
          the "slave" database if present.
+
+        :param flush_on_subtransaction: if True, a :class:`.Session` object
+         will have its :meth:`.Session.flush` method invoked whenever a context
+         manager or decorator that is not itself the originator of the top-
+         level or savepoint :class:`.Session` transaction exits - in this way
+         it behaves like a "subtransaction" from a :class:`.Session`
+         perspective.
 
         .. seealso::
 
@@ -558,7 +566,6 @@ class _TransactionContext(object):
          objects created under this one.  When left as None the actual
          "global" factory is used.
 
-
         """
         self.factory = factory
         self.global_factory = global_factory
@@ -568,6 +575,7 @@ class _TransactionContext(object):
         self.transaction = None
         kw = self.factory._transaction_ctx_cfg
         self.rollback_reader_sessions = kw['rollback_reader_sessions']
+        self.flush_on_subtransaction = kw['flush_on_subtransaction']
 
     @contextlib.contextmanager
     def _connection(self, savepoint=False):
@@ -636,6 +644,8 @@ class _TransactionContext(object):
                     yield self.session
             else:
                 yield self.session
+                if self.flush_on_subtransaction:
+                    self.session.flush()
 
     def _end_session_transaction(self, session):
         if self.mode is _WRITER:
