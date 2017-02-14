@@ -195,6 +195,74 @@ class _TransactionFactory(object):
         :data:`oslo_config.cfg.CONF`, after applying the
         :data:`oslo_db.options.database_opts` configurational defaults to it.
 
+        :param connection: database URL
+
+        :param slave_connection: database URL
+
+        :param sqlite_fk: whether to enable SQLite foreign key pragma; default
+         False
+
+        :param mysql_sql_mode: MySQL SQL mode, defaults to TRADITIONAL
+
+        :param idle_timeout: connection pool recycle time,
+         defaults to 3600. Note the connection does not actually have to
+         be "idle" to be recycled.
+
+        :param connection_debug: engine logging level, defaults to 0. set to
+         50 for INFO, 100 for DEBUG.
+
+        :param max_pool_size: max size of connection pool, uses CONF for
+         default
+
+        :param max_overflow: max overflow for connection pool, uses CONF for
+         default
+
+        :param sqlite_synchronous: disable SQLite SYNCHRONOUS pragma if False;
+         defaults to True
+
+        :param connection_trace: enable tracing comments in logging
+
+        :param max_retries: max retries to connect, defaults to !0
+
+        :param retry_interval: time in seconds between retries, defaults to 10
+
+        :param thread_checkin: add sleep(0) on connection checkin to allow
+         greenlet yields, defaults to True
+
+        :param json_serializer: JSON serializer for PostgreSQL connections
+
+        :param json_deserializer: JSON deserializer for PostgreSQL connections
+
+        :param logging_name: logging name for engine
+
+        :param expire_on_commit: sets expire_on_commit for SQLAlchemy
+         sessionmaker; defaults to False
+
+        :param rollback_reader_sessions: if True, a :class:`.Session` object
+         will have its :meth:`.Session.rollback` method invoked at the end
+         of a ``@reader`` block, actively rolling back the transaction and
+         expiring the objects within, before the :class:`.Session` moves
+         on to be closed, which has the effect of releasing connection
+         resources back to the connection pool and detaching all objects.
+         If False, the :class:`.Session` is
+         not affected at the end of a ``@reader`` block; the underlying
+         connection referred to by this :class:`.Session` will still
+         be released in the enclosing context via the :meth:`.Session.close`
+         method, which still ensures that the DBAPI connection is rolled
+         back, however the objects associated with the :class:`.Session`
+         retain their database-persisted contents after they are detached.
+
+         .. seealso::
+
+            http://docs.sqlalchemy.org/en/rel_0_9/glossary.html#term-released\
+            SQLAlchemy documentation on what "releasing resources" means.
+
+        :param synchronous_reader: whether or not to assume a "reader" context
+         needs to guarantee it can read data committed by a "writer" assuming
+         replication lag is present; defaults to True.  When False, a
+         @reader context works the same as @async_reader and will select
+         the "slave" database if present.
+
         .. seealso::
 
             :meth:`._TransactionFactory.configure`
@@ -211,7 +279,8 @@ class _TransactionFactory(object):
         Behavior here is the same as that of
         :meth:`._TransactionFactory.configure_defaults`,
         with the exception that values specified here will **supersede** those
-        setup in the :class:`oslo_config.cfg.ConfigOpts` options.
+        setup in the :class:`oslo_config.cfg.ConfigOpts` options.  See
+        that method for a listing of all keyword arguments.
 
         .. seealso::
 
@@ -468,9 +537,7 @@ class _TestTransactionFactory(_TransactionFactory):
 class _TransactionContext(object):
     """Represent a single database transaction in progress."""
 
-    def __init__(
-            self, factory, global_factory=None,
-            rollback_reader_sessions=False):
+    def __init__(self, factory, global_factory=None):
         """Construct a new :class:`.TransactionContext`.
 
         :param factory: the :class:`.TransactionFactory` which will
@@ -481,24 +548,6 @@ class _TransactionContext(object):
          objects created under this one.  When left as None the actual
          "global" factory is used.
 
-        :param rollback_reader_sessions: if True, a :class:`.Session` object
-         will have its :meth:`.Session.rollback` method invoked at the end
-         of a ``@reader`` block, actively rolling back the transaction and
-         expiring the objects within, before the :class:`.Session` moves
-         on to be closed, which has the effect of releasing connection
-         resources back to the connection pool and detaching all objects.
-         If False, the :class:`.Session` is
-         not affected at the end of a ``@reader`` block; the underlying
-         connection referred to by this :class:`.Session` will still
-         be released in the enclosing context via the :meth:`.Session.close`
-         method, which still ensures that the DBAPI connection is rolled
-         back, however the objects associated with the :class:`.Session`
-         retain their database-persisted contents after they are detached.
-
-         .. seealso::
-
-            http://docs.sqlalchemy.org/en/rel_0_9/glossary.html#term-released\
-            SQLAlchemy documentation on what "releasing resources" means.
 
         """
         self.factory = factory
@@ -931,9 +980,7 @@ class _TransactionContextManager(object):
 
         if current is None:
             current = transaction_contexts_by_thread.current = \
-                _TransactionContext(
-                    use_factory, global_factory=global_factory,
-                    **use_factory._transaction_ctx_cfg)
+                _TransactionContext(use_factory, global_factory=global_factory)
 
         try:
             if self._mode is not None:
