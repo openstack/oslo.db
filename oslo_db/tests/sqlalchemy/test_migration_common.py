@@ -152,6 +152,42 @@ class TestMigrationCommon(test_base.DbTestCase):
             mock_vc.assert_called_once_with(self.engine, self.return_value1,
                                             self.init_version)
 
+    @mock.patch.object(versioning_api, 'version_control')
+    def test_db_version_raise_not_controlled_alembic_tables(self, mock_vc):
+        # When there are tables but the alembic control table
+        # (alembic_version) is present, attempt to version the db.
+        # This simulates the case where there is are multiple repos (different
+        # abs_paths) and a different path has been versioned already.
+        with mock.patch.object(sqlalchemy, 'MetaData') as mock_meta:
+            self.mock_api_db_version.side_effect = [
+                migrate_exception.DatabaseNotControlledError('oups'), None]
+            my_meta = mock.MagicMock()
+            my_meta.tables = {'alembic_version': 1, 'b': 2}
+            mock_meta.return_value = my_meta
+
+            migration.db_version(self.engine, self.path, self.init_version)
+
+            mock_vc.assert_called_once_with(self.engine, self.return_value1,
+                                            self.init_version)
+
+    @mock.patch.object(versioning_api, 'version_control')
+    def test_db_version_raise_not_controlled_migrate_tables(self, mock_vc):
+        # When there are tables but the sqlalchemy-migrate control table
+        # (migrate_version) is present, attempt to version the db.
+        # This simulates the case where there is are multiple repos (different
+        # abs_paths) and a different path has been versioned already.
+        with mock.patch.object(sqlalchemy, 'MetaData') as mock_meta:
+            self.mock_api_db_version.side_effect = [
+                migrate_exception.DatabaseNotControlledError('oups'), None]
+            my_meta = mock.MagicMock()
+            my_meta.tables = {'migrate_version': 1, 'b': 2}
+            mock_meta.return_value = my_meta
+
+            migration.db_version(self.engine, self.path, self.init_version)
+
+            mock_vc.assert_called_once_with(self.engine, self.return_value1,
+                                            self.init_version)
+
     def test_db_sync_wrong_version(self):
         self.assertRaises(db_exception.DBMigrationError,
                           migration.db_sync, self.engine, self.path, 'foo')
