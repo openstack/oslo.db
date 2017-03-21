@@ -31,7 +31,6 @@ from sqlalchemy.engine import url as sa_url
 from sqlalchemy import schema
 import testresources
 
-from oslo_db._i18n import _LI
 from oslo_db import exception
 from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import session
@@ -292,7 +291,7 @@ class Backend(object):
             # within create_engine().  So if ibm_db_sa, cx_oracle etc.
             # isn't installed, we get an ImportError here.
             LOG.info(
-                _LI("The %(dbapi)s backend is unavailable: %(err)s"),
+                "The %(dbapi)s backend is unavailable: %(err)s",
                 dict(dbapi=url.drivername, err=i_e))
             raise exception.BackendNotAvailable(
                 "Backend '%s' is unavailable: No DBAPI installed" %
@@ -305,7 +304,7 @@ class Backend(object):
                 # usually raises OperationalError and should always at
                 # least raise a SQLAlchemy-wrapped DBAPI Error.
                 LOG.info(
-                    _LI("The %(dbapi)s backend is unavailable: %(err)s"),
+                    "The %(dbapi)s backend is unavailable: %(err)s",
                     dict(dbapi=url.drivername, err=d_e)
                 )
                 raise exception.BackendNotAvailable(

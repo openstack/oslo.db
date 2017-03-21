@@ -30,7 +30,6 @@ import sqlalchemy.exc
 import sqlalchemy.sql.expression as expr
 import sqlalchemy.types as types
 
-from oslo_db._i18n import _LE
 from oslo_db import exception as exc
 from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import utils
@@ -270,7 +269,7 @@ class WalkVersionsMixin(object):
                 if check:
                     check(self.migrate_engine, data)
         except exc.DBMigrationError:
-            msg = _LE("Failed to migrate to version %(ver)s on engine %(eng)s")
+            msg = "Failed to migrate to version %(ver)s on engine %(eng)s"
             LOG.error(msg, {"ver": version, "eng": self.migrate_engine})
             raise
 

@@ -45,8 +45,8 @@ from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy.types import NullType
 
+from oslo_db._i18n import _
 from oslo_db import exception
-from oslo_db._i18n import _, _LI, _LW
 from oslo_db.sqlalchemy import models
 
 # NOTE(ochuprykov): Add references for backwards compatibility
@@ -175,8 +175,8 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
     :return: The query with sorting/pagination added.
     """
     if _stable_sorting_order(model, sort_keys) is False:
-        LOG.warning(_LW('Unique keys not in sort_keys. '
-                        'The sorting order may be unstable.'))
+        LOG.warning('Unique keys not in sort_keys. '
+                    'The sorting order may be unstable.')
 
     assert(not (sort_dir and sort_dirs))
 
@@ -524,8 +524,8 @@ def drop_old_duplicate_entries_from_table(engine, table_name,
         rows_to_delete_select = sqlalchemy.sql.select(
             [table.c.id]).where(delete_condition)
         for row in engine.execute(rows_to_delete_select).fetchall():
-            LOG.info(_LI("Deleting duplicated row with id: %(id)s from table: "
-                         "%(table)s"), dict(id=row[0], table=table_name))
+            LOG.info("Deleting duplicated row with id: %(id)s from table: "
+                     "%(table)s", dict(id=row[0], table=table_name))
 
         if use_soft_delete:
             delete_statement = table.update().\

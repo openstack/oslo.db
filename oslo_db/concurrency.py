@@ -19,7 +19,6 @@ import threading
 
 from oslo_config import cfg
 
-from oslo_db._i18n import _LE
 from oslo_db import api
 
 
@@ -61,8 +60,8 @@ class TpoolDbapiWrapper(object):
                         try:
                             from eventlet import tpool
                         except ImportError:
-                            LOG.exception(_LE("'eventlet' is required for "
-                                              "TpoolDbapiWrapper."))
+                            LOG.exception("'eventlet' is required for "
+                                          "TpoolDbapiWrapper.")
                             raise
                         self._db_api = tpool.Proxy(db_api)
                     else:

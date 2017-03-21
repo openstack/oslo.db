@@ -15,7 +15,6 @@ import os
 
 from migrate.versioning import version as migrate_version
 
-from oslo_db._i18n import _LE
 from oslo_db.sqlalchemy import migration
 from oslo_db.sqlalchemy.migration_cli import ext_base
 
@@ -58,9 +57,9 @@ class MigrateExtension(ext_base.MigrationExtensionBase):
                 init_version=self.init_version)
         except ValueError:
             LOG.error(
-                _LE('Migration number for migrate plugin must be valid '
-                    'integer or empty, if you want to downgrade '
-                    'to initial state')
+                'Migration number for migrate plugin must be valid '
+                'integer or empty, if you want to downgrade '
+                'to initial state'
             )
             raise
 
