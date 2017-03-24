@@ -10,18 +10,10 @@
 #  License for the specific language governing permissions and limitations
 #  under the License.
 
-from debtcollector import removals
 from oslo_config import cfg
 
 
 database_opts = [
-    cfg.StrOpt('sqlite_db',
-               deprecated_for_removal=True,
-               deprecated_reason='Should use config option connection or '
-                                 'slave_connection to connect the database.',
-               deprecated_group='DEFAULT',
-               default='oslo.sqlite',
-               help='The file name to use with SQLite.'),
     cfg.BoolOpt('sqlite_synchronous',
                 deprecated_group='DEFAULT',
                 default=True,
@@ -143,12 +135,8 @@ database_opts = [
 ]
 
 
-@removals.removed_kwarg("sqlite_db",
-                        "Config option sqlite_db is deprecated for removal,"
-                        "please use option `connection`.")
-def set_defaults(conf, connection=None, sqlite_db=None,
-                 max_pool_size=None, max_overflow=None,
-                 pool_timeout=None):
+def set_defaults(conf, connection=None, max_pool_size=None,
+                 max_overflow=None, pool_timeout=None):
     """Set defaults for configuration variables.
 
     Overrides default options values.
@@ -164,9 +152,6 @@ def set_defaults(conf, connection=None, sqlite_db=None,
         * sqlite:///relative/path/to/file.db
         * sqlite:////absolute/path/to/file.db
     :type connection: str
-
-    :keyword sqlite_db: path to SQLite database file.
-    :type sqlite_db: str
 
     :keyword max_pool_size: maximum connections pool size. The size of the pool
      to be maintained, defaults to 5. This is the largest number of connections
@@ -200,8 +185,6 @@ def set_defaults(conf, connection=None, sqlite_db=None,
 
     if connection is not None:
         conf.set_default('connection', connection, group='database')
-    if sqlite_db is not None:
-        conf.set_default('sqlite_db', sqlite_db, group='database')
     if max_pool_size is not None:
         conf.set_default('max_pool_size', max_pool_size, group='database')
     if max_overflow is not None:
