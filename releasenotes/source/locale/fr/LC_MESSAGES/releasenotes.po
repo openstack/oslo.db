@@ -1,0 +1,68 @@
+# Gérald LONLAS <g.lonlas@gmail.com>, 2016. #zanata
+msgid ""
+msgstr ""
+"Project-Id-Version: oslo.db Release Notes 4.18.1.dev1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-03-14 11:56+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2016-10-22 05:59+0000\n"
+"Last-Translator: Gérald LONLAS <g.lonlas@gmail.com>\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"X-Generator: Zanata 3.9.6\n"
+"Plural-Forms: nplurals=2; plural=(n > 1)\n"
+
+msgid "2.6.0-9"
+msgstr "2.6.0-9"
+
+msgid "4.12.0"
+msgstr "4.12.0"
+
+msgid "4.6.0"
+msgstr "4.6.0"
+
+msgid "4.8.0"
+msgstr "4.8.0"
+
+msgid "4.9.0"
+msgstr "4.9.0"
+
+msgid "Bug Fixes"
+msgstr "Corrections de bugs"
+
+msgid "Deprecation Notes"
+msgstr "Notes dépréciées "
+
+msgid "Liberty Series Release Notes"
+msgstr "Note de release pour Liberty"
+
+msgid "Mitaka Series Release Notes"
+msgstr "Note de release pour Mitaka"
+
+msgid "New Features"
+msgstr "Nouvelles fonctionnalités"
+
+msgid "Newton Series Release Notes"
+msgstr "Note de release pour Newton"
+
+msgid "Other Notes"
+msgstr "Autres notes"
+
+msgid "Unreleased Release Notes"
+msgstr "Note de release pour les changements non déployées"
+
+msgid "Upgrade Notes"
+msgstr "Notes de mises à jours"
+
+msgid ""
+"http://lists.openstack.org/pipermail/openstack-dev/2015-December/082717.html"
+msgstr ""
+"http://lists.openstack.org/pipermail/openstack-dev/2015-December/082717.html"
+
+msgid "https://bugs.launchpad.net/oslo.db/+bug/1535375"
+msgstr "https://bugs.launchpad.net/oslo.db/+bug/1535375"
+
+msgid "oslo.db Release Notes"
+msgstr "Note de release pour oslo.db"
