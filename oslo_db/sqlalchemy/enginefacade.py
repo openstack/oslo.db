@@ -169,8 +169,7 @@ class _TransactionFactory(object):
                 'db_max_retries', 'db_inc_retry_interval',
                 'use_db_reconnect',
                 'db_retry_interval', 'min_pool_size',
-                'db_max_retry_interval',
-                'sqlite_db', 'backend'])
+                'db_max_retry_interval', 'backend'])
 
         self._started = False
         self._legacy_facade = None
