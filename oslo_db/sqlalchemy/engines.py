@@ -29,7 +29,6 @@ from sqlalchemy import exc
 from sqlalchemy import pool
 from sqlalchemy.sql.expression import select
 
-from oslo_db._i18n import _LW
 from oslo_db import exception
 
 from oslo_db.sqlalchemy import exc_filters
@@ -255,16 +254,15 @@ def _init_events(engine, mysql_sql_mode=None, **kw):
         realmode = cursor.fetchone()
 
         if realmode is None:
-            LOG.warning(_LW('Unable to detect effective SQL mode'))
+            LOG.warning('Unable to detect effective SQL mode')
         else:
             realmode = realmode[1]
             LOG.debug('MySQL server mode set to %s', realmode)
             if 'TRADITIONAL' not in realmode.upper() and \
-                'STRICT_ALL_TABLES' not in realmode.upper():
+                    'STRICT_ALL_TABLES' not in realmode.upper():
                 LOG.warning(
-                    _LW(
-                        "MySQL SQL mode is '%s', "
-                        "consider enabling TRADITIONAL or STRICT_ALL_TABLES"),
+                    "MySQL SQL mode is '%s', "
+                    "consider enabling TRADITIONAL or STRICT_ALL_TABLES",
                     realmode)
 
 
@@ -330,7 +328,7 @@ def _test_connection(engine, max_retries, retry_interval):
         try:
             return engine.connect()
         except exception.DBConnectionError as de:
-            msg = _LW('SQL connection failed. %s attempts left.')
+            msg = 'SQL connection failed. %s attempts left.'
             LOG.warning(msg, max_retries - attempt)
             time.sleep(retry_interval)
             de_ref = de
@@ -355,10 +353,10 @@ def _add_process_guards(engine):
     def checkout(dbapi_connection, connection_record, connection_proxy):
         pid = os.getpid()
         if connection_record.info['pid'] != pid:
-            LOG.debug(_LW(
+            LOG.debug(
                 "Parent process %(orig)s forked (%(newproc)s) with an open "
                 "database connection, "
-                "which is being discarded and recreated."),
+                "which is being discarded and recreated.",
                 {"newproc": pid, "orig": connection_record.info['pid']})
             connection_record.connection = connection_proxy.connection = None
             raise exc.DisconnectionError(

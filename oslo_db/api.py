@@ -33,7 +33,6 @@ from oslo_utils import importutils
 from oslo_utils import reflection
 import six
 
-from oslo_db._i18n import _LE
 from oslo_db import exception
 from oslo_db import options
 
@@ -144,7 +143,7 @@ class wrap_db_retry(object):
                             ectxt.reraise = not expected
                         else:
                             if expected:
-                                LOG.exception(_LE('DB exceeded retry limit.'))
+                                LOG.exception('DB exceeded retry limit.')
                             # if it's a RetryRequest, we need to unpack it
                             if isinstance(e, exception.RetryRequest):
                                 ectxt.type_ = type(e.inner_exc)
