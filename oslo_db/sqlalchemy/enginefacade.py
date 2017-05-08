@@ -20,6 +20,7 @@ import warnings
 
 import debtcollector.removals as removals
 from oslo_config import cfg
+from oslo_utils import excutils
 
 from oslo_db import exception
 from oslo_db import options
@@ -627,12 +628,8 @@ class _TransactionContext(object):
                 yield self.session
                 self._end_session_transaction(self.session)
             except Exception:
-                self.session.rollback()
-                # TODO(zzzeek) do we need save_and_reraise() here,
-                # or do newer eventlets not have issues?  we are using
-                # raw "raise" in many other places in oslo.db already
-                # (and one six.reraise()).
-                raise
+                with excutils.save_and_reraise_exception():
+                    self.session.rollback()
             finally:
                 self.session.close()
                 self.session = None
