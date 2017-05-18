@@ -55,6 +55,7 @@ class SingletonConnection(SingletonOnName):
     def __init__(self, **kw):
         super(SingletonConnection, self).__init__(
             "connection", **kw)
+        self.info = {}
 
 
 class SingletonEngine(SingletonOnName):
@@ -113,14 +114,16 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
         writer_conn = SingletonConnection()
         writer_engine = SingletonEngine(writer_conn)
         writer_session = mock.Mock(
-            connection=mock.Mock(return_value=writer_conn))
+            connection=mock.Mock(return_value=writer_conn),
+            info={})
         writer_maker = mock.Mock(return_value=writer_session)
 
         if self.slave_uri:
             async_reader_conn = SingletonConnection()
             async_reader_engine = SingletonEngine(async_reader_conn)
             async_reader_session = mock.Mock(
-                connection=mock.Mock(return_value=async_reader_conn))
+                connection=mock.Mock(return_value=async_reader_conn),
+                info={})
             async_reader_maker = mock.Mock(return_value=async_reader_session)
 
         else:
@@ -769,6 +772,20 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
             with self._assert_makers(engines) as makers:
                 with self._assert_reader_session(makers) as session:
                     session.execute("test1")
+
+    def test_using_context_present_in_session_info(self):
+        context = oslo_context.RequestContext()
+
+        with enginefacade.reader.using(context) as session:
+            self.assertEqual(context, session.info['using_context'])
+        self.assertIsNone(session.info['using_context'])
+
+    def test_using_context_present_in_connection_info(self):
+        context = oslo_context.RequestContext()
+
+        with enginefacade.writer.connection.using(context) as connection:
+            self.assertEqual(context, connection.info['using_context'])
+        self.assertIsNone(connection.info['using_context'])
 
     def test_using_reader_rollback_reader_session(self):
         enginefacade.configure(rollback_reader_sessions=True)

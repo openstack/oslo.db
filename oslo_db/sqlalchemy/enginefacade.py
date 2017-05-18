@@ -577,24 +577,27 @@ class _TransactionContext(object):
         self.flush_on_subtransaction = kw['flush_on_subtransaction']
 
     @contextlib.contextmanager
-    def _connection(self, savepoint=False):
+    def _connection(self, savepoint=False, context=None):
         if self.connection is None:
             try:
                 if self.session is not None:
                     # use existing session, which is outer to us
                     self.connection = self.session.connection()
                     if savepoint:
-                        with self.connection.begin_nested():
+                        with self.connection.begin_nested(), \
+                                self._add_context(self.connection, context):
                             yield self.connection
                     else:
-                        yield self.connection
+                        with self._add_context(self.connection, context):
+                            yield self.connection
                 else:
                     # is outermost
                     self.connection = self.factory._create_connection(
                         mode=self.mode)
                     self.transaction = self.connection.begin()
                     try:
-                        yield self.connection
+                        with self._add_context(self.connection, context):
+                            yield self.connection
                         self._end_connection_transaction(self.transaction)
                     except Exception:
                         self.transaction.rollback()
@@ -612,19 +615,22 @@ class _TransactionContext(object):
         else:
             # use existing connection, which is outer to us
             if savepoint:
-                with self.connection.begin_nested():
+                with self.connection.begin_nested(), \
+                        self._add_context(self.connection, context):
                     yield self.connection
             else:
-                yield self.connection
+                with self._add_context(self.connection, context):
+                    yield self.connection
 
     @contextlib.contextmanager
-    def _session(self, savepoint=False):
+    def _session(self, savepoint=False, context=None):
         if self.session is None:
             self.session = self.factory._create_session(
                 bind=self.connection, mode=self.mode)
             try:
                 self.session.begin()
-                yield self.session
+                with self._add_context(self.session, context):
+                    yield self.session
                 self._end_session_transaction(self.session)
             except Exception:
                 self.session.rollback()
@@ -640,11 +646,20 @@ class _TransactionContext(object):
             # use existing session, which is outer to us
             if savepoint:
                 with self.session.begin_nested():
-                    yield self.session
+                    with self._add_context(self.session, context):
+                        yield self.session
             else:
-                yield self.session
+                with self._add_context(self.session, context):
+                    yield self.session
                 if self.flush_on_subtransaction:
                     self.session.flush()
+
+    @contextlib.contextmanager
+    def _add_context(self, connection, context):
+        restore_context = connection.info.get('using_context')
+        connection.info['using_context'] = context
+        yield connection
+        connection.info['using_context'] = restore_context
 
     def _end_session_transaction(self, session):
         if self.mode is _WRITER:
@@ -663,7 +678,8 @@ class _TransactionContext(object):
         else:
             transaction.rollback()
 
-    def _produce_block(self, mode, connection, savepoint, allow_async=False):
+    def _produce_block(self, mode, connection, savepoint, allow_async=False,
+                       context=None):
         if mode is _WRITER:
             self._writer()
         elif mode is _ASYNC_READER:
@@ -671,9 +687,9 @@ class _TransactionContext(object):
         else:
             self._reader(allow_async)
         if connection:
-            return self._connection(savepoint)
+            return self._connection(savepoint, context=context)
         else:
-            return self._session(savepoint)
+            return self._session(savepoint, context=context)
 
     def _writer(self):
         if self.mode is None:
@@ -1008,7 +1024,8 @@ class _TransactionContextManager(object):
                     mode=self._mode,
                     connection=self._connection,
                     savepoint=self._savepoint,
-                    allow_async=self._allow_async) as resource:
+                    allow_async=self._allow_async,
+                    context=context) as resource:
                     yield resource
             else:
                 yield
