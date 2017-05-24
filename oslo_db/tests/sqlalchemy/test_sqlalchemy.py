@@ -664,6 +664,52 @@ class CreateEngineTest(oslo_test.BaseTestCase):
             engines._thread_yield
         )
 
+    def test_warn_on_missing_driver(self):
+
+        warnings = mock.Mock()
+
+        def warn_interpolate(msg, args):
+            # test the interpolation itself to ensure the password
+            # is concealed
+            warnings.warning(msg % args)
+
+        with mock.patch(
+                "oslo_db.sqlalchemy.engines.LOG.warning",
+                warn_interpolate):
+
+            engines._vet_url(
+                url.make_url("mysql://scott:tiger@some_host/some_db"))
+            engines._vet_url(url.make_url(
+                "mysql+mysqldb://scott:tiger@some_host/some_db"))
+            engines._vet_url(url.make_url(
+                "mysql+pymysql://scott:tiger@some_host/some_db"))
+            engines._vet_url(url.make_url(
+                "postgresql+psycopg2://scott:tiger@some_host/some_db"))
+            engines._vet_url(url.make_url(
+                "postgresql://scott:tiger@some_host/some_db"))
+
+        self.assertEqual(
+            [
+                mock.call.warning(
+                    "URL mysql://scott:***@some_host/some_db does not contain "
+                    "a '+drivername' portion, "
+                    "and will make use of a default driver.  "
+                    "A full dbname+drivername:// protocol is recommended. "
+                    "For MySQL, it is strongly recommended that "
+                    "mysql+pymysql:// "
+                    "be specified for maximum service compatibility",
+
+                ),
+                mock.call.warning(
+                    "URL postgresql://scott:***@some_host/some_db does not "
+                    "contain a '+drivername' portion, "
+                    "and will make use of a default driver.  "
+                    "A full dbname+drivername:// protocol is recommended."
+                )
+            ],
+            warnings.mock_calls
+        )
+
 
 class ProcessGuardTest(test_base.DbTestCase):
     def test_process_guard(self):

@@ -100,6 +100,24 @@ def _setup_logging(connection_debug=0):
             logger.setLevel(logging.WARNING)
 
 
+def _vet_url(url):
+    if "+" not in url.drivername and not url.drivername.startswith("sqlite"):
+        if url.drivername.startswith("mysql"):
+            LOG.warning(
+                "URL %r does not contain a '+drivername' portion, "
+                "and will make use of a default driver.  "
+                "A full dbname+drivername:// protocol is recommended. "
+                "For MySQL, it is strongly recommended that mysql+pymysql:// "
+                "be specified for maximum service compatibility", url
+            )
+        else:
+            LOG.warning(
+                "URL %r does not contain a '+drivername' portion, "
+                "and will make use of a default driver.  "
+                "A full dbname+drivername:// protocol is recommended.", url
+            )
+
+
 def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                   idle_timeout=3600,
                   connection_debug=0, max_pool_size=None, max_overflow=None,
@@ -111,6 +129,8 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     """Return a new SQLAlchemy engine."""
 
     url = sqlalchemy.engine.url.make_url(sql_connection)
+
+    _vet_url(url)
 
     engine_args = {
         "pool_recycle": idle_timeout,
