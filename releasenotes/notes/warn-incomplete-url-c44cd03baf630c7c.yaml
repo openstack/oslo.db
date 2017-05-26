@@ -1,0 +1,14 @@
+---
+upgrade:
+  - |
+    oslo.db now logs a warning when the connection URL does not
+    explicitly mention a driver. The default driver is still used, but
+    in some cases, such as MySQL, the default is incompatible with the
+    concurrency library eventlet.
+  - |
+    It is strongly recommended to use the `PyMySQL
+    <https://pypi.python.org/pypi/PyMySQL>`__ driver when connecting
+    to a MySQL-compatible database to ensure the best compatibility
+    with the concurrency library eventlet. To use PyMySQL, ensure the
+    connection URL is specified with ``mysql+pymysql://`` as the
+    scheme.
