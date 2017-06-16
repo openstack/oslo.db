@@ -211,7 +211,7 @@ class SoftDeleteMixinTest(test_base.DbTestCase):
         self.session.add(m)
         self.session.commit()
         self.assertEqual(0, m.deleted)
-        self.assertIs(None, m.deleted_at)
+        self.assertIsNone(m.deleted_at)
 
         m.soft_delete(self.session)
         self.assertEqual(123456, m.deleted)
