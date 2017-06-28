@@ -36,7 +36,7 @@ from sqlalchemy import Text
 from sqlalchemy import create_engine
 from sqlalchemy import schema
 
-from sqlalchemy.dialects.mysql.types import TINYTEXT
+from sqlalchemy.dialects.mysql import TINYTEXT
 
 LOG = logging.getLogger(__name__)
 
