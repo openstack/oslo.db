@@ -395,6 +395,11 @@ def _is_db_connection_error(operational_error, match, engine_name,
     raise exception.DBConnectionError(operational_error)
 
 
+@filters("*", sqla_exc.NotSupportedError, r".*")
+def _raise_for_NotSupportedError(error, match, engine_name, is_disconnect):
+    raise exception.DBNotSupportedError(error)
+
+
 @filters("*", sqla_exc.DBAPIError, r".*")
 def _raise_for_remaining_DBAPIError(error, match, engine_name, is_disconnect):
     """Filter for remaining DBAPIErrors.

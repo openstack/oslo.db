@@ -341,6 +341,7 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
             connection_debug=100,
             max_pool_size=10,
             mysql_sql_mode='TRADITIONAL',
+            mysql_enable_ndb=False,
             sqlite_fk=False,
             idle_timeout=mock.ANY,
             retry_interval=mock.ANY,

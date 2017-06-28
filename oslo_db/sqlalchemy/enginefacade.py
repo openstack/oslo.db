@@ -134,6 +134,7 @@ class _TransactionFactory(object):
         self._engine_cfg = {
             'sqlite_fk': _Default(False),
             'mysql_sql_mode': _Default('TRADITIONAL'),
+            'mysql_enable_ndb': _Default(False),
             'idle_timeout': _Default(3600),
             'connection_debug': _Default(0),
             'max_pool_size': _Default(),
@@ -204,6 +205,8 @@ class _TransactionFactory(object):
          False
 
         :param mysql_sql_mode: MySQL SQL mode, defaults to TRADITIONAL
+
+        :param mysql_enable_ndb: enable MySQL Cluster (NDB) support
 
         :param idle_timeout: connection pool recycle time,
          defaults to 3600. Note the connection does not actually have to
@@ -1193,6 +1196,9 @@ class LegacyEngineFacade(object):
 
     :keyword mysql_sql_mode: the SQL mode to be used for MySQL sessions.
                              (defaults to TRADITIONAL)
+    :keyword mysql_enable_ndb: If True, transparently enables support for
+                               handling MySQL Cluster (NDB).
+                               (defaults to False)
     :keyword idle_timeout: timeout before idle sql connections are reaped
                            (defaults to 3600)
     :keyword connection_debug: verbosity of SQL debugging information.

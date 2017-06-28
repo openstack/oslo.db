@@ -44,6 +44,10 @@ database_opts = [
                     'server-set SQL mode. To use whatever SQL mode '
                     'is set by the server configuration, '
                     'set this to no value. Example: mysql_sql_mode='),
+    cfg.BoolOpt('mysql_enable_ndb',
+                default=False,
+                help='If True, transparently enables support for handling '
+                     'MySQL Cluster (NDB).'),
     cfg.IntOpt('idle_timeout',
                default=3600,
                deprecated_opts=[cfg.DeprecatedOpt('sql_idle_timeout',
