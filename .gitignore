@@ -18,4 +18,4 @@ ChangeLog
 .project
 .pydevproject
 oslo.db.egg-info/
-doc/source/api
+doc/source/reference/api

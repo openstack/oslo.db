@@ -9,19 +9,10 @@ utils.
 .. toctree::
    :maxdepth: 2
 
-   installation
-   opts
-   usage
-   contributing
-   history
-
-API Documentation
-=================
-
-.. toctree::
-   :maxdepth: 1
-
-   api/autoindex
+   install/index
+   contributor/index
+   user/index
+   reference/index
 
 Indices and tables
 ==================
