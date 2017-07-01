@@ -23,9 +23,16 @@ extensions = [
     'sphinx.ext.autodoc',
     #'sphinx.ext.intersphinx',
     'oslo_config.sphinxext',
-    'oslosphinx',
+    'openstackdocstheme',
     'stevedore.sphinxext'
 ]
+# openstackdocstheme options
+repository_name = 'openstack/oslo.db'
+bug_project = 'oslo.db'
+bug_tag = ''
+
+# Must set this variable to include year, month, day, hours, and minutes.
+html_last_updated_fmt = '%Y-%m-%d %H:%M'
 
 # autodoc generation is a bit aggressive and a nuisance when doing heavy
 # text edit cycles.
@@ -66,7 +73,7 @@ modindex_common_prefix = ['oslo_db.']
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
 # html_theme_path = ["."]
-# html_theme = '_theme'
+html_theme = 'openstackdocs'
 # html_static_path = ['static']
 
 # Output file base name for HTML help builder.
