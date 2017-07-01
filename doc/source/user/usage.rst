@@ -9,7 +9,7 @@ Session Handling
 
 Session handling is achieved using the :mod:`oslo_db.sqlalchemy.enginefacade`
 system.   This module presents a function decorator as well as a
-context manager approach to delivering :class:`.Session` as well as
+context manager approach to delivering :class:`.session.Session` as well as
 :class:`.Connection` objects to a function or block.
 
 Both calling styles require the use of a context object.   This object may
@@ -76,7 +76,7 @@ decorator.   Each function must receive the context argument:
         some_writer_api_function(context, 5, 10)
 
 
-``connection`` modifier can be used when a :class:`.Session` object is not
+``connection`` modifier can be used when a :class:`.session.Session` object is not
 needed, e.g. when `SQLAlchemy Core <http://docs.sqlalchemy.org/en/latest/core/>`_
 is preferred:
 

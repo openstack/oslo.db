@@ -90,8 +90,8 @@ Recommended ways to use sessions within this framework:
 
   .. code-block:: sql
 
-    UPDATE bar SET bar = ${newbar}
-        WHERE id=(SELECT bar_id FROM foo WHERE id = ${foo_id} LIMIT 1);
+    UPDATE bar SET bar = '${newbar}'
+        WHERE id=(SELECT bar_id FROM foo WHERE id = '${foo_id}' LIMIT 1);
 
   .. note:: `create_duplicate_foo` is a trivially simple example of catching an
      exception while using a savepoint. Here we create two duplicate

@@ -45,7 +45,7 @@ class WalkVersionsMixin(object):
     abstract class mixin. `INIT_VERSION`, `REPOSITORY` and `migration_api`
     attributes must be implemented in subclasses.
 
-    .. _auxiliary-dynamic-methods: Auxiliary Methods
+    .. _auxiliary-dynamic-methods:
 
     Auxiliary Methods:
 
@@ -214,7 +214,7 @@ class WalkVersionsMixin(object):
         :type version: str
         :keyword with_data: Whether to verify the absence of changes from
             migration(s) being downgraded, see
-            :ref:`auxiliary-dynamic-methods <Auxiliary Methods>`.
+            :ref:`Auxiliary Methods <auxiliary-dynamic-methods>`.
         :type with_data: Bool
         """
 
@@ -246,7 +246,7 @@ class WalkVersionsMixin(object):
         :param version: id of revision to upgrade.
         :type version: str
         :keyword with_data: Whether to verify the applied changes with data,
-            see :ref:`auxiliary-dynamic-methods <Auxiliary Methods>`.
+            see :ref:`Auxiliary Methods <auxiliary-dynamic-methods>`.
         :type with_data: Bool
         """
         # NOTE(sdague): try block is here because it's impossible to debug
