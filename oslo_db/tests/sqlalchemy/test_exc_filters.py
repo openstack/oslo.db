@@ -712,6 +712,55 @@ class TestExceptionCauseMySQLSavepoint(test_base.MySQLOpportunisticTestCase):
         except exception.DBError as dbe_outer:
             self.assertIsNone(dbe_outer.cause)
 
+    def test_rollback_doesnt_interfere_with_killed_conn(self):
+        session = self.sessionmaker()
+
+        session.begin()
+        try:
+            session.execute("select 1")
+
+            # close underying DB connection
+            session.connection().connection.connection.close()
+
+            # alternate approach, but same idea:
+            # conn_id = session.scalar("select connection_id()")
+            # session.execute("kill connection %s" % conn_id)
+
+            # try using it, will raise an error
+            session.execute("select 1")
+        except exception.DBConnectionError:
+            # issue being tested is that this session.rollback()
+            # does not itself try to re-connect and raise another
+            # error.
+            session.rollback()
+        else:
+            assert False, "no exception raised"
+
+    def test_savepoint_rollback_doesnt_interfere_with_killed_conn(self):
+        session = self.sessionmaker()
+
+        session.begin()
+        try:
+            session.begin_nested()
+            session.execute("select 1")
+
+            # close underying DB connection
+            session.connection().connection.connection.close()
+
+            # alternate approach, but same idea:
+            # conn_id = session.scalar("select connection_id()")
+            # session.execute("kill connection %s" % conn_id)
+
+            # try using it, will raise an error
+            session.execute("select 1")
+        except exception.DBConnectionError:
+            # issue being tested is that this session.rollback()
+            # does not itself try to re-connect and raise another
+            # error.
+            session.rollback()
+        else:
+            assert False, "no exception raised"
+
 
 class TestDBDataErrorSQLite(_SQLAExceptionMatcher, test_base.DbTestCase):
 

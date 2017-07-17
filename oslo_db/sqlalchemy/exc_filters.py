@@ -485,7 +485,11 @@ def register_engine(engine):
     def rollback_savepoint(conn, name, context):
         exc_info = sys.exc_info()
         if exc_info[1]:
-            conn.info[ROLLBACK_CAUSE_KEY] = exc_info[1]
+            # NOTE(zzzeek) accessing conn.info on an invalidated
+            # connection causes it to reconnect, which we don't
+            # want to do inside a rollback handler
+            if not conn.invalidated:
+                conn.info[ROLLBACK_CAUSE_KEY] = exc_info[1]
         # NOTE(zzzeek) this eliminates a reference cycle between tracebacks
         # that would occur in Python 3 only, which has been shown to occur if
         # this function were in fact part of the traceback.  That's not the
@@ -497,7 +501,11 @@ def register_engine(engine):
     @event.listens_for(engine, "rollback")
     @event.listens_for(engine, "commit")
     def pop_exc_tx(conn):
-        conn.info.pop(ROLLBACK_CAUSE_KEY, None)
+        # NOTE(zzzeek) accessing conn.info on an invalidated
+        # connection causes it to reconnect, which we don't
+        # want to do inside a rollback handler
+        if not conn.invalidated:
+            conn.info.pop(ROLLBACK_CAUSE_KEY, None)
 
     # .. as well as connection pool checkin (just in case).
     # the .info dictionary lasts as long as the DBAPI connection itself
