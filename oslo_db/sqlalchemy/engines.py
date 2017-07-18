@@ -77,6 +77,8 @@ def _connect_ping_listener(connection, branch):
         # "invalid", but the pool should be ready to return
         # new connections assuming they are good now.
         # run the select again to re-validate the Connection.
+        LOG.exception(
+            'Database connection was found disconnected; reconnecting')
         connection.scalar(select([1]))
     finally:
         connection.should_close_with_result = save_should_close_with_result
