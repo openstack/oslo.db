@@ -18,7 +18,6 @@ import mock
 from oslo_utils import uuidutils
 from oslotest import base as test_base
 from oslotest import moxstubout
-import six
 from six.moves.urllib import parse
 import sqlalchemy
 from sqlalchemy.dialects import mysql
@@ -614,7 +613,7 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         }
 
         index_instances = [Index(name, *columns)
-                           for name, columns in six.iteritems(indexes)]
+                           for name, columns in indexes.items()]
 
         table = Table(table_name, self.meta,
                       Column('id', Integer, primary_key=True),
