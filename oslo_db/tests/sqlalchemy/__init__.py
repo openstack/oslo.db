@@ -13,6 +13,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from oslo_db.sqlalchemy import test_base
+from oslo_db.sqlalchemy import test_fixtures
 
-load_tests = test_base.optimize_db_test_loader(__file__)
+load_tests = test_fixtures.optimize_package_test_loader(__file__)
