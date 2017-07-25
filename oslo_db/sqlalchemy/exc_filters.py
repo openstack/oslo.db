@@ -475,11 +475,11 @@ def handler(context):
                                 if isinstance(
                                         dbe, exception.DBConnectionError):
                                     context.is_disconnect = True
-                                raise
+                                return dbe
 
 
 def register_engine(engine):
-    event.listen(engine, "handle_error", handler)
+    event.listen(engine, "handle_error", handler, retval=True)
 
     @event.listens_for(engine, "rollback_savepoint")
     def rollback_savepoint(conn, name, context):
