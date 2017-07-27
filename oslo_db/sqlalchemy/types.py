@@ -12,16 +12,18 @@
 
 import json
 
-from sqlalchemy.types import Integer, TypeDecorator, Text
 from sqlalchemy.dialects import mysql
+from sqlalchemy.types import Integer, Text, TypeDecorator, String as _String
 
 
 class JsonEncodedType(TypeDecorator):
     """Base column type for data serialized as JSON-encoded string in db."""
+
     type = None
     impl = Text
 
     def __init__(self, mysql_as_long=False, mysql_as_medium=False):
+        """Initialize JSON-encoding type."""
         super(JsonEncodedType, self).__init__()
 
         if mysql_as_long and mysql_as_medium:
@@ -34,6 +36,7 @@ class JsonEncodedType(TypeDecorator):
             self.impl = Text().with_variant(mysql.MEDIUMTEXT(), 'mysql')
 
     def process_bind_param(self, value, dialect):
+        """Bind parameters to the process."""
         if value is None:
             if self.type is not None:
                 # Save default value according to current type to keep the
@@ -48,6 +51,7 @@ class JsonEncodedType(TypeDecorator):
         return serialized_value
 
     def process_result_value(self, value, dialect):
+        """Process result value."""
         if value is not None:
             value = json.loads(value)
         return value
@@ -61,6 +65,7 @@ class JsonEncodedDict(JsonEncodedType):
     back. See this page for more robust work around:
     http://docs.sqlalchemy.org/en/rel_1_0/orm/extensions/mutable.html
     """
+
     type = dict
 
 
@@ -72,6 +77,7 @@ class JsonEncodedList(JsonEncodedType):
     back. See this page for more robust work around:
     http://docs.sqlalchemy.org/en/rel_1_0/orm/extensions/mutable.html
     """
+
     type = list
 
 
@@ -97,7 +103,26 @@ class SoftDeleteInteger(TypeDecorator):
     impl = Integer
 
     def process_bind_param(self, value, dialect):
+        """Return the binding parameter."""
         if value is None:
             return None
         else:
             return int(value)
+
+
+class String(_String):
+    """String subclass that implements oslo_db specific options.
+
+    Initial goal is to support ndb-specific flags.
+
+    mysql_ndb_type is used to override the String with another data type.
+    mysql_ndb_size is used to adjust the length of the String.
+
+    """
+
+    def __init__(
+            self, length, mysql_ndb_length=None, mysql_ndb_type=None, **kw):
+        """Initialize options."""
+        super(String, self).__init__(length, **kw)
+        self.mysql_ndb_type = mysql_ndb_type
+        self.mysql_ndb_length = mysql_ndb_length

@@ -24,18 +24,20 @@ from oslo_db.sqlalchemy import ndb
 from oslo_db.sqlalchemy import test_fixtures
 from oslo_db.sqlalchemy import utils
 
+from oslo_db.sqlalchemy.types import String
+
 from oslotest import base as test_base
 
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import MetaData
-from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy import Text
 
 from sqlalchemy import create_engine
 from sqlalchemy import schema
 
+from sqlalchemy.dialects.mysql import TEXT
 from sqlalchemy.dialects.mysql import TINYTEXT
 
 LOG = logging.getLogger(__name__)
@@ -43,9 +45,9 @@ LOG = logging.getLogger(__name__)
 _MOCK_CONNECTION = 'mysql+pymysql://'
 _TEST_TABLE = Table("test_ndb", MetaData(),
                     Column('id', Integer, primary_key=True),
-                    Column('test1', ndb.AutoStringTinyText(255)),
-                    Column('test2', ndb.AutoStringText(4096)),
-                    Column('test3', ndb.AutoStringSize(255, 64)),
+                    Column('test1', String(255, mysql_ndb_type=TEXT)),
+                    Column('test2', String(4096, mysql_ndb_type=TEXT)),
+                    Column('test3', String(255, mysql_ndb_length=64)),
                     mysql_engine='InnoDB')
 
 
@@ -56,6 +58,10 @@ class NDBMockTestBase(test_base.BaseTestCase):
         self.test_engine = test_engine = create_engine(
             _MOCK_CONNECTION, module=mock_dbapi)
         test_engine.dialect._oslodb_enable_ndb_support = True
+
+        self.addCleanup(
+            setattr, test_engine.dialect, "_oslodb_enable_ndb_support", False
+        )
         ndb.init_ndb_events(test_engine)
 
 
@@ -67,7 +73,6 @@ class NDBEventTestCase(NDBMockTestBase):
             str(schema.CreateTable(_TEST_TABLE).compile(
                 dialect=test_engine.dialect)),
             "ENGINE=NDBCLUSTER")
-        test_engine.dialect._oslodb_enable_ndb_support = False
 
     def test_ndb_engine_override(self):
         test_engine = self.test_engine
@@ -76,7 +81,6 @@ class NDBEventTestCase(NDBMockTestBase):
             statement, dialect = fn(
                 mock.Mock(), mock.Mock(), statement, {}, mock.Mock(), False)
         self.assertEqual(statement, "ENGINE=NDBCLUSTER")
-        test_engine.dialect._oslodb_enable_ndb_support = False
 
     def test_ndb_savepoint_override(self):
         test_engine = self.test_engine
@@ -86,7 +90,6 @@ class NDBEventTestCase(NDBMockTestBase):
                 mock.Mock(), mock.Mock(), statement, {}, mock.Mock(), False)
         self.assertEqual(statement,
                          "SET @oslo_db_ndb_savepoint_rollback_disabled = 0;")
-        test_engine.dialect._oslodb_enable_ndb_support = False
 
     def test_ndb_rollback_override(self):
         test_engine = self.test_engine
@@ -96,7 +99,6 @@ class NDBEventTestCase(NDBMockTestBase):
                 mock.Mock(), mock.Mock(), statement, {}, mock.Mock(), False)
         self.assertEqual(statement,
                          "SET @oslo_db_ndb_savepoint_rollback_disabled = 0;")
-        test_engine.dialect._oslodb_enable_ndb_support = False
 
     def test_ndb_rollback_release_override(self):
         test_engine = self.test_engine
@@ -106,30 +108,69 @@ class NDBEventTestCase(NDBMockTestBase):
                 mock.Mock(), mock.Mock(), statement, {}, mock.Mock(), False)
         self.assertEqual(statement,
                          "SET @oslo_db_ndb_savepoint_rollback_disabled = 0;")
-        test_engine.dialect._oslodb_enable_ndb_support = False
 
 
 class NDBDatatypesTestCase(NDBMockTestBase):
-    def test_ndb_autostringtinytext(self):
+    def test_ndb_deprecated_autostringtinytext(self):
         test_engine = self.test_engine
         self.assertEqual("TINYTEXT",
                          str(ndb.AutoStringTinyText(255).compile(
                              dialect=test_engine.dialect)))
-        test_engine.dialect._oslodb_enable_ndb_support = False
 
-    def test_ndb_autostringtext(self):
+    def test_ndb_deprecated_autostringtext(self):
         test_engine = self.test_engine
         self.assertEqual("TEXT",
                          str(ndb.AutoStringText(4096).compile(
                              dialect=test_engine.dialect)))
-        test_engine.dialect._oslodb_enable_ndb_support = False
 
-    def test_ndb_autostringsize(self):
+    def test_ndb_deprecated_autostringsize(self):
         test_engine = self.test_engine
         self.assertEqual('VARCHAR(64)',
                          str(ndb.AutoStringSize(255, 64).compile(
                              dialect=test_engine.dialect)))
-        test_engine.dialect._oslodb_enable_ndb_support = False
+
+    def test_ndb_string_to_tinytext(self):
+        test_engine = self.test_engine
+        self.assertEqual("TINYTEXT",
+                         str(String(255, mysql_ndb_type=TINYTEXT).compile(
+                             dialect=test_engine.dialect)))
+
+    def test_ndb_string_to_text(self):
+        test_engine = self.test_engine
+        self.assertEqual("TEXT",
+                         str(String(4096, mysql_ndb_type=TEXT).compile(
+                             dialect=test_engine.dialect)))
+
+    def test_ndb_string_length(self):
+        test_engine = self.test_engine
+        self.assertEqual('VARCHAR(64)',
+                         str(String(255, mysql_ndb_length=64).compile(
+                             dialect=test_engine.dialect)))
+
+
+class NDBDatatypesDefaultTestCase(NDBMockTestBase):
+    def setUp(self):
+        super(NDBMockTestBase, self).setUp()
+        mock_dbapi = mock.Mock()
+        self.test_engine = create_engine(_MOCK_CONNECTION, module=mock_dbapi)
+
+    def test_non_ndb_string_to_text(self):
+        test_engine = self.test_engine
+        self.assertEqual("VARCHAR(255)",
+                         str(String(255, mysql_ndb_type=TINYTEXT).compile(
+                             dialect=test_engine.dialect)))
+
+    def test_non_ndb_autostringtext(self):
+        test_engine = self.test_engine
+        self.assertEqual("VARCHAR(4096)",
+                         str(String(4096, mysql_ndb_type=TEXT).compile(
+                             dialect=test_engine.dialect)))
+
+    def test_non_ndb_autostringsize(self):
+        test_engine = self.test_engine
+        self.assertEqual('VARCHAR(255)',
+                         str(String(255, mysql_ndb_length=64).compile(
+                             dialect=test_engine.dialect)))
 
 
 class NDBOpportunisticTestCase(
