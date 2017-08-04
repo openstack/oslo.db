@@ -1496,3 +1496,36 @@ class TestDBConnectPingWrapping(TestsExceptionFilter):
                 self.OperationalError('%d MySQL server has gone away' % code),
                 is_disconnect=False
             )
+
+
+class TestsErrorHandler(TestsExceptionFilter):
+    def test_multiple_error_handlers(self):
+        handler = mock.MagicMock(return_value=None)
+        sqla.event.listen(self.engine, "handle_error", handler, retval=True)
+
+        # cause an error in DB API
+        self._run_test(
+            "mysql", "select you_made_a_programming_error",
+            self.ProgrammingError("Error 123, you made a mistake"),
+            exception.DBError
+        )
+
+        # expect custom handler to be called together with oslo.db's one
+        self.assertEqual(1, handler.call_count,
+                         'Custom handler should be called')
+
+    def test_chained_exceptions(self):
+        class CustomError(Exception):
+            pass
+
+        def handler(context):
+            return CustomError('Custom Error')
+
+        sqla.event.listen(self.engine, "handle_error", handler, retval=True)
+
+        # cause an error in DB API, expect exception from custom handler
+        self._run_test(
+            "mysql", "select you_made_a_programming_error",
+            self.ProgrammingError("Error 123, you made a mistake"),
+            CustomError
+        )
