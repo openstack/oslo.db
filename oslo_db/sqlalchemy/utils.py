@@ -22,6 +22,8 @@ import itertools
 import logging
 import re
 
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
 from oslo_utils import timeutils
 import six
 import sqlalchemy
@@ -47,6 +49,7 @@ from sqlalchemy.types import NullType
 from oslo_db._i18n import _
 from oslo_db import exception
 from oslo_db.sqlalchemy import models
+from oslo_db.sqlalchemy import ndb
 
 # NOTE(ochuprykov): Add references for backwards compatibility
 InvalidSortKey = exception.InvalidSortKey
@@ -1067,11 +1070,10 @@ def get_non_innodb_tables(connectable, skip_tables=('migrate_version',
                                                     'alembic_version')):
     """Get a list of tables which don't use InnoDB storage engine.
 
-     :param connectable: a SQLAlchemy Engine or a Connection instance
-     :param skip_tables: a list of tables which might have a different
-                         storage engine
-     """
-
+    :param connectable: a SQLAlchemy Engine or a Connection instance
+    :param skip_tables: a list of tables which might have a different
+                        storage engine
+    """
     query_str = """
         SELECT table_name
         FROM information_schema.tables
@@ -1123,6 +1125,98 @@ def get_non_ndbcluster_tables(connectable, skip_tables=None):
     query = text(query_str)
     nonndbcluster = connectable.execute(query, **params)
     return [i[0] for i in nonndbcluster]
+
+
+def get_foreign_key_constraint_name(engine, table_name, column_name):
+    """Find the name of foreign key in a table, given constrained column name.
+
+    :param engine: a SQLAlchemy engine (or connection)
+
+    :param table_name: name of table which contains the constraint
+
+    :param column_name: name of column that is constrained by the foreign key.
+
+    :return: the name of the first foreign key constraint which constrains
+     the given column in the given table.
+
+    """
+    insp = inspect(engine)
+    for fk in insp.get_foreign_keys(table_name):
+        if column_name in fk['constrained_columns']:
+            return fk['name']
+
+
+@contextlib.contextmanager
+def suspend_fk_constraints_for_col_alter(
+        engine, table_name, column_name, referents=[]):
+    """Detect foreign key constraints, drop, and recreate.
+
+    This is used to guard against a column ALTER that on some backends
+    cannot proceed unless foreign key constraints are not present.
+
+    e.g.::
+
+        from oslo_db.sqlalchemy.util import (
+            suspend_fk_constraints_for_col_alter
+        )
+
+        with suspend_fk_constraints_for_col_alter(
+            migrate_engine, "user_table",
+            referents=[
+                "local_user", "nonlocal_user", "project"
+            ]):
+            user_table.c.domain_id.alter(nullable=False)
+
+    :param engine: a SQLAlchemy engine (or connection)
+
+    :param table_name: target table name.  All foreign key constraints
+     that refer to the table_name / column_name will be dropped and recreated.
+
+    :param column_name: target column name.  all foreign key constraints
+     which refer to this column, either partially or fully, will be dropped
+     and recreated.
+
+    :param referents: sequence of string table names to search for foreign
+     key constraints.   A future version of this function may no longer
+     require this argument, however for the moment it is required.
+
+    """
+    if (
+        not ndb.ndb_status(engine)
+    ):
+        yield
+    else:
+        with engine.connect() as conn:
+            insp = inspect(conn)
+            fks = []
+            for ref_table_name in referents:
+                for fk in insp.get_foreign_keys(ref_table_name):
+                    assert fk.get('name')
+                    if fk['referred_table'] == table_name and \
+                            column_name in fk['referred_columns']:
+                        fk['source_table'] = ref_table_name
+                        if 'options' not in fk:
+                            fk['options'] = {}
+                        fks.append(fk)
+
+            ctx = MigrationContext.configure(conn)
+            op = Operations(ctx)
+
+            for fk in fks:
+                op.drop_constraint(
+                    fk['name'], fk['source_table'], type_="foreignkey")
+            yield
+            for fk in fks:
+                op.create_foreign_key(
+                    fk['name'], fk['source_table'],
+                    fk['referred_table'],
+                    fk['constrained_columns'],
+                    fk['referred_columns'],
+                    onupdate=fk['options'].get('onupdate'),
+                    ondelete=fk['options'].get('ondelete'),
+                    deferrable=fk['options'].get('deferrable'),
+                    initially=fk['options'].get('initially'),
+                )
 
 
 class NonCommittingConnectable(object):
