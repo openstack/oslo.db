@@ -43,3 +43,27 @@ def get_postgresql_enums(conn):
         return [e['name'] for e in sqlalchemy.inspect(conn).get_enums()]
     else:
         return conn.dialect._load_enums(conn).keys()
+
+
+def adapt_type_object(type_object, target_class, *args, **kw):
+    """Call the adapt() method on a type.
+
+    For SQLAlchemy 1.0, runs a local version of constructor_copy() that
+    allows keyword arguments to be overridden.
+
+    See https://github.com/zzzeek/sqlalchemy/commit/\
+    ceeb033054f09db3eccbde3fad1941ec42919a54
+
+    """
+    if sqla_110:
+        return type_object.adapt(target_class, *args, **kw)
+    else:
+        # NOTE(zzzeek): this only works for basic types, won't work for
+        # schema types like Enum, Boolean
+        # NOTE(zzzeek): this code can be removed once requirements
+        # are at SQLAlchemy >= 1.1
+        names = sqlalchemy.util.get_cls_kwargs(target_class)
+        kw.update(
+            (k, type_object.__dict__[k]) for k in names.difference(kw)
+            if k in type_object.__dict__)
+        return target_class(*args, **kw)
