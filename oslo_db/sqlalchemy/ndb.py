@@ -15,9 +15,17 @@
 
 import re
 
-from sqlalchemy import String, event, schema
+import debtcollector.removals
+
+from oslo_db.sqlalchemy.types import String
+
+from sqlalchemy import event, schema
+from sqlalchemy.dialects.mysql import TEXT
+from sqlalchemy.dialects.mysql import TINYTEXT
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.types import VARCHAR
+from sqlalchemy.types import String as _String
+from sqlalchemy.types import to_instance
+
 
 engine_regex = re.compile("engine=innodb", re.IGNORECASE)
 trans_regex = re.compile("savepoint|rollback|release savepoint", re.IGNORECASE)
@@ -78,60 +86,43 @@ def prefix_inserts(create_table, compiler, **kw):
     return existing
 
 
-class AutoStringTinyText(String):
-    """Class definition for AutoStringTinyText.
+@compiles(String, "mysql")
+def _compile_ndb_string(element, compiler, **kw):
+    """Process ndb specific overrides for String.
 
-    Class is used by compiler function _auto-string_tiny_text().
+    Function will intercept mysql_ndb_length and mysql_ndb_type
+    arguments to adjust columns automatically.
+
+    mysql_ndb_length argument will adjust the String length
+    to the requested value.
+
+    mysql_ndb_type will change the column type to the requested
+    data type.
     """
+    if not ndb_status(compiler):
+        return compiler.visit_string(element, **kw)
 
-    pass
-
-
-@compiles(AutoStringTinyText, 'mysql')
-def _auto_string_tiny_text(element, compiler, **kw):
-    if ndb_status(compiler):
-        return "TINYTEXT"
+    if element.mysql_ndb_length:
+        effective_type = element.adapt(
+            _String, length=element.mysql_ndb_length)
+        return compiler.visit_string(effective_type, **kw)
+    elif element.mysql_ndb_type:
+        effective_type = to_instance(element.mysql_ndb_type)
+        return compiler.process(effective_type, **kw)
     else:
         return compiler.visit_string(element, **kw)
 
 
-class AutoStringText(String):
-    """Class definition for AutoStringText.
-
-    Class is used by compiler function _auto_string_text().
-    """
-
-    pass
+@debtcollector.removals.remove
+def AutoStringTinyText(length, **kw):
+    return String(length, mysql_ndb_type=TINYTEXT, *kw)
 
 
-@compiles(AutoStringText, 'mysql')
-def _auto_string_text(element, compiler, **kw):
-    if ndb_status(compiler):
-        return "TEXT"
-    else:
-        return compiler.visit_string(element, **kw)
+@debtcollector.removals.remove
+def AutoStringText(length, **kw):
+    return String(length, mysql_ndb_type=TEXT, **kw)
 
 
-class AutoStringSize(String):
-    """Class definition for AutoStringSize.
-
-    Class is used by the compiler function _auto_string_size().
-    """
-
-    def __init__(self, length, ndb_size, **kw):
-        """Initialize and extend the String arguments.
-
-        Function adds the innodb_size and ndb_size arguments to the
-        function String().
-        """
-        super(AutoStringSize, self).__init__(length=length, **kw)
-        self.ndb_size = ndb_size
-        self.length = length
-
-
-@compiles(AutoStringSize, 'mysql')
-def _auto_string_size(element, compiler, **kw):
-    if ndb_status(compiler):
-        return compiler.process(VARCHAR(element.ndb_size), **kw)
-    else:
-        return compiler.visit_string(element, **kw)
+@debtcollector.removals.remove
+def AutoStringSize(length, ndb_size, **kw):
+    return String(length, mysql_ndb_length=ndb_size, **kw)
