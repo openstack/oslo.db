@@ -2156,7 +2156,8 @@ class ConfigOptionsTest(oslo_test_base.BaseTestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            factory.configure(fake1='x', idle_timeout=200, wrong2='y')
+            factory.configure(
+                fake1='x', connection_recycle_time=200, wrong2='y')
 
         self.assertEqual(1, len(w))
         self.assertTrue(
