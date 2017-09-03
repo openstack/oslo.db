@@ -22,7 +22,6 @@ import itertools
 import logging
 import re
 
-import debtcollector
 from oslo_utils import timeutils
 import six
 import sqlalchemy
@@ -433,43 +432,6 @@ def get_table(engine, name):
     return Table(name, metadata, autoload=True)
 
 
-@debtcollector.removals.removed_class(
-    'InsertFromSelect',
-    replacement='sqlalchemy.sql.expression.Insert.from_select',
-    message='this functionality is provided out-of-box by SQLAlchemy >= 1.0.0'
-)
-class InsertFromSelect(object):
-    """Form the base for `INSERT INTO table (SELECT ... )` statement.
-
-    :param table: table to insert records
-    :param select: select query
-    :param cols: list of columns to specify in insert clause
-    :return: SQLAlchemy :class:`Insert` object instance
-
-    Usage:
-
-    .. code-block:: python
-
-      select = sql.select(table_from)
-      insert = InsertFromSelect(table_to, select,
-                                ['id', 'name', 'insert_date'])
-      engine.execute(insert)
-
-    """
-    # NOTE(tdurakov): Insert from select implementation added to SQLAlchemy
-    # starting from version 0.8.7. Default SQLAlchemy implementation should be
-    # used instead of this. Deprecated.
-
-    def __new__(cls, table, select, cols=None):
-        if not cols:
-            cols = [c.name for c in table.c]
-
-        return table.insert(inline=True).from_select(cols, select)
-
-    def __init__(self, table, select, cols=None):
-        pass
-
-
 def _get_not_supported_column(col_name_col_instance, column_name):
     try:
         column = col_name_col_instance[column_name]
@@ -628,9 +590,6 @@ def _change_deleted_column_type_to_boolean_sqlite(engine, table_name,
         else:
             c_select.append(table.c.deleted == table.c.id)
 
-    ins = InsertFromSelect(new_table, sqlalchemy.sql.select(c_select))
-    engine.execute(ins)
-
     table.drop()
     for index in indexes:
         index.create(engine)
@@ -721,9 +680,6 @@ def _change_deleted_column_type_to_id_type_sqlite(engine, table_name,
         column_names = [new_table.c[c] for c in index['column_names']]
         indexes.append(Index(index["name"], *column_names,
                              unique=index["unique"]))
-
-    ins = InsertFromSelect(new_table, table.select())
-    engine.execute(ins)
 
     table.drop()
     for index in indexes:

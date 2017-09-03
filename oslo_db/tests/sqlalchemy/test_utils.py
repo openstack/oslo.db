@@ -15,7 +15,6 @@
 
 import fixtures
 import mock
-from oslo_utils import uuidutils
 from oslotest import base as test_base
 from oslotest import moxstubout
 from six.moves.urllib import parse
@@ -770,119 +769,6 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         # NOTE(I159): if the CHECK constraint has been dropped (expected
         # behavior), any integer value can be inserted, otherwise only 1 or 0.
         self.engine.execute(table.insert({'deleted': 10}))
-
-    def test_insert_from_select(self):
-        insert_table_name = "__test_insert_to_table__"
-        select_table_name = "__test_select_from_table__"
-        uuidstrs = []
-        for unused in range(10):
-            uuidstrs.append(uuidutils.generate_uuid(dashed=False))
-        insert_table = Table(
-            insert_table_name, self.meta,
-            Column('id', Integer, primary_key=True,
-                   nullable=False, autoincrement=True),
-            Column('uuid', String(36), nullable=False))
-        select_table = Table(
-            select_table_name, self.meta,
-            Column('id', Integer, primary_key=True,
-                   nullable=False, autoincrement=True),
-            Column('uuid', String(36), nullable=False))
-
-        insert_table.create()
-        select_table.create()
-        # Add 10 rows to select_table
-        for uuidstr in uuidstrs:
-            ins_stmt = select_table.insert().values(uuid=uuidstr)
-            self.conn.execute(ins_stmt)
-
-        # Select 4 rows in one chunk from select_table
-        column = select_table.c.id
-        query_insert = select([select_table],
-                              select_table.c.id < 5).order_by(column)
-        insert_statement = utils.InsertFromSelect(insert_table,
-                                                  query_insert)
-        result_insert = self.conn.execute(insert_statement)
-        # Verify we insert 4 rows
-        self.assertEqual(4, result_insert.rowcount)
-
-        query_all = select([insert_table]).where(
-            insert_table.c.uuid.in_(uuidstrs))
-        rows = self.conn.execute(query_all).fetchall()
-        # Verify we really have 4 rows in insert_table
-        self.assertEqual(4, len(rows))
-
-    def test_insert_from_select_with_specified_columns(self):
-        insert_table_name = "__test_insert_to_table__"
-        select_table_name = "__test_select_from_table__"
-        uuidstrs = []
-        for unused in range(10):
-            uuidstrs.append(uuidutils.generate_uuid(dashed=False))
-        insert_table = Table(
-            insert_table_name, self.meta,
-            Column('id', Integer, primary_key=True,
-                   nullable=False, autoincrement=True),
-            Column('uuid', String(36), nullable=False))
-        select_table = Table(
-            select_table_name, self.meta,
-            Column('id', Integer, primary_key=True,
-                   nullable=False, autoincrement=True),
-            Column('uuid', String(36), nullable=False))
-
-        insert_table.create()
-        select_table.create()
-        # Add 10 rows to select_table
-        for uuidstr in uuidstrs:
-            ins_stmt = select_table.insert().values(uuid=uuidstr)
-            self.conn.execute(ins_stmt)
-
-        # Select 4 rows in one chunk from select_table
-        column = select_table.c.id
-        query_insert = select([select_table],
-                              select_table.c.id < 5).order_by(column)
-        insert_statement = utils.InsertFromSelect(insert_table,
-                                                  query_insert, ['id', 'uuid'])
-        result_insert = self.conn.execute(insert_statement)
-        # Verify we insert 4 rows
-        self.assertEqual(4, result_insert.rowcount)
-
-        query_all = select([insert_table]).where(
-            insert_table.c.uuid.in_(uuidstrs))
-        rows = self.conn.execute(query_all).fetchall()
-        # Verify we really have 4 rows in insert_table
-        self.assertEqual(4, len(rows))
-
-    def test_insert_from_select_with_specified_columns_negative(self):
-        insert_table_name = "__test_insert_to_table__"
-        select_table_name = "__test_select_from_table__"
-        uuidstrs = []
-        for unused in range(10):
-            uuidstrs.append(uuidutils.generate_uuid(dashed=False))
-        insert_table = Table(
-            insert_table_name, self.meta,
-            Column('id', Integer, primary_key=True,
-                   nullable=False, autoincrement=True),
-            Column('uuid', String(36), nullable=False))
-        select_table = Table(
-            select_table_name, self.meta,
-            Column('id', Integer, primary_key=True,
-                   nullable=False, autoincrement=True),
-            Column('uuid', String(36), nullable=False))
-
-        insert_table.create()
-        select_table.create()
-        # Add 10 rows to select_table
-        for uuidstr in uuidstrs:
-            ins_stmt = select_table.insert().values(uuid=uuidstr)
-            self.conn.execute(ins_stmt)
-
-        # Select 4 rows in one chunk from select_table
-        column = select_table.c.id
-        query_insert = select([select_table],
-                              select_table.c.id < 5).order_by(column)
-        insert_statement = utils.InsertFromSelect(insert_table,
-                                                  query_insert, ['uuid', 'id'])
-        self.assertRaises(exception.DBError, self.conn.execute,
-                          insert_statement)
 
 
 class PostgesqlTestMigrations(TestMigrationUtils,
