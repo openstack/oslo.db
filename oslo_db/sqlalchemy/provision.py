@@ -361,17 +361,6 @@ class Backend(object):
         """
         return self.impl.provisioned_database_url(self.url, ident)
 
-    @debtcollector.removals.remove()
-    def provisioned_engine(self, ident):
-        """Given the URL of a particular database backend and the string
-
-        name of a particular 'database' within that backend, return
-        an Engine instance whose connections will refer directly to the
-        named database.
-
-        """
-        return self.impl.provisioned_engine(self.url, ident)
-
     @classmethod
     def _setup(cls):
         """Initial startup feature will scan the environment for configured
