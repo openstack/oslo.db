@@ -194,18 +194,7 @@ class DBInvalidUnicodeParameter(Exception):
             _("Invalid Parameter: Encoding directive wasn't provided."))
 
 
-class DbMigrationError(DBError):
-
-    """Wrapped migration specific exception.
-
-    Raised when migrations couldn't be completed successfully.
-    """
-
-    def __init__(self, message=None):
-        super(DbMigrationError, self).__init__(message)
-
-
-class DBMigrationError(DbMigrationError):
+class DBMigrationError(DBError):
 
     """Wrapped migration specific exception.
 
