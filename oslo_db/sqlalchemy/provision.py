@@ -160,27 +160,6 @@ class DatabaseResource(testresources.TestResourceManager):
         return False
 
 
-@debtcollector.removals.removed_class("TransactionResource")
-class TransactionResource(testresources.TestResourceManager):
-
-    def __init__(self, database_resource, schema_resource):
-        super(TransactionResource, self).__init__()
-        self.resources = [
-            ('database', database_resource),
-            ('schema', schema_resource)
-        ]
-
-    def clean(self, resource):
-        resource._dispose()
-
-    def make(self, dependency_resources):
-        conn = dependency_resources['database'].engine.connect()
-        return utils.NonCommittingEngine(conn)
-
-    def isDirty(self):
-        return True
-
-
 class SchemaResource(testresources.TestResourceManager):
 
     def __init__(self, database_resource, generate_schema, teardown=False):
