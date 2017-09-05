@@ -15,14 +15,10 @@
 
 import re
 
-import debtcollector.removals
-
 from oslo_db.sqlalchemy.compat import utils as compat_utils
 from oslo_db.sqlalchemy.types import String
 
 from sqlalchemy import event, schema
-from sqlalchemy.dialects.mysql import TEXT
-from sqlalchemy.dialects.mysql import TINYTEXT
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.types import String as _String
 from sqlalchemy.types import to_instance
@@ -112,18 +108,3 @@ def _compile_ndb_string(element, compiler, **kw):
         return compiler.process(effective_type, **kw)
     else:
         return compiler.visit_string(element, **kw)
-
-
-@debtcollector.removals.remove
-def AutoStringTinyText(length, **kw):
-    return String(length, mysql_ndb_type=TINYTEXT, *kw)
-
-
-@debtcollector.removals.remove
-def AutoStringText(length, **kw):
-    return String(length, mysql_ndb_type=TEXT, **kw)
-
-
-@debtcollector.removals.remove
-def AutoStringSize(length, ndb_size, **kw):
-    return String(length, mysql_ndb_length=ndb_size, **kw)

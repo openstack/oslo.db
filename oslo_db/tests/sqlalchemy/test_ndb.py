@@ -111,24 +111,6 @@ class NDBEventTestCase(NDBMockTestBase):
 
 
 class NDBDatatypesTestCase(NDBMockTestBase):
-    def test_ndb_deprecated_autostringtinytext(self):
-        test_engine = self.test_engine
-        self.assertEqual("TINYTEXT",
-                         str(ndb.AutoStringTinyText(255).compile(
-                             dialect=test_engine.dialect)))
-
-    def test_ndb_deprecated_autostringtext(self):
-        test_engine = self.test_engine
-        self.assertEqual("TEXT",
-                         str(ndb.AutoStringText(4096).compile(
-                             dialect=test_engine.dialect)))
-
-    def test_ndb_deprecated_autostringsize(self):
-        test_engine = self.test_engine
-        self.assertEqual('VARCHAR(64)',
-                         str(ndb.AutoStringSize(255, 64).compile(
-                             dialect=test_engine.dialect)))
-
     def test_ndb_string_to_tinytext(self):
         test_engine = self.test_engine
         self.assertEqual("TINYTEXT",
