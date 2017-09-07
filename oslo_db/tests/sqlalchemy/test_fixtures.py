@@ -265,9 +265,6 @@ class TestLoadHook(unittest.TestCase):
     def test_package_level(self):
         self._test_package_level(test_fixtures.optimize_package_test_loader)
 
-    def test_package_level_legacy(self):
-        self._test_package_level(legacy_test_base.optimize_db_test_loader)
-
     def _test_package_level(self, fn):
         load_tests = fn(
             os.path.join(start_dir, "__init__.py"))

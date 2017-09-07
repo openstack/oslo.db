@@ -32,7 +32,6 @@ from oslo_db import exception
 from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import session
-from oslo_db.sqlalchemy.test_fixtures import optimize_package_test_loader
 
 
 @debtcollector.removals.removed_class("DbFixture")
@@ -241,7 +240,3 @@ class MySQLOpportunisticTestCase(OpportunisticTestCase):
 @debtcollector.removals.removed_class("PostgreSQLOpportunisticTestCase")
 class PostgreSQLOpportunisticTestCase(OpportunisticTestCase):
     FIXTURE = PostgreSQLOpportunisticFixture
-
-
-optimize_db_test_loader = debtcollector.moves.moved_function(
-    optimize_package_test_loader, "optimize_db_test_loader", __name__)

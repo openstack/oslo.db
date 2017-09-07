@@ -402,8 +402,9 @@ class OpportunisticDbFixture(BaseDbFixture):
     This fixture relies upon the use of the OpportunisticDBTestMixin to supply
     a test.resources attribute, and also works much more effectively when
     combined the testresources.OptimisingTestSuite.   The
-    optimize_db_test_loader() function should be used at the module and package
-    levels to optimize database provisioning across many tests.
+    optimize_package_test_loader() function should be
+    used at the module and package levels to optimize database
+    provisioning across many tests.
 
     """
     def __init__(self, test, driver=None, ident=None):
