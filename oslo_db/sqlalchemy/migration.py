@@ -78,7 +78,7 @@ def db_sync(engine, abs_path, version=None, init_version=0, sanity_check=True):
         try:
             migration = versioning_api.upgrade(engine, repository, version)
         except Exception as ex:
-            raise exception.DbMigrationError(ex)
+            raise exception.DBMigrationError(ex)
     else:
         migration = versioning_api.downgrade(engine, repository,
                                              version)
