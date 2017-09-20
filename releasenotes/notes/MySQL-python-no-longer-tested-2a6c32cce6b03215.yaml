@@ -1,0 +1,8 @@
+---
+deprecations:
+  - |
+    PyMySQL is a default MySQL DB API driver for oslo.db, as well as for the whole
+    OpenStack. So far it was possible to use MySQL-python as an alternative DB API driver.
+    This driver is no longer being tested in this release, hence it should be considered
+    unsupported. Please switch to PyMySQL, which is an adequate replacement. Refer to
+    https://wiki.openstack.org/wiki/PyMySQL_evaluation for details.

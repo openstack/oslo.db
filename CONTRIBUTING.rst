@@ -32,9 +32,6 @@ venv, so you must ensure that you have the required system packages installed
 for psycopg2 (PyMySQL is a pure-Python implementation and so needs no
 additional system packages).  For Ubuntu/Debian they are python-dev, and
 libpq-dev.  For Fedora/CentOS - gcc, python-devel and postgresql-devel.
-There is also a separate env for testing with MySQL-python. If you are suppose
-to run these tests as well, you need to install libmysqlclient-dev on
-Ubuntu/Debian or mysql-devel for Fedora/CentOS.
 
 The oslo.db unit tests system allows to run unittests on real databases. At the
 moment it supports MySQL, PostgreSQL and SQLite.
