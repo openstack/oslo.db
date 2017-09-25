@@ -22,7 +22,8 @@ import sqlalchemy
 from sqlalchemy.dialects import mysql
 from sqlalchemy import Boolean, Index, Integer, DateTime, String, SmallInteger
 from sqlalchemy import CheckConstraint
-from sqlalchemy import MetaData, Table, Column, ForeignKey
+from sqlalchemy import MetaData, Table, Column
+from sqlalchemy import ForeignKey, ForeignKeyConstraint
 from sqlalchemy.engine import reflection
 from sqlalchemy.engine import url as sa_url
 from sqlalchemy.exc import OperationalError
@@ -30,6 +31,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import mapper
 from sqlalchemy.orm import Session
+from sqlalchemy import PrimaryKeyConstraint
 from sqlalchemy.sql.expression import cast
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
@@ -770,9 +772,124 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         # behavior), any integer value can be inserted, otherwise only 1 or 0.
         self.engine.execute(table.insert({'deleted': 10}))
 
+    def test_get_foreign_key_constraint_name(self):
+        table_1 = Table('table_name_1', self.meta,
+                        Column('id', Integer, primary_key=True),
+                        Column('deleted', Integer))
+        table_2 = Table('table_name_2', self.meta,
+                        Column('id', Integer, primary_key=True),
+                        Column('foreign_id', Integer),
+                        ForeignKeyConstraint(['foreign_id'],
+                                             ['table_name_1.id'],
+                                             name='table_name_2_fk1'),
+                        Column('deleted', Integer))
 
-class PostgesqlTestMigrations(TestMigrationUtils,
-                              db_test_base.PostgreSQLOpportunisticTestCase):
+        self.meta.create_all(tables=[table_1, table_2])
+        fkc = utils.get_foreign_key_constraint_name(self.engine,
+                                                    'table_name_2',
+                                                    'foreign_id')
+        self.assertEqual(fkc, 'table_name_2_fk1')
+
+    @db_test_base.backend_specific('mysql', 'postgresql')
+    def test_suspend_fk_constraints_for_col_alter(self):
+
+        a = Table(
+            'a', self.meta,
+            Column('id', Integer, primary_key=True)
+        )
+        b = Table(
+            'b', self.meta,
+            Column('key', Integer),
+            Column('archive_id', Integer),
+            Column('aid', ForeignKey('a.id')),
+            PrimaryKeyConstraint("key", "archive_id")
+        )
+        c = Table(
+            'c', self.meta,
+            Column('id', Integer, primary_key=True),
+            Column('aid', ForeignKey('a.id')),
+            Column('key', Integer),
+            Column('archive_id', Integer),
+            ForeignKeyConstraint(
+                ['key', 'archive_id'], ['b.key', 'b.archive_id'],
+                name="some_composite_fk")
+        )
+        self.meta.create_all(tables=[a, b, c])
+
+        def get_fk_entries():
+            inspector = sqlalchemy.inspect(self.engine)
+            return sorted(
+                inspector.get_foreign_keys('b') +
+                inspector.get_foreign_keys('c'),
+                key=lambda fk: fk['referred_table']
+            )
+
+        def normalize_fk_entries(fks):
+            return [{
+                    'name': fk['name'],
+                    'referred_columns': fk['referred_columns'],
+                    'referred_table': fk['referred_table'],
+                    } for fk in fks]
+
+        existing_foreign_keys = get_fk_entries()
+        self.assertEqual(
+            [{'name': mock.ANY,
+              'referred_columns': ['id'], 'referred_table': 'a'},
+                {'name': mock.ANY,
+                 'referred_columns': ['id'], 'referred_table': 'a'},
+                {'name': 'some_composite_fk',
+                 'referred_columns': ['key', 'archive_id'],
+                 'referred_table': 'b'}],
+            normalize_fk_entries(existing_foreign_keys)
+        )
+
+        with mock.patch("oslo_db.sqlalchemy.ndb.ndb_status",
+                        mock.Mock(return_value=True)):
+            with utils.suspend_fk_constraints_for_col_alter(
+                    self.engine, 'a', 'id', referents=['b', 'c']):
+                no_a_foreign_keys = get_fk_entries()
+                self.assertEqual(
+                    [{'name': 'some_composite_fk',
+                      'referred_columns': ['key', 'archive_id'],
+                      'referred_table': 'b'}],
+                    normalize_fk_entries(no_a_foreign_keys)
+                )
+
+        self.assertEqual(existing_foreign_keys, get_fk_entries())
+
+        with mock.patch("oslo_db.sqlalchemy.ndb.ndb_status",
+                        mock.Mock(return_value=True)):
+            with utils.suspend_fk_constraints_for_col_alter(
+                    self.engine, 'b', 'archive_id', referents=['c']):
+                self.assertEqual(
+                    [{'name': mock.ANY,
+                      'referred_columns': ['id'], 'referred_table': 'a'},
+                        {'name': mock.ANY,
+                         'referred_columns': ['id'], 'referred_table': 'a'}],
+                    normalize_fk_entries(get_fk_entries())
+                )
+
+        self.assertEqual(existing_foreign_keys, get_fk_entries())
+
+        with utils.suspend_fk_constraints_for_col_alter(
+                self.engine, 'a', 'id', referents=['b', 'c']):
+            self.assertEqual(existing_foreign_keys, get_fk_entries())
+
+        if self.engine.name == 'mysql':
+            self.engine.dialect._oslodb_enable_ndb_support = True
+
+            self.addCleanup(
+                setattr, self.engine.dialect, "_oslodb_enable_ndb_support",
+                False
+            )
+
+            with utils.suspend_fk_constraints_for_col_alter(
+                    self.engine, 'a', 'id', referents=['b', 'c']):
+                self.assertEqual(no_a_foreign_keys, get_fk_entries())
+
+
+class PostgresqlTestMigrations(TestMigrationUtils,
+                               db_test_base.PostgreSQLOpportunisticTestCase):
 
     """Test migrations on PostgreSQL."""
     pass
