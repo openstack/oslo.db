@@ -292,9 +292,18 @@ class TestPaginateQuery(test_base.BaseTestCase):
         self.query.order_by('desc_1').AndReturn(self.query)
 
         self.mox.StubOutWithMock(sqlalchemy.sql, 'and_')
-        sqlalchemy.sql.and_(mock.ANY).AndReturn('some_crit')
-        sqlalchemy.sql.and_(mock.ANY, mock.ANY).AndReturn('another_crit')
         self.mox.StubOutWithMock(sqlalchemy.sql, 'or_')
+        self.mox.StubOutWithMock(self.model.user_id, 'is_')
+
+        self.model.user_id.is_(None).AndReturn('desc_null_filter_1')
+        self.model.user_id.is_(None).AndReturn('desc_null_filter_2')
+        sqlalchemy.sql.or_(mock.ANY, 'desc_null_filter_2').AndReturn('or_1')
+
+        self.model.project_id.is_(None).AndReturn('asc_null_filter')
+        sqlalchemy.sql.or_(mock.ANY, 'asc_null_filter').AndReturn('or_2')
+
+        sqlalchemy.sql.and_('or_1').AndReturn('some_crit')
+        sqlalchemy.sql.and_(mock.ANY, 'or_2').AndReturn('another_crit')
         sqlalchemy.sql.or_('some_crit', 'another_crit').AndReturn('some_f')
         self.query.filter('some_f').AndReturn(self.query)
         self.query.limit(5).AndReturn(self.query)
@@ -322,8 +331,14 @@ class TestPaginateQuery(test_base.BaseTestCase):
         self.query.order_by('desc_1').AndReturn(self.query)
 
         self.mox.StubOutWithMock(sqlalchemy.sql, 'and_')
-        sqlalchemy.sql.and_(mock.ANY).AndReturn('some_crit')
         self.mox.StubOutWithMock(sqlalchemy.sql, 'or_')
+        self.mox.StubOutWithMock(self.model.user_id, 'is_')
+
+        self.model.user_id.is_(None).AndReturn('asc_null_filter_1')
+        self.model.user_id.is_(None).AndReturn('asc_null_filter_2')
+        sqlalchemy.sql.or_(mock.ANY, 'asc_null_filter_2').AndReturn('or_1')
+
+        sqlalchemy.sql.and_('or_1').AndReturn('some_crit')
         sqlalchemy.sql.or_('some_crit').AndReturn('some_f')
         self.query.filter('some_f').AndReturn(self.query)
         self.query.limit(5).AndReturn(self.query)
@@ -332,6 +347,53 @@ class TestPaginateQuery(test_base.BaseTestCase):
                              ['user_id', 'updated_at'],
                              marker=self.marker,
                              sort_dirs=['asc-nullslast', 'desc-nullsfirst'])
+
+    def test_paginate_query_marker_null_with_two_primary_keys(self):
+        self.mox.StubOutWithMock(self.model.user_id, 'isnot')
+        self.model.user_id.isnot(None).AndReturn('asc_null_1')
+        sqlalchemy.desc('asc_null_1').AndReturn('asc_null_2')
+        self.query.order_by('asc_null_2').AndReturn(self.query)
+
+        sqlalchemy.asc(self.model.user_id).AndReturn('asc_1')
+        self.query.order_by('asc_1').AndReturn(self.query)
+
+        self.mox.StubOutWithMock(self.model.updated_at, 'is_')
+        self.model.updated_at.is_(None).AndReturn('desc_null_1')
+        sqlalchemy.desc('desc_null_1').AndReturn('desc_null_2')
+        self.query.order_by('desc_null_2').AndReturn(self.query)
+
+        sqlalchemy.desc(self.model.updated_at).AndReturn('desc_1')
+        self.query.order_by('desc_1').AndReturn(self.query)
+
+        self.mox.StubOutWithMock(self.model.project_id, 'is_')
+        self.model.project_id.is_(None).AndReturn('desc_null_3')
+        sqlalchemy.desc('desc_null_3').AndReturn('desc_null_4')
+        self.query.order_by('desc_null_4').AndReturn(self.query)
+
+        sqlalchemy.desc(self.model.project_id).AndReturn('desc_4')
+        self.query.order_by('desc_4').AndReturn(self.query)
+
+        self.mox.StubOutWithMock(sqlalchemy.sql, 'and_')
+        self.mox.StubOutWithMock(sqlalchemy.sql, 'or_')
+        self.mox.StubOutWithMock(self.model.user_id, 'is_')
+
+        self.model.user_id.is_(None).AndReturn('asc_null_filter_1')
+        self.model.user_id.is_(None).AndReturn('asc_null_filter_2')
+        self.model.project_id.is_(None).AndReturn('desc_null_filter_3')
+
+        sqlalchemy.sql.or_(mock.ANY, 'asc_null_filter_2').AndReturn('or_1')
+        sqlalchemy.sql.or_(mock.ANY, 'desc_null_filter_3').AndReturn('or_2')
+        sqlalchemy.sql.and_('or_1').AndReturn('some_crit')
+        sqlalchemy.sql.and_(mock.ANY, 'or_2').AndReturn('other_crit')
+        sqlalchemy.sql.or_('some_crit', 'other_crit').AndReturn('some_f')
+        self.query.filter('some_f').AndReturn(self.query)
+        self.query.limit(5).AndReturn(self.query)
+        self.mox.ReplayAll()
+        utils.paginate_query(self.query, self.model, 5,
+                             ['user_id', 'updated_at', 'project_id'],
+                             marker=self.marker,
+                             sort_dirs=['asc-nullslast', 'desc-nullsfirst',
+                                        'desc-nullsfirst'])
 
     def test_paginate_query_value_error(self):
         sqlalchemy.asc(self.model.user_id).AndReturn('asc_1')

@@ -241,7 +241,8 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
             if marker_values[i] is not None:
                 for j in range(i):
                     model_attr = getattr(model, sort_keys[j])
-                    crit_attrs.append((model_attr == marker_values[j]))
+                    if marker_values[j] is not None:
+                        crit_attrs.append((model_attr == marker_values[j]))
 
                 model_attr = getattr(model, sort_keys[i])
                 val = marker_values[i]
@@ -250,9 +251,16 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
                     val = int(val)
                     model_attr = cast(model_attr, Integer)
                 if sort_dirs[i].startswith('desc'):
-                    crit_attrs.append((model_attr < val))
+                    crit_attr = (model_attr < val)
+                    if sort_dirs[i].endswith('nullsfirst'):
+                        crit_attr = sqlalchemy.sql.or_(crit_attr,
+                                                       model_attr.is_(None))
                 else:
-                    crit_attrs.append((model_attr > val))
+                    crit_attr = (model_attr > val)
+                    if sort_dirs[i].endswith('nullslast'):
+                        crit_attr = sqlalchemy.sql.or_(crit_attr,
+                                                       model_attr.is_(None))
+                crit_attrs.append(crit_attr)
                 criteria = sqlalchemy.sql.and_(*crit_attrs)
                 criteria_list.append(criteria)
 
