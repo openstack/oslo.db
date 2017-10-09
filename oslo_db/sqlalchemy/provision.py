@@ -17,7 +17,6 @@
 """Provision test environment for specific DB backends"""
 
 import abc
-import debtcollector
 import logging
 import os
 import random
@@ -33,7 +32,6 @@ import testresources
 
 from oslo_db import exception
 from oslo_db.sqlalchemy import enginefacade
-from oslo_db.sqlalchemy import session
 from oslo_db.sqlalchemy import utils
 
 LOG = logging.getLogger(__name__)
@@ -503,38 +501,9 @@ class BackendImpl(object):
         url.database = ident
         return url
 
-    @debtcollector.removals.remove()
-    def provisioned_engine(self, base_url, ident):
-        """Return a provisioned engine.
-
-        Given the URL of a particular database backend and the string
-        name of a particular 'database' within that backend, return
-        an Engine instance whose connections will refer directly to the
-        named database.
-
-        For hostname-based URLs, this typically involves switching just the
-        'database' portion of the URL with the given name and creating
-        an engine.
-
-        For URLs that instead deal with DSNs, the rules may be more custom;
-        for example, the engine may need to connect to the root URL and
-        then emit a command to switch to the named database.
-
-        """
-        url = self.provisioned_database_url(base_url, ident)
-
-        return session.create_engine(
-            url,
-            logging_name="%s@%s" % (self.drivername, ident),
-            **self.default_engine_kwargs
-        )
-
 
 @BackendImpl.impl.dispatch_for("mysql")
 class MySQLBackendImpl(BackendImpl):
-
-    # only used for deprecated provisioned_engine() function.
-    default_engine_kwargs = {'mysql_sql_mode': 'TRADITIONAL'}
 
     def create_opportunistic_driver_url(self):
         return "mysql+pymysql://openstack_citest:openstack_citest@localhost/"
