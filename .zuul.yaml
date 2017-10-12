@@ -1,0 +1,17 @@
+- project:
+    name: openstack/oslo.db
+    check:
+      jobs:
+        - oslo.db-tox-mysql-python
+    gate:
+      jobs:
+        - oslo.db-tox-mysql-python
+
+- job:
+    name: oslo.db-tox-mysql-python
+    parent: legacy-base
+    run: playbooks/legacy/oslo.db-tox-mysql-python/run
+    post-run: playbooks/legacy/oslo.db-tox-mysql-python/post
+    timeout: 2400
+    required-projects:
+      - openstack/requirements
