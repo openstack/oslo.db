@@ -832,7 +832,19 @@ class TestMigrationUtils(db_test_base.DbTestCase):
         table = Table(table_name, self.meta, autoload=True)
         # NOTE(I159): if the CHECK constraint has been dropped (expected
         # behavior), any integer value can be inserted, otherwise only 1 or 0.
-        self.engine.execute(table.insert({'deleted': 10}))
+        # NOTE(zzzeek): SQLAlchemy 1.2 Boolean type will disallow non 1/0
+        # value here, 1.1 also coerces to "1/0" so use raw SQL to test the
+        # constraint
+        with self.engine.connect() as conn:
+            conn.execute(
+                "INSERT INTO abc (deleted) VALUES (?)",
+                (10, )
+            )
+
+            self.assertEqual(
+                10,
+                conn.scalar("SELECT deleted FROM abc")
+            )
 
     def test_get_foreign_key_constraint_name(self):
         table_1 = Table('table_name_1', self.meta,
