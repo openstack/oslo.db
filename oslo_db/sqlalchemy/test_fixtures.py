@@ -533,7 +533,7 @@ class OpportunisticDBTestMixin(object):
             if not fixture._has_db_resource():
                 msg = fixture._get_db_resource_not_available_reason()
                 if self.SKIP_ON_UNAVAILABLE_DB:
-                    self.skip(msg)
+                    self.skipTest(msg)
                 else:
                     self.fail(msg)
 

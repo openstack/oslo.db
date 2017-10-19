@@ -176,7 +176,7 @@ class RetainSchemaTest(oslo_test_base.BaseTestCase):
             database_resource = provision.DatabaseResource(
                 self.DRIVER, provision_new_database=True)
         except exception.BackendNotAvailable:
-            self.skip("database not available")
+            self.skipTest("database not available")
 
         schema_resource = provision.SchemaResource(
             database_resource, self._gen_schema)
@@ -244,7 +244,7 @@ class AdHocURLTest(oslo_test_base.BaseTestCase):
             mysql_backend = provision.Backend.backend_for_database_type(
                 "mysql")
         except exception.BackendNotAvailable:
-            self.skip("mysql backend not available")
+            self.skipTest("mysql backend not available")
 
         mysql_backend.create_named_database("adhoc_test")
         self.addCleanup(

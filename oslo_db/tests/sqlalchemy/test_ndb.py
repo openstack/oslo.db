@@ -176,7 +176,7 @@ class NDBOpportunisticTestCase(
         try:
             self.test_table.create(self.engine)
         except exception.DBNotSupportedError:
-            self.skip("MySQL NDB Cluster not available")
+            self.skipTest("MySQL NDB Cluster not available")
 
     def test_ndb_enabled(self):
         self.init_db(True)
