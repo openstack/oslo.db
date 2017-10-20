@@ -77,7 +77,7 @@ class EventletTestMixin(object):
 
         eventlet = importutils.try_import('eventlet')
         if eventlet is None:
-            return self.skip('eventlet is required for this test')
+            return self.skipTest('eventlet is required for this test')
 
         a_ready = eventlet.event.Event()
         a_proceed = eventlet.event.Event()

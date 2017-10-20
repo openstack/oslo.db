@@ -70,7 +70,7 @@ class DbFixture(fixtures.Fixture):
         if not self.test._has_db_resource():
             msg = self.test._get_db_resource_not_available_reason()
             if self.test.SKIP_ON_UNAVAILABLE_DB:
-                self.test.skip(msg)
+                self.test.skipTest(msg)
             else:
                 self.test.fail(msg)
 
@@ -216,7 +216,7 @@ def backend_specific(*dialects):
                        'only on %s. Current engine is %s.')
                 args = (reflection.get_callable_name(f), ', '.join(dialects),
                         self.engine.name)
-                self.skip(msg % args)
+                self.skipTest(msg % args)
             else:
                 return f(self)
         return ins_wrap

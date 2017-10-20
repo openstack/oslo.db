@@ -219,8 +219,8 @@ class LegacyBaseClassTest(oslo_test_base.BaseTestCase):
         try:
             provision.DatabaseResource(base_cls.FIXTURE.DRIVER)
         except exception.BackendNotAvailable:
-            self.skip("Backend %s is not available" %
-                      base_cls.FIXTURE.DRIVER)
+            self.skipTest("Backend %s is not available" %
+                          base_cls.FIXTURE.DRIVER)
 
         class SomeTest(base_cls):
             def runTest(self):

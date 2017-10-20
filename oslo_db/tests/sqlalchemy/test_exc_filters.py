@@ -768,7 +768,7 @@ class TestDBDataErrorSQLite(_SQLAExceptionMatcher, test_base.DbTestCase):
         super(TestDBDataErrorSQLite, self).setUp()
 
         if six.PY3:
-            self.skip("SQLite database supports unicode value for python3")
+            self.skipTest("SQLite database supports unicode value for python3")
 
         meta = sqla.MetaData(bind=self.engine)
 
