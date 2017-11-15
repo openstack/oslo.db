@@ -33,17 +33,3 @@ Note that even in a virtual environment the libpq-dev will be installed
 system wide.
 
 
-Using with MySQL-python
------------------------
-
-PyMySQL is a default MySQL DB API driver for oslo.db, as well as for the whole
-OpenStack. But you still can use MySQL-python as an alternative DB API driver.
-For MySQL-python you must install the MySQL client development package for
-your distro. On Ubuntu this is done as follows::
-
-    $ sudo apt-get install libmysqlclient-dev
-    $ pip install MySQL-python
-
-The installation of MySQL-python will fail if libmysqlclient-dev is not
-installed first. Note that even in a virtual environment the MySQL package will
-be installed system wide.
