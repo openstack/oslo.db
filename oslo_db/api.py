@@ -27,7 +27,6 @@ import logging
 import threading
 import time
 
-from debtcollector import removals
 from oslo_utils import excutils
 from oslo_utils import importutils
 from oslo_utils import reflection
@@ -106,12 +105,10 @@ class wrap_db_retry(object):
     :type exception_checker: callable
     """
 
-    @removals.removed_kwarg("retry_on_request",
-                            "Retry on request is always enabled")
     def __init__(self, retry_interval=1, max_retries=20,
                  inc_retry_interval=True,
                  max_retry_interval=10, retry_on_disconnect=False,
-                 retry_on_deadlock=False, retry_on_request=False,
+                 retry_on_deadlock=False,
                  exception_checker=lambda exc: False):
         super(wrap_db_retry, self).__init__()
 
