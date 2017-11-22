@@ -18,6 +18,7 @@
 
 import collections
 import contextlib
+import inspect as pyinspect
 import itertools
 import logging
 import re
@@ -1225,6 +1226,25 @@ def suspend_fk_constraints_for_col_alter(
                     deferrable=fk['options'].get('deferrable'),
                     initially=fk['options'].get('initially'),
                 )
+
+
+def getargspec(fn):
+    """Inspects a function for its argspec.
+
+    This is to handle a difference between py2/3. The Python 2.x getargspec
+    call is deprecated in Python 3.x, with the suggestion to use the signature
+    call instead.
+
+    To keep compatibility with the results, while avoiding deprecation
+    warnings, this instead will use the getfullargspec instead.
+
+    :param fn: The function to inspect.
+    :returns: The argspec for the function.
+    """
+    if hasattr(pyinspect, 'getfullargspec'):
+        return pyinspect.getfullargspec(fn)
+
+    return pyinspect.getargspec(fn)
 
 
 class NonCommittingConnectable(object):
