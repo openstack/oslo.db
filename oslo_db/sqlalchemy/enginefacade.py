@@ -13,7 +13,6 @@
 
 import contextlib
 import functools
-import inspect
 import operator
 import threading
 import warnings
@@ -27,6 +26,7 @@ from oslo_db import exception
 from oslo_db import options
 from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import orm
+from oslo_db.sqlalchemy import utils
 
 
 class _symbol(object):
@@ -970,7 +970,7 @@ class _TransactionContextManager(object):
 
     def __call__(self, fn):
         """Decorate a function."""
-        argspec = inspect.getargspec(fn)
+        argspec = utils.getargspec(fn)
         if argspec.args[0] == 'self' or argspec.args[0] == 'cls':
             context_index = 1
         else:
