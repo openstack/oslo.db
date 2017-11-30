@@ -843,7 +843,8 @@ class _TransactionContextManager(object):
         new = self._clone()
         new._root = new
         new._root_factory = self._root_factory._create_factory_copy()
-        assert not new._factory._started
+        if new._factory._started:
+            raise AssertionError('TransactionFactory is already started')
         return new
 
     def patch_factory(self, factory_or_manager):
@@ -869,7 +870,8 @@ class _TransactionContextManager(object):
             raise ValueError(
                 "_TransactionContextManager or "
                 "_TransactionFactory expected.")
-        assert self._root is self
+        if self._root is not self:
+            raise AssertionError('patch_factory only works for root factory.')
         existing_factory = self._root_factory
         self._root_factory = factory
 
