@@ -926,7 +926,7 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
                 getattr, context, 'session'
             )
 
-            self.assertRegexpMatches(
+            self.assertRegex(
                 exc.args[0],
                 "The 'session' context attribute was requested but it has "
                 "not been established for this context."
@@ -941,7 +941,7 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
                 getattr, context, 'connection'
             )
 
-            self.assertRegexpMatches(
+            self.assertRegex(
                 exc.args[0],
                 "The 'connection' context attribute was requested but it has "
                 "not been established for this context."
@@ -954,7 +954,7 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
             getattr, context, 'session'
         )
 
-        self.assertRegexpMatches(
+        self.assertRegex(
             exc.args[0],
             "No TransactionContext is established for "
             "this .*RequestContext.* object within the current "
@@ -972,7 +972,7 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
             getattr, context, 'connection'
         )
 
-        self.assertRegexpMatches(
+        self.assertRegex(
             exc.args[0],
             "No TransactionContext is established for "
             "this .*RequestContext.* object within the current "
@@ -990,7 +990,7 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
             getattr, context, 'transaction'
         )
 
-        self.assertRegexpMatches(
+        self.assertRegex(
             exc.args[0],
             "No TransactionContext is established for "
             "this .*RequestContext.* object within the current "
@@ -1008,7 +1008,7 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
             getattr, context, 'transaction_ctx'
         )
 
-        self.assertRegexpMatches(
+        self.assertRegex(
             exc.args[0],
             "No TransactionContext is established for "
             "this .*RequestContext.* object within the current "
