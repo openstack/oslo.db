@@ -712,54 +712,6 @@ def _change_deleted_column_type_to_id_type_sqlite(engine, table_name,
         execute()
 
 
-def get_connect_string(backend, database, user=None, passwd=None,
-                       host='localhost'):
-    """Get database connection
-
-    Try to get a connection with a very specific set of values, if we get
-    these then we'll run the tests, otherwise they are skipped
-
-    DEPRECATED: this function is deprecated and will be removed from oslo_db
-    in a few releases. Please use the provisioning system for dealing
-    with URLs and database provisioning.
-
-    """
-    args = {'backend': backend,
-            'user': user,
-            'passwd': passwd,
-            'host': host,
-            'database': database}
-    if backend == 'sqlite':
-        template = '%(backend)s:///%(database)s'
-    else:
-        template = "%(backend)s://%(user)s:%(passwd)s@%(host)s/%(database)s"
-    return template % args
-
-
-def is_backend_avail(backend, database, user=None, passwd=None):
-    """Return True if the given backend is available.
-
-
-    DEPRECATED: this function is deprecated and will be removed from oslo_db
-    in a few releases. Please use the provisioning system to access
-    databases based on backend availability.
-
-    """
-    from oslo_db.sqlalchemy import provision
-
-    connect_uri = get_connect_string(backend=backend,
-                                     database=database,
-                                     user=user,
-                                     passwd=passwd)
-    try:
-        eng = provision.Backend._ensure_backend_available(connect_uri)
-        eng.dispose()
-    except exception.BackendNotAvailable:
-        return False
-    else:
-        return True
-
-
 def get_db_connection_info(conn_pieces):
     database = conn_pieces.path.strip('/')
     loc_pieces = conn_pieces.netloc.split('@')

@@ -998,34 +998,6 @@ class TestConnectionUtils(test_utils.BaseTestCase):
         patch_onconnect.start()
         self.addCleanup(patch_onconnect.stop)
 
-    def test_connect_string(self):
-        connect_string = utils.get_connect_string(**self.full_credentials)
-        self.assertEqual(self.connect_string, connect_string)
-
-    def test_connect_string_sqlite(self):
-        sqlite_credentials = {'backend': 'sqlite', 'database': 'test.db'}
-        connect_string = utils.get_connect_string(**sqlite_credentials)
-        self.assertEqual('sqlite:///test.db', connect_string)
-
-    def test_is_backend_avail(self):
-        self.mox.StubOutWithMock(sqlalchemy.engine.base.Engine, 'connect')
-        fake_connection = self.mox.CreateMockAnything()
-        fake_connection.close()
-        sqlalchemy.engine.base.Engine.connect().AndReturn(fake_connection)
-        self.mox.ReplayAll()
-
-        self.assertTrue(utils.is_backend_avail(**self.full_credentials))
-
-    def test_is_backend_unavail(self):
-        log = self.useFixture(fixtures.FakeLogger())
-        err = OperationalError("Can't connect to database", None, None)
-        error_msg = "The postgresql backend is unavailable: %s\n" % err
-        self.mox.StubOutWithMock(sqlalchemy.engine.base.Engine, 'connect')
-        sqlalchemy.engine.base.Engine.connect().AndRaise(err)
-        self.mox.ReplayAll()
-        self.assertFalse(utils.is_backend_avail(**self.full_credentials))
-        self.assertEqual(error_msg, log.output)
-
     def test_ensure_backend_available(self):
         self.mox.StubOutWithMock(sqlalchemy.engine.base.Engine, 'connect')
         fake_connection = self.mox.CreateMockAnything()
@@ -1078,11 +1050,6 @@ class TestConnectionUtils(test_utils.BaseTestCase):
         conn_pieces = parse.urlparse(self.connect_string)
         self.assertEqual(('dude', 'pass', 'test', 'localhost'),
                          utils.get_db_connection_info(conn_pieces))
-
-    def test_connect_string_host(self):
-        self.full_credentials['host'] = 'myhost'
-        connect_string = utils.get_connect_string(**self.full_credentials)
-        self.assertEqual('postgresql://dude:pass@myhost/test', connect_string)
 
 
 class MyModelSoftDeletedProjectId(declarative_base(), models.ModelBase,
