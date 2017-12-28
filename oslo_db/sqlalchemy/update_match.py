@@ -164,9 +164,9 @@ def update_on_match(
 
     entity = inspect(specimen)
     mapper = entity.mapper
-    assert \
-        [desc['type'] for desc in query.column_descriptions] == \
-        [mapper.class_], "Query does not match given specimen"
+    if [desc['type'] for desc in query.column_descriptions] != \
+        [mapper.class_]:
+        raise AssertionError("Query does not match given specimen")
 
     criteria = manufacture_entity_criteria(
         specimen, include_only=include_only, exclude=[surrogate_key])

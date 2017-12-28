@@ -181,7 +181,9 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
         LOG.warning('Unique keys not in sort_keys. '
                     'The sorting order may be unstable.')
 
-    assert(not (sort_dir and sort_dirs))
+    if sort_dir and sort_dirs:
+        raise AssertionError('Disallow set sort_dir and '
+                             'sort_dirs at the same time.')
 
     # Default the sort direction to ascending
     if sort_dirs is None and sort_dir is None:
@@ -191,7 +193,8 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
     if sort_dirs is None:
         sort_dirs = [sort_dir for _sort_key in sort_keys]
 
-    assert(len(sort_dirs) == len(sort_keys))
+    if len(sort_dirs) != len(sort_keys):
+        raise AssertionError('sort_dirs and sort_keys must have same length.')
 
     # Add sorting
     for current_sort_key, current_sort_dir in zip(sort_keys, sort_dirs):
@@ -1152,7 +1155,8 @@ def suspend_fk_constraints_for_col_alter(
             fks = []
             for ref_table_name in referents:
                 for fk in insp.get_foreign_keys(ref_table_name):
-                    assert fk.get('name')
+                    if not fk.get('name'):
+                        raise AssertionError("foreign key hasn't a name.")
                     if fk['referred_table'] == table_name and \
                             column_name in fk['referred_columns']:
                         fk['source_table'] = ref_table_name
