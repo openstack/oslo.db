@@ -1780,7 +1780,7 @@ class LiveFacadeTest(test_base.DbTestCase):
 
         session = self.sessionmaker(autocommit=True)
 
-        # inner transction + second part of "outer" transaction were committed
+        # inner transaction + second part of "outer" transaction were committed
         self.assertEqual(
             [("u2",), ("u3",), ("u4", )],
             session.query(
@@ -1820,7 +1820,7 @@ class LiveFacadeTest(test_base.DbTestCase):
 
         session = self.sessionmaker(autocommit=True)
 
-        # inner transction + second part of "outer" transaction were committed
+        # inner transaction + second part of "outer" transaction were committed
         self.assertEqual(
             [("u1",), ("u3",), ("u4", )],
             session.query(
@@ -1848,7 +1848,7 @@ class LiveFacadeTest(test_base.DbTestCase):
 
         session = self.sessionmaker(autocommit=True)
 
-        # inner transction + second part of "outer" transaction were committed
+        # inner transaction + second part of "outer" transaction were committed
         self.assertEqual(
             [("u1",), ("u3",), ("u4", )],
             session.query(
@@ -1896,7 +1896,7 @@ class LiveFacadeTest(test_base.DbTestCase):
 
         session = self.sessionmaker(autocommit=True)
 
-        # inner transction + second part of "outer" transaction were committed
+        # inner transaction + second part of "outer" transaction were committed
         self.assertEqual(
             [("u2",), ("u3",), ("u4", )],
             session.query(
