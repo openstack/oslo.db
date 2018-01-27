@@ -1,14 +1,15 @@
 # Andi Chandler <andi@gowling.com>, 2016. #zanata
 # Andi Chandler <andi@gowling.com>, 2017. #zanata
+# Andi Chandler <andi@gowling.com>, 2018. #zanata
 msgid ""
 msgstr ""
 "Project-Id-Version: oslo.db Release Notes\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-12-05 12:09+0000\n"
+"POT-Creation-Date: 2018-01-26 04:45+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"PO-Revision-Date: 2017-12-05 10:29+0000\n"
+"PO-Revision-Date: 2018-01-26 07:19+0000\n"
 "Last-Translator: Andi Chandler <andi@gowling.com>\n"
 "Language-Team: English (United Kingdom)\n"
 "Language: en-GB\n"
@@ -116,6 +117,9 @@ msgstr ""
 "release, hence it should be considered unsupported. Please switch to "
 "PyMySQL, which is an adequate replacement. Refer to https://wiki.openstack."
 "org/wiki/PyMySQL_evaluation for details."
+
+msgid "Queens Series Release Notes"
+msgstr "Queens Series Release Notes"
 
 msgid ""
 "The allowed values for the ``connection_debug`` option are now restricted to "
