@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Repaired the "synchronous_reader" modifier of enginefacade so that it
+    refers to the "writer" engine when set to True, thereby allowing
+    "synchronous" behavior with the writer.  When set to False, this is
+    "asynchronous", so this should be associated with the async engines.
+    The flag had the reverse behavior previously.
