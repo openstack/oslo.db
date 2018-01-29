@@ -135,15 +135,15 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
             async_reader_maker = writer_maker
 
         if self.synchronous_reader:
-            reader_conn = async_reader_conn
-            reader_engine = async_reader_engine
-            reader_session = async_reader_session
-            reader_maker = async_reader_maker
-        else:
             reader_conn = writer_conn
             reader_engine = writer_engine
             reader_session = writer_session
             reader_maker = writer_maker
+        else:
+            reader_conn = async_reader_conn
+            reader_engine = async_reader_engine
+            reader_session = async_reader_session
+            reader_maker = async_reader_maker
 
         self.connections = AssertDataSource(
             writer_conn, reader_conn, async_reader_conn
@@ -236,9 +236,9 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
             async_reader_engine = writer_engine
 
         if self.synchronous_reader:
-            reader_engine = async_reader_engine
-        else:
             reader_engine = writer_engine
+        else:
+            reader_engine = async_reader_engine
 
         engines = AssertDataSource(
             writer_engine, reader_engine, async_reader_engine)
@@ -333,9 +333,9 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
             async_reader_maker = writer_maker
 
         if self.synchronous_reader:
-            reader_maker = async_reader_maker
-        else:
             reader_maker = writer_maker
+        else:
+            reader_maker = async_reader_maker
 
         makers = AssertDataSource(
             writer_maker,
