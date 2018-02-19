@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import debtcollector
+
 from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy.test_base import backend_specific  # noqa
 from oslo_db.sqlalchemy import test_fixtures as db_fixtures
@@ -26,6 +28,10 @@ class Context(object):
 context = Context()
 
 
+@debtcollector.removals.removed_class(
+    "DbTestCase",
+    message="Do not import from oslo_db.tests!  "
+            "Please use oslo_db.sqlalchemy.test_fixtures directly")
 class DbTestCase(db_fixtures.OpportunisticDBTestMixin, test_base.BaseTestCase):
 
     def setUp(self):
@@ -35,9 +41,38 @@ class DbTestCase(db_fixtures.OpportunisticDBTestMixin, test_base.BaseTestCase):
         self.sessionmaker = enginefacade.writer.get_sessionmaker()
 
 
+@debtcollector.removals.removed_class(
+    "MySQLOpportunisticTestCase",
+    message="Do not import from oslo_db.tests!  "
+            "Please use oslo_db.sqlalchemy.test_fixtures directly")
 class MySQLOpportunisticTestCase(DbTestCase):
     FIXTURE = db_fixtures.MySQLOpportunisticFixture
 
 
+@debtcollector.removals.removed_class(
+    "PostgreSQLOpportunisticTestCase",
+    message="Do not import from oslo_db.tests!  "
+            "Please use oslo_db.sqlalchemy.test_fixtures directly")
 class PostgreSQLOpportunisticTestCase(DbTestCase):
+    FIXTURE = db_fixtures.PostgresqlOpportunisticFixture
+
+
+# NOTE (zzzeek) These test classes are **private to oslo.db**.  Please
+# make use of oslo_db.sqlalchemy.test_fixtures directly.
+
+class _DbTestCase(
+        db_fixtures.OpportunisticDBTestMixin, test_base.BaseTestCase):
+
+    def setUp(self):
+        super(_DbTestCase, self).setUp()
+
+        self.engine = enginefacade.writer.get_engine()
+        self.sessionmaker = enginefacade.writer.get_sessionmaker()
+
+
+class _MySQLOpportunisticTestCase(_DbTestCase):
+    FIXTURE = db_fixtures.MySQLOpportunisticFixture
+
+
+class _PostgreSQLOpportunisticTestCase(_DbTestCase):
     FIXTURE = db_fixtures.PostgresqlOpportunisticFixture

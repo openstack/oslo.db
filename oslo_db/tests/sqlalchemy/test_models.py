@@ -30,7 +30,7 @@ from oslo_db.tests.sqlalchemy import base as test_base
 BASE = declarative_base()
 
 
-class ModelBaseTest(test_base.DbTestCase):
+class ModelBaseTest(test_base._DbTestCase):
     def setUp(self):
         super(ModelBaseTest, self).setUp()
         self.mb = models.ModelBase()
@@ -191,7 +191,7 @@ class SoftDeletedModel(BASE, models.ModelBase, models.SoftDeleteMixin):
     smth = Column('smth', String(255))
 
 
-class SoftDeleteMixinTest(test_base.DbTestCase):
+class SoftDeleteMixinTest(test_base._DbTestCase):
     def setUp(self):
         super(SoftDeleteMixinTest, self).setUp()
 

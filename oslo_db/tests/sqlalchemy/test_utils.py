@@ -547,7 +547,7 @@ class TestPaginateQueryActualSQL(test_base.BaseTestCase):
         )
 
 
-class TestMigrationUtils(db_test_base.DbTestCase):
+class TestMigrationUtils(db_test_base._DbTestCase):
 
     """Class for testing utils that are used in db migrations."""
 
@@ -957,14 +957,14 @@ class TestMigrationUtils(db_test_base.DbTestCase):
 
 
 class PostgresqlTestMigrations(TestMigrationUtils,
-                               db_test_base.PostgreSQLOpportunisticTestCase):
+                               db_test_base._PostgreSQLOpportunisticTestCase):
 
     """Test migrations on PostgreSQL."""
     pass
 
 
 class MySQLTestMigrations(TestMigrationUtils,
-                          db_test_base.MySQLOpportunisticTestCase):
+                          db_test_base._MySQLOpportunisticTestCase):
 
     """Test migrations on MySQL."""
     pass
@@ -1146,7 +1146,7 @@ class TestModelQuery(test_base.BaseTestCase):
         self.session.query.assert_called_with(MyModel.id)
 
 
-class TestUtils(db_test_base.DbTestCase):
+class TestUtils(db_test_base._DbTestCase):
     def setUp(self):
         super(TestUtils, self).setUp()
         meta = MetaData(bind=self.engine)
@@ -1222,12 +1222,12 @@ class TestUtils(db_test_base.DbTestCase):
 
 
 class TestUtilsMysqlOpportunistically(
-        TestUtils, db_test_base.MySQLOpportunisticTestCase):
+        TestUtils, db_test_base._MySQLOpportunisticTestCase):
     pass
 
 
 class TestUtilsPostgresqlOpportunistically(
-        TestUtils, db_test_base.PostgreSQLOpportunisticTestCase):
+        TestUtils, db_test_base._PostgreSQLOpportunisticTestCase):
     pass
 
 
@@ -1536,7 +1536,7 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
         )
 
 
-class TestGetInnoDBTables(db_test_base.MySQLOpportunisticTestCase):
+class TestGetInnoDBTables(db_test_base._MySQLOpportunisticTestCase):
 
     def test_all_tables_use_innodb(self):
         self.engine.execute("CREATE TABLE customers "

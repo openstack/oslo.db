@@ -118,10 +118,10 @@ class EventletTestMixin(object):
 # ie: This file performs no tests by default.
 
 class MySQLEventletTestCase(EventletTestMixin,
-                            test_base.MySQLOpportunisticTestCase):
+                            test_base._MySQLOpportunisticTestCase):
     pass
 
 
 class PostgreSQLEventletTestCase(EventletTestMixin,
-                                 test_base.PostgreSQLOpportunisticTestCase):
+                                 test_base._PostgreSQLOpportunisticTestCase):
     pass

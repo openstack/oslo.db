@@ -1335,7 +1335,7 @@ class AsyncReaderWSlaveMockFacadeTest(MockFacadeTest):
     slave_uri = 'some_slave_connection'
 
 
-class LegacyIntegrationtest(test_base.DbTestCase):
+class LegacyIntegrationtest(test_base._DbTestCase):
 
     def test_legacy_integration(self):
         legacy_facade = enginefacade.get_legacy_facade()
@@ -1393,7 +1393,7 @@ class LegacyIntegrationtest(test_base.DbTestCase):
         )
 
 
-class ThreadingTest(test_base.DbTestCase):
+class ThreadingTest(test_base._DbTestCase):
     """Test copy/pickle on new threads using real connections and sessions."""
 
     def _assert_ctx_connection(self, context, connection):
@@ -1586,7 +1586,7 @@ class ThreadingTest(test_base.DbTestCase):
                 assert session is not session2
 
 
-class LiveFacadeTest(test_base.DbTestCase):
+class LiveFacadeTest(test_base._DbTestCase):
     """test using live SQL with test-provisioned databases.
 
     Several of these tests require that multiple transactions run
@@ -2127,12 +2127,12 @@ class LiveFacadeTest(test_base.DbTestCase):
 
 
 class MySQLLiveFacadeTest(
-        test_base.MySQLOpportunisticTestCase, LiveFacadeTest):
+        test_base._MySQLOpportunisticTestCase, LiveFacadeTest):
     pass
 
 
 class PGLiveFacadeTest(
-        test_base.PostgreSQLOpportunisticTestCase, LiveFacadeTest):
+        test_base._PostgreSQLOpportunisticTestCase, LiveFacadeTest):
     pass
 
 

@@ -33,7 +33,7 @@ class JsonTable(BASE, models.ModelBase):
     json = Column(types.JsonEncodedType)
 
 
-class JsonTypesTestCase(test_base.DbTestCase):
+class JsonTypesTestCase(test_base._DbTestCase):
     def setUp(self):
         super(JsonTypesTestCase, self).setUp()
         JsonTable.__table__.create(self.engine)

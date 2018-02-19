@@ -85,7 +85,7 @@ class ManufactureCriteriaTest(oslo_test_base.BaseTestCase):
         )
 
 
-class UpdateMatchTest(test_base.DbTestCase):
+class UpdateMatchTest(test_base._DbTestCase):
     def setUp(self):
         super(UpdateMatchTest, self).setUp()
         Base.metadata.create_all(self.engine)
@@ -435,11 +435,11 @@ class UpdateMatchTest(test_base.DbTestCase):
 
 class PGUpdateMatchTest(
         UpdateMatchTest,
-        test_base.PostgreSQLOpportunisticTestCase):
+        test_base._PostgreSQLOpportunisticTestCase):
     pass
 
 
 class MySQLUpdateMatchTest(
         UpdateMatchTest,
-        test_base.MySQLOpportunisticTestCase):
+        test_base._MySQLOpportunisticTestCase):
     pass

@@ -52,7 +52,7 @@ class RegexpTable(BASE, models.ModelBase):
     bar = Column(String(255))
 
 
-class RegexpFilterTestCase(test_base.DbTestCase):
+class RegexpFilterTestCase(test_base._DbTestCase):
 
     def setUp(self):
         super(RegexpFilterTestCase, self).setUp()
@@ -90,7 +90,7 @@ class RegexpFilterTestCase(test_base.DbTestCase):
         self._test_regexp_filter(u'♦', [])
 
 
-class SQLiteSavepointTest(test_base.DbTestCase):
+class SQLiteSavepointTest(test_base._DbTestCase):
     def setUp(self):
         super(SQLiteSavepointTest, self).setUp()
         meta = MetaData()
@@ -286,7 +286,7 @@ class QueryParamTest(test_base.DbTestCase):
         )
 
 
-class MySQLDefaultModeTestCase(test_base.MySQLOpportunisticTestCase):
+class MySQLDefaultModeTestCase(test_base._MySQLOpportunisticTestCase):
     def test_default_is_traditional(self):
         with self.engine.connect() as conn:
             sql_mode = conn.execute(
@@ -296,7 +296,7 @@ class MySQLDefaultModeTestCase(test_base.MySQLOpportunisticTestCase):
         self.assertIn("TRADITIONAL", sql_mode)
 
 
-class MySQLModeTestCase(test_base.MySQLOpportunisticTestCase):
+class MySQLModeTestCase(test_base._MySQLOpportunisticTestCase):
 
     def __init__(self, *args, **kwargs):
         super(MySQLModeTestCase, self).__init__(*args, **kwargs)
@@ -512,7 +512,7 @@ class SQLiteConnectTest(oslo_test.BaseTestCase):
         )
 
 
-class MysqlConnectTest(test_base.MySQLOpportunisticTestCase):
+class MysqlConnectTest(test_base._MySQLOpportunisticTestCase):
 
     def _fixture(self, sql_mode):
         return session.create_engine(self.engine.url, mysql_sql_mode=sql_mode)
@@ -790,7 +790,7 @@ class CreateEngineTest(oslo_test.BaseTestCase):
         )
 
 
-class ProcessGuardTest(test_base.DbTestCase):
+class ProcessGuardTest(test_base._DbTestCase):
     def test_process_guard(self):
         self.engine.dispose()
 
@@ -818,7 +818,7 @@ class ProcessGuardTest(test_base.DbTestCase):
         self.assertEqual(new_dbapi_id, newer_dbapi_id)
 
 
-class PatchStacktraceTest(test_base.DbTestCase):
+class PatchStacktraceTest(test_base._DbTestCase):
 
     def test_trace(self):
         engine = self.engine

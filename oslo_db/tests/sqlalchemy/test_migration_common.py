@@ -28,7 +28,7 @@ from oslo_db.tests.sqlalchemy import base as test_base
 from oslo_db.tests import utils as test_utils
 
 
-class TestMigrationCommon(test_base.DbTestCase):
+class TestMigrationCommon(test_base._DbTestCase):
     def setUp(self):
         super(TestMigrationCommon, self).setUp()
 

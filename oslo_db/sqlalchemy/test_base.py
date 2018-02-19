@@ -34,7 +34,9 @@ from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import session
 
 
-@debtcollector.removals.removed_class("DbFixture")
+@debtcollector.removals.removed_class(
+    "DbFixture",
+    message="Please use oslo_db.sqlalchemy.test_fixtures directly")
 class DbFixture(fixtures.Fixture):
     """Basic database fixture.
 
@@ -89,7 +91,9 @@ class DbFixture(fixtures.Fixture):
         self.addCleanup(self.test.enginefacade.dispose_global)
 
 
-@debtcollector.removals.removed_class("DbTestCase")
+@debtcollector.removals.removed_class(
+    "DbTestCase",
+    message="Please use oslo_db.sqlalchemy.test_fixtures directly")
 class DbTestCase(test_base.BaseTestCase):
     """Base class for testing of DB code.
 

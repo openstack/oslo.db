@@ -180,7 +180,7 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
         self.assertEqual(upgraded, self.migrate_up.call_args_list)
 
 
-class ModelsMigrationSyncMixin(test_base.DbTestCase):
+class ModelsMigrationSyncMixin(test_base._DbTestCase):
 
     def setUp(self):
         super(ModelsMigrationSyncMixin, self).setUp()
@@ -359,7 +359,7 @@ class ModelsMigrationSyncMixin(test_base.DbTestCase):
 
 class ModelsMigrationsSyncMysql(ModelsMigrationSyncMixin,
                                 migrate.ModelsMigrationsSync,
-                                test_base.MySQLOpportunisticTestCase):
+                                test_base._MySQLOpportunisticTestCase):
 
     def test_models_not_sync(self):
         self._test_models_not_sync()
@@ -370,7 +370,7 @@ class ModelsMigrationsSyncMysql(ModelsMigrationSyncMixin,
 
 class ModelsMigrationsSyncPsql(ModelsMigrationSyncMixin,
                                migrate.ModelsMigrationsSync,
-                               test_base.PostgreSQLOpportunisticTestCase):
+                               test_base._PostgreSQLOpportunisticTestCase):
 
     def test_models_not_sync(self):
         self._test_models_not_sync()
@@ -379,7 +379,7 @@ class ModelsMigrationsSyncPsql(ModelsMigrationSyncMixin,
         self._test_models_not_sync_filtered()
 
 
-class TestOldCheckForeignKeys(test_base.DbTestCase):
+class TestOldCheckForeignKeys(test_base._DbTestCase):
     def setUp(self):
         super(TestOldCheckForeignKeys, self).setUp()
 
@@ -557,10 +557,10 @@ class TestOldCheckForeignKeys(test_base.DbTestCase):
 
 
 class PGTestOldCheckForeignKeys(
-        TestOldCheckForeignKeys, test_base.PostgreSQLOpportunisticTestCase):
+        TestOldCheckForeignKeys, test_base._PostgreSQLOpportunisticTestCase):
     pass
 
 
 class MySQLTestOldCheckForeignKeys(
-        TestOldCheckForeignKeys, test_base.MySQLOpportunisticTestCase):
+        TestOldCheckForeignKeys, test_base._MySQLOpportunisticTestCase):
     pass

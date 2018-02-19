@@ -27,7 +27,7 @@ from oslo_db.sqlalchemy import utils
 from oslo_db.tests.sqlalchemy import base as test_base
 
 
-class DropAllObjectsTest(test_base.DbTestCase):
+class DropAllObjectsTest(test_base._DbTestCase):
 
     def setUp(self):
         super(DropAllObjectsTest, self).setUp()
@@ -138,12 +138,12 @@ class BackendNotAvailableTest(oslo_test_base.BaseTestCase):
 
 
 class MySQLDropAllObjectsTest(
-        DropAllObjectsTest, test_base.MySQLOpportunisticTestCase):
+        DropAllObjectsTest, test_base._MySQLOpportunisticTestCase):
     pass
 
 
 class PostgreSQLDropAllObjectsTest(
-        DropAllObjectsTest, test_base.PostgreSQLOpportunisticTestCase):
+        DropAllObjectsTest, test_base._PostgreSQLOpportunisticTestCase):
     pass
 
 
