@@ -146,6 +146,11 @@ database_opts = [
                     'error before error is '
                     'raised. Set to -1 to specify an infinite retry '
                     'count.'),
+    cfg.StrOpt('connection_parameters',
+               default='',
+               help='Optional URL parameters to append onto the connection '
+               'URL at connect time; specify as '
+               'param1=value1&param2=value2&...'),
 ]
 
 

@@ -149,7 +149,8 @@ class _TransactionFactory(object):
             'thread_checkin': _Default(True),
             'json_serializer': _Default(None),
             'json_deserializer': _Default(None),
-            'logging_name': _Default(None)
+            'logging_name': _Default(None),
+            'connection_parameters': _Default(None)
         }
         self._maker_cfg = {
             'expire_on_commit': _Default(False),
@@ -218,6 +219,9 @@ class _TransactionFactory(object):
 
         :param connection_debug: engine logging level, defaults to 0. set to
          50 for INFO, 100 for DEBUG.
+
+        :param connection_parameters: additional parameters to append onto the
+         database URL query string, pass as "param1=value1&param2=value2&..."
 
         :param max_pool_size: max size of connection pool, uses CONF for
          default

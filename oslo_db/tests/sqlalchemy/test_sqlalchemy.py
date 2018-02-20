@@ -213,6 +213,79 @@ class FakeDB2Engine(object):
         pass
 
 
+class QueryParamTest(test_base.DbTestCase):
+    def _fixture(self):
+        from sqlalchemy import create_engine
+
+        def _mock_create_engine(*arg, **kw):
+            return create_engine("sqlite://")
+
+        return mock.patch(
+            "oslo_db.sqlalchemy.engines.sqlalchemy.create_engine",
+            side_effect=_mock_create_engine)
+
+    def test_add_assorted_params(self):
+        with self._fixture() as ce:
+            engines.create_engine(
+                "mysql+pymysql://foo:bar@bat",
+                connection_parameters="foo=bar&bat=hoho&bat=param2")
+
+        self.assertEqual(
+            ce.mock_calls[0][1][0].query,
+            {'bat': ['hoho', 'param2'], 'foo': 'bar'}
+        )
+
+    def test_add_no_params(self):
+        with self._fixture() as ce:
+            engines.create_engine(
+                "mysql+pymysql://foo:bar@bat")
+
+        self.assertEqual(
+            ce.mock_calls[0][1][0].query,
+            {}
+        )
+
+    def test_combine_params(self):
+        with self._fixture() as ce:
+            engines.create_engine(
+                "mysql+pymysql://foo:bar@bat/"
+                "?charset=utf8&param_file=tripleo.cnf",
+                connection_parameters="plugin=sqlalchemy_collectd&"
+                                      "collectd_host=127.0.0.1&"
+                                      "bind_host=192.168.1.5")
+
+        self.assertEqual(
+            ce.mock_calls[0][1][0].query,
+            {
+                'bind_host': '192.168.1.5',
+                'charset': 'utf8',
+                'collectd_host': '127.0.0.1',
+                'param_file': 'tripleo.cnf',
+                'plugin': 'sqlalchemy_collectd'
+            }
+        )
+
+    def test_combine_multi_params(self):
+        with self._fixture() as ce:
+            engines.create_engine(
+                "mysql+pymysql://foo:bar@bat/"
+                "?charset=utf8&param_file=tripleo.cnf&plugin=connmon",
+                connection_parameters="plugin=sqlalchemy_collectd&"
+                                      "collectd_host=127.0.0.1&"
+                                      "bind_host=192.168.1.5")
+
+        self.assertEqual(
+            ce.mock_calls[0][1][0].query,
+            {
+                'bind_host': '192.168.1.5',
+                'charset': 'utf8',
+                'collectd_host': '127.0.0.1',
+                'param_file': 'tripleo.cnf',
+                'plugin': ['connmon', 'sqlalchemy_collectd']
+            }
+        )
+
+
 class MySQLDefaultModeTestCase(test_base.MySQLOpportunisticTestCase):
     def test_default_is_traditional(self):
         with self.engine.connect() as conn:
@@ -357,6 +430,7 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
             thread_checkin=mock.ANY,
             json_serializer=None,
             json_deserializer=None,
+            connection_parameters='',
             logging_name=mock.ANY,
         )
         get_maker.assert_called_once_with(engine=create_engine(),

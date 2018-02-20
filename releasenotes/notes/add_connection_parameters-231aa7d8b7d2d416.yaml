@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Added new option connection_parameters which allows SQLAlchemy query
+    parameters to be stated separately from the URL itself, to allow
+    URL-persistence schemes like Nova cells to use controller-local
+    query parameters that aren't broadcast to all other servers.

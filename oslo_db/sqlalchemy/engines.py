@@ -104,6 +104,21 @@ def _setup_logging(connection_debug=0):
             logger.setLevel(logging.WARNING)
 
 
+def _extend_url_parameters(url, connection_parameters):
+    for key, value in six.moves.urllib.parse.parse_qs(
+            connection_parameters).items():
+        if key in url.query:
+            existing = url.query[key]
+            if not isinstance(existing, list):
+                url.query[key] = existing = utils.to_list(existing)
+            existing.extend(value)
+            value = existing
+        else:
+            url.query[key] = value
+        if len(value) == 1:
+            url.query[key] = value[0]
+
+
 def _vet_url(url):
     if "+" not in url.drivername and not url.drivername.startswith("sqlite"):
         if url.drivername.startswith("mysql"):
@@ -132,10 +147,13 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                   connection_trace=False, max_retries=10, retry_interval=10,
                   thread_checkin=True, logging_name=None,
                   json_serializer=None,
-                  json_deserializer=None):
+                  json_deserializer=None, connection_parameters=None):
     """Return a new SQLAlchemy engine."""
 
     url = sqlalchemy.engine.url.make_url(sql_connection)
+
+    if connection_parameters:
+        _extend_url_parameters(url, connection_parameters)
 
     _vet_url(url)
 
