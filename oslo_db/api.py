@@ -24,6 +24,7 @@ API methods.
 """
 
 import logging
+import random
 import threading
 import time
 
@@ -103,15 +104,21 @@ class wrap_db_retry(object):
 
     :param exception_checker: checks if an exception should trigger a retry
     :type exception_checker: callable
+
+    :param jitter: determine increase retry interval use jitter or not, jitter
+           is always interpreted as True for a DBDeadlockError
+    :type jitter: bool
     """
 
     def __init__(self, retry_interval=1, max_retries=20,
                  inc_retry_interval=True,
                  max_retry_interval=10, retry_on_disconnect=False,
                  retry_on_deadlock=False,
-                 exception_checker=lambda exc: False):
+                 exception_checker=lambda exc: False,
+                 jitter=False):
         super(wrap_db_retry, self).__init__()
 
+        self.jitter = jitter
         self.db_error = (exception.RetryRequest, )
         # default is that we re-raise anything unexpected
         self.exception_checker = exception_checker
@@ -127,7 +134,7 @@ class wrap_db_retry(object):
     def __call__(self, f):
         @six.wraps(f)
         def wrapper(*args, **kwargs):
-            next_interval = self.retry_interval
+            sleep_time = next_interval = self.retry_interval
             remaining = self.max_retries
 
             while True:
@@ -150,12 +157,20 @@ class wrap_db_retry(object):
                     # NOTE(vsergeyev): We are using patched time module, so
                     #                  this effectively yields the execution
                     #                  context to another green thread.
-                    time.sleep(next_interval)
+                    time.sleep(sleep_time)
                     if self.inc_retry_interval:
-                        next_interval = min(
-                            next_interval * 2,
-                            self.max_retry_interval
-                        )
+                        # NOTE(jiangyikun): In order to minimize the chance of
+                        # regenerating a deadlock and reduce the average sleep
+                        # time, we are using jitter by default when the
+                        # deadlock is detected. With the jitter,
+                        # sleep_time = [0, next_interval), otherwise, without
+                        # the jitter, sleep_time = next_interval.
+                        if isinstance(e, exception.DBDeadlock):
+                            jitter = True
+                        else:
+                            jitter = self.jitter
+                        sleep_time, next_interval = self._get_inc_interval(
+                            next_interval, jitter)
                     remaining -= 1
 
         return wrapper
@@ -169,6 +184,18 @@ class wrap_db_retry(object):
                 LOG.debug('DB error: %s', exc)
             return True
         return self.exception_checker(exc)
+
+    def _get_inc_interval(self, n, jitter):
+        # NOTE(jiangyikun): The "n" help us to record the 2 ** retry_times.
+        # The "sleep_time" means the real time to sleep:
+        # - Without jitter: sleep_time = 2 ** retry_times = n
+        # - With jitter:    sleep_time = [0, 2 ** retry_times) < n
+        n = n * 2
+        if jitter:
+            sleep_time = random.uniform(0, n)
+        else:
+            sleep_time = n
+        return min(sleep_time, self.max_retry_interval), n
 
 
 class DBAPI(object):

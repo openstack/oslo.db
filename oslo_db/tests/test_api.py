@@ -253,3 +253,59 @@ class DBRetryRequestCase(DBAPITestCase):
 
         self.assertRaises(AttributeError, some_method)
         self.assertFalse(mock_log.called)
+
+    @mock.patch('oslo_db.api.time.sleep', return_value=None)
+    def test_retry_wrapper_deadlock(self, mock_sleep):
+
+        # Tests that jitter is False, if the retry wrapper hits a
+        # non-deadlock error
+        @api.wrap_db_retry(max_retries=1, retry_on_deadlock=True)
+        def some_method_no_deadlock():
+            raise exception.RetryRequest(ValueError())
+        with mock.patch(
+                'oslo_db.api.wrap_db_retry._get_inc_interval') as mock_get:
+            mock_get.return_value = 2, 2
+            self.assertRaises(ValueError, some_method_no_deadlock)
+            mock_get.assert_called_once_with(1, False)
+
+        # Tests that jitter is True, if the retry wrapper hits a deadlock
+        # error.
+        @api.wrap_db_retry(max_retries=1, retry_on_deadlock=True)
+        def some_method_deadlock():
+            raise exception.DBDeadlock('test')
+        with mock.patch(
+                'oslo_db.api.wrap_db_retry._get_inc_interval') as mock_get:
+            mock_get.return_value = 0.1, 2
+            self.assertRaises(exception.DBDeadlock, some_method_deadlock)
+            mock_get.assert_called_once_with(1, True)
+
+        # Tests that jitter is True, if the jitter is enable by user
+        @api.wrap_db_retry(max_retries=1, retry_on_deadlock=True, jitter=True)
+        def some_method_no_deadlock_exp():
+            raise exception.RetryRequest(ValueError())
+        with mock.patch(
+                'oslo_db.api.wrap_db_retry._get_inc_interval') as mock_get:
+            mock_get.return_value = 0.1, 2
+            self.assertRaises(ValueError, some_method_no_deadlock_exp)
+            mock_get.assert_called_once_with(1, True)
+
+    def test_wrap_db_retry_get_interval(self):
+        x = api.wrap_db_retry(max_retries=5, retry_on_deadlock=True,
+                              max_retry_interval=11)
+        self.assertEqual(11, x.max_retry_interval)
+        for i in (1, 2, 4):
+            # With jitter: sleep_time = [0, 2 ** retry_times)
+            sleep_time, n = x._get_inc_interval(i, True)
+            self.assertEqual(2 * i, n)
+            self.assertTrue(2 * i > sleep_time)
+            # Without jitter: sleep_time = 2 ** retry_times
+            sleep_time, n = x._get_inc_interval(i, False)
+            self.assertEqual(2 * i, n)
+            self.assertEqual(2 * i, sleep_time)
+        for i in (8, 16, 32):
+            sleep_time, n = x._get_inc_interval(i, False)
+            self.assertEqual(x.max_retry_interval, sleep_time)
+            self.assertEqual(2 * i, n)
+            sleep_time, n = x._get_inc_interval(i, True)
+            self.assertTrue(x.max_retry_interval >= sleep_time)
+            self.assertEqual(2 * i, n)
