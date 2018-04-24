@@ -8,11 +8,11 @@ At the command line::
 
 You will also need to install at least one SQL backend::
 
-    $ pip install psycopg2
+    $ pip install PyMySQL
 
 Or::
 
-    $ pip install PyMySQL
+    $ pip install psycopg2
 
 Or::
 
