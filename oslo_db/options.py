@@ -73,6 +73,9 @@ database_opts = [
                                                   group='DEFAULT'),
                                 cfg.DeprecatedOpt('sql_min_pool_size',
                                                   group='DATABASE')],
+               deprecated_for_removal=True,
+               deprecated_reason='The option to set the minimum pool '
+                                 'size is not supported by sqlalchemy.',
                help='Minimum number of SQL connections to keep open in a '
                     'pool.'),
     cfg.IntOpt('max_pool_size',
