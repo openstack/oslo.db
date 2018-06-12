@@ -203,6 +203,7 @@ class ModelsMigrationSyncMixin(test_base._DbTestCase):
             sa.Column('defaulttest4', sa.Enum('first', 'second',
                                               name='testenum'),
                       server_default="first"),
+            sa.Column("defaulttest5", sa.Integer, server_default=sa.text('0')),
             sa.Column('variant', sa.BigInteger()),
             sa.Column('variant2', sa.BigInteger(), server_default='0'),
             sa.Column('fk_check', sa.String(36), nullable=False),
@@ -233,6 +234,8 @@ class ModelsMigrationSyncMixin(test_base._DbTestCase):
             defaulttest4 = sa.Column('defaulttest4', sa.Enum('first', 'second',
                                                              name='testenum'),
                                      server_default="first")
+            defaulttest5 = sa.Column("defaulttest5",
+                                     sa.Integer, server_default=sa.text('0'))
             variant = sa.Column(sa.BigInteger().with_variant(
                 sa.Integer(), 'sqlite'))
             variant2 = sa.Column(sa.BigInteger().with_variant(
@@ -284,6 +287,7 @@ class ModelsMigrationSyncMixin(test_base._DbTestCase):
             sa.Column('defaulttest4',
                       sa.Enum('first', 'second', name='testenum'),
                       server_default="first"),
+            sa.Column("defaulttest5", sa.Integer, server_default=sa.text('0')),
             sa.Column('fk_check', sa.String(36), nullable=False),
             sa.UniqueConstraint('spam', 'foo', name='uniq_cons'),
             sa.ForeignKeyConstraint(['fk_check'], ['table.fk_check']),
@@ -330,6 +334,7 @@ class ModelsMigrationSyncMixin(test_base._DbTestCase):
             sa.Column('defaulttest4',
                       sa.Enum('first', 'second', name='testenum'),
                       server_default="first"),
+            sa.Column("defaulttest5", sa.Integer, server_default=sa.text('0')),
             sa.Column('variant', sa.String(10)),
             sa.Column('fk_check', sa.String(36), nullable=False),
             sa.UniqueConstraint('spam', 'foo', name='uniq_cons'),

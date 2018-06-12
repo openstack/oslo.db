@@ -482,26 +482,6 @@ class ModelsMigrationsSync(object):
                 isinstance(meta_def.arg, expr.False_) and insp_def == "0"
             )
 
-        impl_type = meta_col.type
-        if isinstance(impl_type, types.Variant):
-            impl_type = impl_type.load_dialect_impl(bind.dialect)
-        if isinstance(impl_type, (sqlalchemy.Integer, sqlalchemy.BigInteger)):
-            if meta_def is None or insp_def is None:
-                return meta_def != insp_def
-            insp_def = insp_def.strip("'")
-            return meta_def.arg != insp_def
-
-    @_compare_server_default.dispatch_for('postgresql')
-    def _compare_server_default(bind, meta_col, insp_def, meta_def):
-        if isinstance(meta_col.type, sqlalchemy.Enum):
-            if meta_def is None or insp_def is None:
-                return meta_def != insp_def
-            return insp_def != "'%s'::%s" % (meta_def.arg, meta_col.type.name)
-        elif isinstance(meta_col.type, sqlalchemy.String):
-            if meta_def is None or insp_def is None:
-                return meta_def != insp_def
-            return insp_def != "'%s'::character varying" % meta_def.arg
-
     FKInfo = collections.namedtuple('fk_info', ['constrained_columns',
                                                 'referred_table',
                                                 'referred_columns'])
