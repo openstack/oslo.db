@@ -27,3 +27,4 @@ utils.
 * Documentation: https://docs.openstack.org/oslo.db/latest
 * Source: https://git.openstack.org/cgit/openstack/oslo.db
 * Bugs: https://bugs.launchpad.net/oslo.db
+* Release notes:  https://docs.openstack.org/releasenotes/oslo.db/
