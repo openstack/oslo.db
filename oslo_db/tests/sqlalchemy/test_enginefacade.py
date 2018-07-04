@@ -15,6 +15,7 @@ import contextlib
 import copy
 import fixtures
 import pickle
+import sys
 import warnings
 
 import mock
@@ -607,7 +608,7 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
 
     def test_async_on_writer_raises(self):
         exc = self.assertRaises(
-            TypeError, getattr, enginefacade.writer, "async"
+            TypeError, getattr, enginefacade.writer, "async_"
         )
         self.assertEqual(
             "Setting async on a WRITER makes no sense",
@@ -626,7 +627,7 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
     def test_reader_nested_in_async_reader_raises(self):
         context = oslo_context.RequestContext()
 
-        @enginefacade.reader.async
+        @enginefacade.reader.async_
         def go1(context):
             context.session.execute("test1")
             go2(context)
@@ -647,7 +648,7 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
     def test_reader_allow_async_nested_in_async_reader(self):
         context = oslo_context.RequestContext()
 
-        @enginefacade.reader.async
+        @enginefacade.reader.async_
         def go1(context):
             context.session.execute("test1")
             go2(context)
@@ -701,7 +702,7 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
     def test_writer_nested_in_async_reader_raises(self):
         context = oslo_context.RequestContext()
 
-        @enginefacade.reader.async
+        @enginefacade.reader.async_
         def go1(context):
             context.session.execute("test1")
             go2(context)
@@ -741,10 +742,30 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
                 with self._assert_writer_session(makers) as session:
                     session.execute("test2")
 
+    def test_deprecated_async_reader_name(self):
+        if sys.version_info >= (3, 7):
+            self.skipTest("Test only runs on Python < 3.7")
+
+        context = oslo_context.RequestContext()
+
+        old = getattr(enginefacade.reader, "async")
+
+        @old
+        def go1(context):
+            context.session.execute("test1")
+
+        go1(context)
+
+        with self._assert_engines() as engines:
+            with self._assert_makers(engines) as makers:
+                with self._assert_async_reader_session(
+                        makers, assert_calls=False) as session:
+                    session.execute("test1")
+
     def test_async_reader_then_reader_ok(self):
         context = oslo_context.RequestContext()
 
-        @enginefacade.reader.async
+        @enginefacade.reader.async_
         def go1(context):
             context.session.execute("test1")
 
