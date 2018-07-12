@@ -14,7 +14,7 @@ AUTHORS
 .update-venv/
 ChangeLog
 *.egg
-.testrepository/
+.stestr/
 .project
 .pydevproject
 oslo.db.egg-info/
