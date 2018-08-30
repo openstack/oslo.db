@@ -251,11 +251,11 @@ def _check_constraint_error(
          "of relation "
          "\"(?P<relation>.+)\" does not exist")
 @filters("mysql", sqla_exc.InternalError,
-         r".*1091,.*Can't DROP '(?P<constraint>.+)'; "
-         "check that column/key exists")
+         r".*1091,.*Can't DROP (?:FOREIGN KEY )?['`](?P<constraint>.+)['`]; "
+         "check that .* exists")
 @filters("mysql", sqla_exc.OperationalError,
-         r".*1091,.*Can't DROP '(?P<constraint>.+)'; "
-         "check that column/key exists")
+         r".*1091,.*Can't DROP (?:FOREIGN KEY )?['`](?P<constraint>.+)['`]; "
+         "check that .* exists")
 @filters("mysql", sqla_exc.InternalError,
          r".*1025,.*Error on rename of '.+/(?P<relation>.+)' to ")
 def _check_constraint_non_existing(
