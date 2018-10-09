@@ -388,7 +388,8 @@ class _TransactionFactory(object):
             self._start()
         if mode is _WRITER:
             return self._writer_engine.connect()
-        elif self.synchronous_reader or mode is _ASYNC_READER:
+        elif mode is _ASYNC_READER or \
+                (mode is _READER and not self.synchronous_reader):
             return self._reader_engine.connect()
         else:
             return self._writer_engine.connect()
@@ -403,7 +404,8 @@ class _TransactionFactory(object):
             kw['bind'] = bind
         if mode is _WRITER:
             return self._writer_maker(**kw)
-        elif self.synchronous_reader or mode is _ASYNC_READER:
+        elif mode is _ASYNC_READER or \
+                (mode is _READER and not self.synchronous_reader):
             return self._reader_maker(**kw)
         else:
             return self._writer_maker(**kw)
