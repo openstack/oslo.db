@@ -10,7 +10,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 import contextlib
 import functools
 import operator
@@ -28,6 +27,7 @@ from oslo_db import options
 from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import orm
 from oslo_db.sqlalchemy import utils
+from oslo_db import warning
 
 
 class _symbol(object):
@@ -334,7 +334,7 @@ class _TransactionFactory(object):
             warnings.warn(
                 "Configuration option(s) %r not supported" %
                 sorted(not_supported),
-                exception.NotSupportedWarning
+                warning.NotSupportedWarning
             )
 
     def get_legacy_facade(self):
@@ -1253,7 +1253,7 @@ class LegacyEngineFacade(object):
         warnings.warn(
             "EngineFacade is deprecated; please use "
             "oslo_db.sqlalchemy.enginefacade",
-            exception.OsloDBDeprecationWarning,
+            warning.OsloDBDeprecationWarning,
             stacklevel=2)
         if _factory:
             self._factory = _factory

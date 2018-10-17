@@ -37,6 +37,7 @@ from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import engines as oslo_engines
 from oslo_db.sqlalchemy import orm
 from oslo_db.tests.sqlalchemy import base as test_base
+from oslo_db import warning
 
 
 enginefacade.transaction_context_provider(oslo_context.RequestContext)
@@ -2182,7 +2183,7 @@ class ConfigOptionsTest(oslo_test_base.BaseTestCase):
 
         self.assertEqual(1, len(w))
         self.assertTrue(
-            issubclass(w[-1].category, exception.NotSupportedWarning))
+            issubclass(w[-1].category, warning.NotSupportedWarning))
         self.assertEqual(
             "Configuration option(s) ['fake1', 'wrong2'] not supported",
             str(w[-1].message)
