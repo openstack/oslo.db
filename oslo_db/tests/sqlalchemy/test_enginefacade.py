@@ -479,6 +479,32 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
             [mock.call.dispose()]
         )
 
+    def test_started_flag(self):
+        facade = enginefacade.transaction_context()
+
+        self.assertFalse(facade.is_started)
+        facade.configure(connection=self.engine_uri)
+        facade.writer.get_engine()
+
+        self.assertTrue(facade.is_started)
+
+    def test_started_exception(self):
+        facade = enginefacade.transaction_context()
+
+        self.assertFalse(facade.is_started)
+        facade.configure(connection=self.engine_uri)
+        facade.writer.get_engine()
+
+        exc = self.assertRaises(
+            enginefacade.AlreadyStartedError,
+            facade.configure,
+            connection=self.engine_uri
+        )
+        self.assertEqual(
+            "this TransactionFactory is already started",
+            exc.args[0]
+        )
+
     def test_session_reader_decorator(self):
         context = oslo_context.RequestContext()
 

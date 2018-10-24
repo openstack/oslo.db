@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Added new ``.is_started`` boolean flag to enginefacade context manager
+    and factory objects, so that double-configure scenarios can be prevented
+    by calling code.   Additionally, the ``TypeError`` raised when configure
+    is called after the factory is started is now a specific subclass
+    ``enginefacade.AlreadyStartedError``.

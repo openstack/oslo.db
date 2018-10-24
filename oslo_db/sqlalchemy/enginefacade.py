@@ -120,6 +120,14 @@ class _Default(object):
             hasattr(conf_namespace, key)
 
 
+class AlreadyStartedError(TypeError):
+    """Raises when a factory is being asked to initialize a second time.
+
+    Subclasses :class:`.TypeError` for legacy support.
+
+    """
+
+
 class _TransactionFactory(object):
     """A factory for :class:`._TransactionContext` objects.
 
@@ -314,7 +322,8 @@ class _TransactionFactory(object):
     def _configure(self, as_defaults, kw):
 
         if self._started:
-            raise TypeError("this TransactionFactory is already started")
+            raise AlreadyStartedError(
+                "this TransactionFactory is already started")
         not_supported = []
         for k, v in kw.items():
             for dict_ in (
@@ -463,6 +472,11 @@ class _TransactionFactory(object):
             self._writer_engine.pool.dispose()
             if self._reader_engine is not self._writer_engine:
                 self._reader_engine.pool.dispose()
+
+    @property
+    def is_started(self):
+        """True if this :class:`._TransactionFactory` is already started."""
+        return self._started
 
     def _start(self, conf=False, connection=None, slave_connection=None):
         with self._start_lock:
@@ -776,6 +790,11 @@ class _TransactionContextManager(object):
     def _factory(self):
         """The :class:`._TransactionFactory` associated with this context."""
         return self._root._root_factory
+
+    @property
+    def is_started(self):
+        """True if this manager is already started."""
+        return self._factory.is_started
 
     def configure(self, **kw):
         """Apply configurational options to the factory.
