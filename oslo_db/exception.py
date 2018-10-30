@@ -43,10 +43,12 @@ with `try/except` statement. This is required for consistent handling of
 database errors.
 """
 
+from debtcollector import moves
+from oslo_utils.excutils import CausedByException
 import six
 
 from oslo_db._i18n import _
-from oslo_utils.excutils import CausedByException
+from oslo_db import warning
 
 
 class DBError(CausedByException):
@@ -299,27 +301,10 @@ class CantStartEngineError(Exception):
     """Error raised when the enginefacade cannot start up correctly."""
 
 
-class NotSupportedWarning(Warning):
-    """Warn that an argument or call that was passed is not supported.
+moves.moved_class(warning.NotSupportedWarning,
+                  'NotSupportedWarning',
+                  __name__, version='Stein')
 
-    This subclasses Warning so that it can be filtered as a distinct
-    category.
-
-    .. seealso::
-
-        https://docs.python.org/2/library/warnings.html
-
-    """
-
-
-class OsloDBDeprecationWarning(DeprecationWarning):
-    """Issued per usage of a deprecated API.
-
-    This subclasses DeprecationWarning so that it can be filtered as a distinct
-    category.
-
-    .. seealso::
-
-        https://docs.python.org/2/library/warnings.html
-
-    """
+moves.moved_class(warning.OsloDBDeprecationWarning,
+                  'OsloDBDeprecationWarning',
+                  __name__, version='Stein')
