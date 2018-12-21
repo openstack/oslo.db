@@ -159,7 +159,6 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
 
     engine_args = {
         "pool_recycle": connection_recycle_time,
-        'convert_unicode': True,
         'connect_args': {},
         'logging_name': logging_name
     }
