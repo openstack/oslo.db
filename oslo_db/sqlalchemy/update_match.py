@@ -292,8 +292,8 @@ def manufacture_entity_criteria(entity, include_only=None, exclude=None):
     existing = dict(
         (attr.key, attr.loaded_value)
         for attr in state.attrs
-        if attr.loaded_value is not orm.attributes.NO_VALUE
-        and attr.key not in exclude
+        if attr.loaded_value is not orm.attributes.NO_VALUE and
+        attr.key not in exclude
     )
     if include_only:
         existing = dict(
