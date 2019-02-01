@@ -18,7 +18,6 @@
 
 from oslo_utils import timeutils
 import sqlalchemy.orm
-from sqlalchemy.sql.expression import literal_column
 
 from oslo_db.sqlalchemy import update_match
 
@@ -26,8 +25,9 @@ from oslo_db.sqlalchemy import update_match
 class Query(sqlalchemy.orm.query.Query):
     """Subclass of sqlalchemy.query with soft_delete() method."""
     def soft_delete(self, synchronize_session='evaluate'):
-        return self.update({'deleted': literal_column('id'),
-                            'updated_at': literal_column('updated_at'),
+        entity = self.column_descriptions[0]['entity']
+        return self.update({'deleted': entity.id,
+                            'updated_at': entity.updated_at,
                             'deleted_at': timeutils.utcnow()},
                            synchronize_session=synchronize_session)
 
