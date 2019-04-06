@@ -67,17 +67,6 @@ database_opts = [
              'pool longer than this number of seconds will be replaced '
              'with a new one the next time they are checked out from '
              'the pool.'),
-    cfg.IntOpt('min_pool_size',
-               default=1,
-               deprecated_opts=[cfg.DeprecatedOpt('sql_min_pool_size',
-                                                  group='DEFAULT'),
-                                cfg.DeprecatedOpt('sql_min_pool_size',
-                                                  group='DATABASE')],
-               deprecated_for_removal=True,
-               deprecated_reason='The option to set the minimum pool '
-                                 'size is not supported by sqlalchemy.',
-               help='Minimum number of SQL connections to keep open in a '
-                    'pool.'),
     cfg.IntOpt('max_pool_size',
                default=5,
                deprecated_opts=[cfg.DeprecatedOpt('sql_max_pool_size',

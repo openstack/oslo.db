@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Removed deprecated database option ``min_pool_size``.
+
+    This option had no effect and was deprecated in Rocky. For more
+    information see bug `1764786 <https://bugs.launchpad.net/oslo.db/+bug/1764786>`_.

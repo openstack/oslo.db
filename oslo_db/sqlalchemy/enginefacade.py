@@ -181,7 +181,7 @@ class _TransactionFactory(object):
             (k, _Default(None)) for k in [
                 'db_max_retries', 'db_inc_retry_interval',
                 'use_db_reconnect',
-                'db_retry_interval', 'min_pool_size',
+                'db_retry_interval',
                 'db_max_retry_interval', 'backend', 'use_tpool'])
 
         self._started = False

@@ -30,7 +30,6 @@ class DbApiOptionsTestCase(test_utils.BaseTestCase):
     def test_deprecated_session_parameters(self):
         path = self.create_tempfiles([["tmp", b"""[DEFAULT]
 sql_connection=x://y.z
-sql_min_pool_size=10
 sql_max_pool_size=20
 sql_max_retries=30
 sql_retry_interval=40
@@ -40,7 +39,6 @@ sql_connection_trace=True
 """]])[0]
         self.conf(['--config-file', path])
         self.assertEqual('x://y.z', self.conf.database.connection)
-        self.assertEqual(10, self.conf.database.min_pool_size)
         self.assertEqual(20, self.conf.database.max_pool_size)
         self.assertEqual(30, self.conf.database.max_retries)
         self.assertEqual(40, self.conf.database.retry_interval)
@@ -51,7 +49,6 @@ sql_connection_trace=True
     def test_session_parameters(self):
         path = self.create_tempfiles([["tmp", b"""[database]
 connection=x://y.z
-min_pool_size=10
 max_pool_size=20
 max_retries=30
 retry_interval=40
@@ -62,7 +59,6 @@ pool_timeout=7
 """]])[0]
         self.conf(['--config-file', path])
         self.assertEqual('x://y.z', self.conf.database.connection)
-        self.assertEqual(10, self.conf.database.min_pool_size)
         self.assertEqual(20, self.conf.database.max_pool_size)
         self.assertEqual(30, self.conf.database.max_retries)
         self.assertEqual(40, self.conf.database.retry_interval)
@@ -75,7 +71,6 @@ pool_timeout=7
         path = self.create_tempfiles([['tmp', b'[DATABASE]\n'
                                        b'sql_connection=fake_connection\n'
                                        b'sql_idle_timeout=100\n'
-                                       b'sql_min_pool_size=99\n'
                                        b'sql_max_pool_size=199\n'
                                        b'sql_max_retries=22\n'
                                        b'reconnect_interval=17\n'
@@ -86,7 +81,6 @@ pool_timeout=7
         self.assertEqual('fake_connection', self.conf.database.connection)
         self.assertEqual(100, self.conf.database.connection_recycle_time)
         self.assertEqual(100, self.conf.database.idle_timeout)
-        self.assertEqual(99, self.conf.database.min_pool_size)
         self.assertEqual(199, self.conf.database.max_pool_size)
         self.assertEqual(22, self.conf.database.max_retries)
         self.assertEqual(17, self.conf.database.retry_interval)
