@@ -195,15 +195,16 @@ def _sqlite_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
          r"(?i).*foreign key constraint failed")
 @filters("postgresql", sqla_exc.IntegrityError,
          r".*on table \"(?P<table>[^\"]+)\" violates "
-         "foreign key constraint \"(?P<constraint>[^\"]+)\".*\n"
-         "DETAIL:  Key \((?P<key>.+)\)=\(.+\) "
-         "is (not present in|still referenced from) table "
-         "\"(?P<key_table>[^\"]+)\".")
-@filters("mysql", sqla_exc.IntegrityError,
-         r".*Cannot (add|delete) or update a (child|parent) row: "
-         'a foreign key constraint fails \([`"].+[`"]\.[`"](?P<table>.+)[`"], '
-         'CONSTRAINT [`"](?P<constraint>.+)[`"] FOREIGN KEY '
-         '\([`"](?P<key>.+)[`"]\) REFERENCES [`"](?P<key_table>.+)[`"] ')
+         r"foreign key constraint \"(?P<constraint>[^\"]+)\".*\n"
+         r"DETAIL:  Key \((?P<key>.+)\)=\(.+\) "
+         r"is (not present in|still referenced from) table "
+         r"\"(?P<key_table>[^\"]+)\".")
+@filters(
+    "mysql", sqla_exc.IntegrityError,
+    r".*Cannot (add|delete) or update a (child|parent) row: "
+    r'a foreign key constraint fails \([`"].+[`"]\.[`"](?P<table>.+)[`"], '
+    r'CONSTRAINT [`"](?P<constraint>.+)[`"] FOREIGN KEY '
+    r'\([`"](?P<key>.+)[`"]\) REFERENCES [`"](?P<key_table>.+)[`"] ')
 def _foreign_key_error(integrity_error, match, engine_name, is_disconnect):
     """Filter for foreign key errors."""
 

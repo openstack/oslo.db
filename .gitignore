@@ -23,6 +23,7 @@ AUTHORS
 .update-venv/
 ChangeLog
 *.egg
+*.eggs
 .stestr/
 oslo.db.egg-info/
 doc/source/reference/api

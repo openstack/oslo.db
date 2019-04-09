@@ -17,6 +17,12 @@
 #    under the License.
 
 import collections
+# TODO(smcginnis) update this once six has support for collections.abc
+# (https://github.com/benjaminp/six/pull/241) or clean up once we drop py2.7.
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
 import contextlib
 import inspect as pyinspect
 import itertools
@@ -280,8 +286,7 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
 def to_list(x, default=None):
     if x is None:
         return default
-    if not isinstance(x, collections.Iterable) or \
-            isinstance(x, six.string_types):
+    if not isinstance(x, Iterable) or isinstance(x, six.string_types):
         return [x]
     elif isinstance(x, list):
         return x
