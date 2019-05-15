@@ -1003,10 +1003,13 @@ class _TransactionContextManager(object):
             context_index = 1
         else:
             context_index = 0
+        context_kw = argspec.args[context_index]
 
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
-            context = args[context_index]
+            context = kwargs.get(context_kw, None)
+            if not context:
+                context = args[context_index]
 
             with self._transaction_scope(context):
                 return fn(*args, **kwargs)

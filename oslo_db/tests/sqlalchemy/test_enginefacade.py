@@ -519,6 +519,19 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
                 with self._assert_reader_session(makers) as session:
                     session.execute("test")
 
+    def test_session_reader_decorator_kwarg_call(self):
+        context = oslo_context.RequestContext()
+
+        @enginefacade.reader
+        def go(context):
+            context.session.execute("test")
+        go(context=context)
+
+        with self._assert_engines() as engines:
+            with self._assert_makers(engines) as makers:
+                with self._assert_reader_session(makers) as session:
+                    session.execute("test")
+
     def test_connection_reader_decorator(self):
         context = oslo_context.RequestContext()
 
