@@ -1227,12 +1227,16 @@ class NonCommittingConnectable(object):
 
     """
 
+    _nested_trans = None
+
     def __init__(self, connection):
         self.connection = connection
         self._trans = connection.begin()
         self._restart_nested()
 
     def _restart_nested(self):
+        if self._nested_trans is not None:
+            self._nested_trans.rollback()
         self._nested_trans = self.connection.begin_nested()
 
     def _dispose(self):
