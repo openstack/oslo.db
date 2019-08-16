@@ -1477,15 +1477,15 @@ class TestDBConnectPingWrapping(TestsExceptionFilter):
         with self._fixture(dialect_name, exc_obj, 1, is_disconnect):
             self.assertRaises(
                 exception.DBConnectionError,
-                self.engine.contextual_connect
+                self.engine.connect
             )
             self.assertRaises(
                 exception.DBConnectionError,
-                self.engine.contextual_connect
+                self.engine.connect
             )
             self.assertRaises(
                 exception.DBConnectionError,
-                self.engine.contextual_connect
+                self.engine.connect
             )
 
     def test_mysql_w_disconnect_flag(self):
