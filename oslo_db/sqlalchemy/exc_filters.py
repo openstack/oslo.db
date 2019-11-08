@@ -413,8 +413,7 @@ def _raise_for_remaining_DBAPIError(error, match, engine_name, is_disconnect):
     if is_disconnect:
         raise exception.DBConnectionError(error)
     else:
-        LOG.exception(
-            'DBAPIError exception wrapped from %s' % error)
+        LOG.warn('DBAPIError exception wrapped.', exc_info=True)
         raise exception.DBError(error)
 
 
@@ -425,7 +424,7 @@ def _raise_for_unicode_encode(error, match, engine_name, is_disconnect):
 
 @filters("*", Exception, r".*")
 def _raise_for_all_others(error, match, engine_name, is_disconnect):
-    LOG.exception('DB exception wrapped.')
+    LOG.warn('DB exception wrapped.', exc_info=True)
     raise exception.DBError(error)
 
 ROLLBACK_CAUSE_KEY = 'oslo.db.sp_rollback_cause'
