@@ -60,19 +60,19 @@ class ManufactureCriteriaTest(oslo_test_base.BaseTestCase):
         specimen = MyModel(
             y='y1', z=('z1', 'z2'),
         )
-        self.assertEqual(
-            "my_table.y = :y_1 AND my_table.z IN (:z_1, :z_2)",
-            str(update_match.manufacture_entity_criteria(specimen).compile())
+        self.assertRegex(
+            str(update_match.manufacture_entity_criteria(specimen).compile()),
+            r"my_table.y = :y_1 AND my_table.z IN \(.+?\)",
         )
 
     def test_instance_criteria_tuples_wnone(self):
         specimen = MyModel(
             y='y1', z=('z1', 'z2', None),
         )
-        self.assertEqual(
-            "my_table.y = :y_1 AND (my_table.z IS NULL OR "
-            "my_table.z IN (:z_1, :z_2))",
-            str(update_match.manufacture_entity_criteria(specimen).compile())
+        self.assertRegex(
+            str(update_match.manufacture_entity_criteria(specimen).compile()),
+            r"my_table.y = :y_1 AND \(my_table.z IS NULL OR "
+            r"my_table.z IN \(.+?\)\)",
         )
 
     def test_instance_criteria_none_list(self):
