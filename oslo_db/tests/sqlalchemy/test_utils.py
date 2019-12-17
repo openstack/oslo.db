@@ -16,7 +16,6 @@
 import fixtures
 import mock
 from oslotest import base as test_base
-from oslotest import moxstubout
 from six.moves.urllib import parse
 import sqlalchemy
 from sqlalchemy.dialects import mysql
@@ -166,11 +165,13 @@ class FakeModel(object):
 class TestPaginateQuery(test_base.BaseTestCase):
     def setUp(self):
         super(TestPaginateQuery, self).setUp()
-        mox_fixture = self.useFixture(moxstubout.MoxStubout())
-        self.mox = mox_fixture.mox
-        self.query = self.mox.CreateMockAnything()
-        self.mox.StubOutWithMock(sqlalchemy, 'asc')
-        self.mox.StubOutWithMock(sqlalchemy, 'desc')
+
+        self.query = mock.Mock()
+        self.mock_asc = self.useFixture(
+            fixtures.MockPatchObject(sqlalchemy, 'asc')).mock
+        self.mock_desc = self.useFixture(
+            fixtures.MockPatchObject(sqlalchemy, 'desc')).mock
+
         self.marker = FakeTable(user_id='user',
                                 project_id='p',
                                 snapshot_id='s',
@@ -178,27 +179,42 @@ class TestPaginateQuery(test_base.BaseTestCase):
         self.model = FakeTable
 
     def test_paginate_query_no_pagination_no_sort_dirs(self):
-        sqlalchemy.asc(self.model.user_id).AndReturn('asc_3')
-        self.query.order_by('asc_3').AndReturn(self.query)
-        sqlalchemy.asc(self.model.project_id).AndReturn('asc_2')
-        self.query.order_by('asc_2').AndReturn(self.query)
-        sqlalchemy.asc(self.model.snapshot_id).AndReturn('asc_1')
-        self.query.order_by('asc_1').AndReturn(self.query)
-        self.query.limit(5).AndReturn(self.query)
-        self.mox.ReplayAll()
+        self.query.order_by.return_value = self.query
+        self.mock_asc.side_effect = [
+            'asc_3', 'asc_2', 'asc_1'
+        ]
+
         utils.paginate_query(self.query, self.model, 5,
                              ['user_id', 'project_id', 'snapshot_id'])
 
+        self.mock_asc.assert_has_calls([
+            mock.call(self.model.user_id),
+            mock.call(self.model.project_id),
+            mock.call(self.model.snapshot_id),
+        ])
+        self.query.order_by.assert_has_calls([
+            mock.call('asc_3'),
+            mock.call('asc_2'),
+            mock.call('asc_1'),
+        ])
+        self.query.limit.assert_called_once_with(5)
+
     def test_paginate_query_no_pagination(self):
-        sqlalchemy.asc(self.model.user_id).AndReturn('asc')
-        self.query.order_by('asc').AndReturn(self.query)
-        sqlalchemy.desc(self.model.project_id).AndReturn('desc')
-        self.query.order_by('desc').AndReturn(self.query)
-        self.query.limit(5).AndReturn(self.query)
-        self.mox.ReplayAll()
+        self.query.order_by.return_value = self.query
+        self.mock_asc.side_effect = ['asc']
+        self.mock_desc.side_effect = ['desc']
+
         utils.paginate_query(self.query, self.model, 5,
                              ['user_id', 'project_id'],
                              sort_dirs=['asc', 'desc'])
+
+        self.mock_asc.assert_called_once_with(self.model.user_id)
+        self.mock_desc.assert_called_once_with(self.model.project_id)
+        self.query.order_by.assert_has_calls([
+            mock.call('asc'),
+            mock.call('desc'),
+        ])
+        self.query.limit.assert_called_once_with(5)
 
     def test_invalid_sort_key_str(self):
         self.assertEqual("Sort key supplied is invalid: None",
@@ -212,12 +228,14 @@ class TestPaginateQuery(test_base.BaseTestCase):
             str(exception.DBInvalidUnicodeParameter()))
 
     def test_paginate_query_attribute_error(self):
-        sqlalchemy.asc(self.model.user_id).AndReturn('asc')
-        self.query.order_by('asc').AndReturn(self.query)
-        self.mox.ReplayAll()
+        self.mock_asc.return_value = 'asc'
+
         self.assertRaises(exception.InvalidSortKey,
                           utils.paginate_query, self.query,
                           self.model, 5, ['user_id', 'non-existent key'])
+
+        self.mock_asc.assert_called_once_with(self.model.user_id)
+        self.query.order_by.assert_called_once_with('asc')
 
     def test_paginate_query_attribute_error_invalid_sortkey(self):
         self.assertRaises(exception.InvalidSortKey,
@@ -235,7 +253,6 @@ class TestPaginateQuery(test_base.BaseTestCase):
                           self.model, 5, ['asc-nullinvalid'])
 
     def test_paginate_query_assertion_error(self):
-        self.mox.ReplayAll()
         self.assertRaises(AssertionError,
                           utils.paginate_query, self.query,
                           self.model, 5, ['user_id'],
@@ -243,172 +260,274 @@ class TestPaginateQuery(test_base.BaseTestCase):
                           sort_dir='asc', sort_dirs=['asc'])
 
     def test_paginate_query_assertion_error_2(self):
-        self.mox.ReplayAll()
         self.assertRaises(AssertionError,
                           utils.paginate_query, self.query,
                           self.model, 5, ['user_id'],
                           marker=self.marker,
                           sort_dir=None, sort_dirs=['asc', 'desk'])
 
-    def test_paginate_query(self):
-        sqlalchemy.asc(self.model.user_id).AndReturn('asc_1')
-        self.query.order_by('asc_1').AndReturn(self.query)
-        sqlalchemy.desc(self.model.project_id).AndReturn('desc_1')
-        self.query.order_by('desc_1').AndReturn(self.query)
-        self.mox.StubOutWithMock(sqlalchemy.sql, 'and_')
-        sqlalchemy.sql.and_(mock.ANY).AndReturn('some_crit')
-        sqlalchemy.sql.and_(mock.ANY, mock.ANY).AndReturn('another_crit')
-        self.mox.StubOutWithMock(sqlalchemy.sql, 'or_')
-        sqlalchemy.sql.or_('some_crit', 'another_crit').AndReturn('some_f')
-        self.query.filter('some_f').AndReturn(self.query)
-        self.query.limit(5).AndReturn(self.query)
-        self.mox.ReplayAll()
+    @mock.patch.object(sqlalchemy.sql, 'and_')
+    @mock.patch.object(sqlalchemy.sql, 'or_')
+    def test_paginate_query(self, mock_or, mock_and):
+        self.query.order_by.return_value = self.query
+        self.query.filter.return_value = self.query
+        self.mock_asc.return_value = 'asc_1'
+        self.mock_desc.return_value = 'desc_1'
+        mock_and.side_effect = ['some_crit', 'another_crit']
+        mock_or.return_value = 'some_f'
+
         utils.paginate_query(self.query, self.model, 5,
                              ['user_id', 'project_id'],
                              marker=self.marker,
                              sort_dirs=['asc', 'desc'])
 
-    def test_paginate_query_null(self):
-        self.mox.StubOutWithMock(self.model.user_id, 'isnot')
-        self.model.user_id.isnot(None).AndReturn('asc_null_1')
-        sqlalchemy.desc('asc_null_1').AndReturn('asc_null_2')
-        self.query.order_by('asc_null_2').AndReturn(self.query)
+        self.mock_asc.assert_called_once_with(self.model.user_id)
+        self.mock_desc.assert_called_once_with(self.model.project_id)
+        self.query.order_by.assert_has_calls([
+            mock.call('asc_1'),
+            mock.call('desc_1'),
+        ])
+        mock_and.assert_has_calls([
+            mock.call(mock.ANY),
+            mock.call(mock.ANY, mock.ANY)
+        ])
+        mock_or.assert_called_once_with('some_crit', 'another_crit')
+        self.query.filter.assert_called_once_with('some_f')
+        self.query.limit.assert_called_once_with(5)
 
-        sqlalchemy.asc(self.model.user_id).AndReturn('asc_1')
-        self.query.order_by('asc_1').AndReturn(self.query)
+    @mock.patch.object(sqlalchemy.sql, 'and_')
+    @mock.patch.object(sqlalchemy.sql, 'or_')
+    def test_paginate_query_null(self, mock_or, mock_and):
+        self.query.order_by.return_value = self.query
+        self.query.filter.return_value = self.query
+        self.mock_desc.side_effect = [
+            'asc_null_2',
+            'desc_null_2',
+            'desc_1',
+        ]
+        self.mock_asc.side_effect = [
+            'asc_1'
+        ]
+        mock_or.side_effect = [
+            'or_1',
+            'or_2',
+            'some_f',
+        ]
+        mock_and.side_effect = [
+            'some_crit',
+            'another_crit',
+        ]
 
-        self.mox.StubOutWithMock(self.model.project_id, 'is_')
-        self.model.project_id.is_(None).AndReturn('desc_null_1')
-        sqlalchemy.desc('desc_null_1').AndReturn('desc_null_2')
-        self.query.order_by('desc_null_2').AndReturn(self.query)
+        with mock.patch.object(self.model.user_id, 'isnot') as mock_isnot, \
+                mock.patch.object(self.model.user_id, 'is_') as mock_is_a, \
+                mock.patch.object(self.model.project_id, 'is_') as mock_is_b:
+            mock_isnot.return_value = 'asc_null_1'
+            mock_is_a.side_effect = [
+                'desc_null_filter_1',
+                'desc_null_filter_2',
+            ]
+            mock_is_b.side_effect = [
+                'desc_null_1',
+                'asc_null_filter',
+            ]
 
-        sqlalchemy.desc(self.model.project_id).AndReturn('desc_1')
-        self.query.order_by('desc_1').AndReturn(self.query)
+            utils.paginate_query(self.query, self.model, 5,
+                                 ['user_id', 'project_id'],
+                                 marker=self.marker,
+                                 sort_dirs=[
+                                     'asc-nullslast', 'desc-nullsfirst'])
 
-        self.mox.StubOutWithMock(sqlalchemy.sql, 'and_')
-        self.mox.StubOutWithMock(sqlalchemy.sql, 'or_')
-        self.mox.StubOutWithMock(self.model.user_id, 'is_')
+            mock_isnot.assert_called_once_with(None)
+            mock_is_a.assert_has_calls([
+                mock.call(None),
+                mock.call(None),
+            ])
+            mock_is_b.assert_has_calls([
+                mock.call(None),
+                mock.call(None),
+            ])
 
-        self.model.user_id.is_(None).AndReturn('desc_null_filter_1')
-        self.model.user_id.is_(None).AndReturn('desc_null_filter_2')
-        sqlalchemy.sql.or_(mock.ANY, 'desc_null_filter_2').AndReturn('or_1')
+        self.mock_desc.assert_has_calls([
+            mock.call('asc_null_1'),
+            mock.call('desc_null_1'),
+            mock.call(self.model.project_id),
+        ])
+        self.mock_asc.assert_has_calls([
+            mock.call(self.model.user_id),
+        ])
+        mock_or.assert_has_calls([
+            mock.call(mock.ANY, 'desc_null_filter_2'),
+            mock.call(mock.ANY, 'asc_null_filter'),
+            mock.call('some_crit', 'another_crit'),
+        ])
+        mock_and.assert_has_calls([
+            mock.call('or_1'),
+            mock.call(mock.ANY, 'or_2'),
+        ])
 
-        self.model.project_id.is_(None).AndReturn('asc_null_filter')
-        sqlalchemy.sql.or_(mock.ANY, 'asc_null_filter').AndReturn('or_2')
+        self.query.order_by.assert_has_calls([
+            mock.call('asc_null_2'),
+            mock.call('asc_1'),
+            mock.call('desc_null_2'),
+            mock.call('desc_1'),
+        ])
+        self.query.filter.assert_called_once_with('some_f')
+        self.query.limit.assert_called_once_with(5)
 
-        sqlalchemy.sql.and_('or_1').AndReturn('some_crit')
-        sqlalchemy.sql.and_(mock.ANY, 'or_2').AndReturn('another_crit')
-        sqlalchemy.sql.or_('some_crit', 'another_crit').AndReturn('some_f')
-        self.query.filter('some_f').AndReturn(self.query)
-        self.query.limit(5).AndReturn(self.query)
-        self.mox.ReplayAll()
-        utils.paginate_query(self.query, self.model, 5,
-                             ['user_id', 'project_id'],
-                             marker=self.marker,
-                             sort_dirs=['asc-nullslast', 'desc-nullsfirst'])
+    @mock.patch.object(sqlalchemy.sql, 'and_')
+    @mock.patch.object(sqlalchemy.sql, 'or_')
+    def test_paginate_query_marker_null(self, mock_or, mock_and):
 
-    def test_paginate_query_marker_null(self):
-        self.mox.StubOutWithMock(self.model.user_id, 'isnot')
-        self.model.user_id.isnot(None).AndReturn('asc_null_1')
-        sqlalchemy.desc('asc_null_1').AndReturn('asc_null_2')
-        self.query.order_by('asc_null_2').AndReturn(self.query)
+        self.mock_asc.side_effect = [
+            'asc_1'
+        ]
+        self.mock_desc.side_effect = [
+            'asc_null_2',
+            'desc_null_2',
+            'desc_1',
+        ]
+        self.query.order_by.return_value = self.query
+        self.query.filter.return_value = self.query
+        mock_and.return_value = 'some_crit'
+        mock_or.side_effect = ['or_1', 'some_f']
 
-        sqlalchemy.asc(self.model.user_id).AndReturn('asc_1')
-        self.query.order_by('asc_1').AndReturn(self.query)
+        with mock.patch.object(self.model.user_id, 'isnot') as mock_isnot, \
+                mock.patch.object(self.model.updated_at, 'is_') as mock_is_a, \
+                mock.patch.object(self.model.user_id, 'is_') as mock_is_b:
 
-        self.mox.StubOutWithMock(self.model.updated_at, 'is_')
-        self.model.updated_at.is_(None).AndReturn('desc_null_1')
-        sqlalchemy.desc('desc_null_1').AndReturn('desc_null_2')
-        self.query.order_by('desc_null_2').AndReturn(self.query)
+            mock_isnot.return_value = 'asc_null_1'
+            mock_is_a.return_value = 'desc_null_1'
+            mock_is_b.side_effect = ['asc_null_filter_1', 'asc_null_filter_2']
 
-        sqlalchemy.desc(self.model.updated_at).AndReturn('desc_1')
-        self.query.order_by('desc_1').AndReturn(self.query)
+            utils.paginate_query(self.query, self.model, 5,
+                                 ['user_id', 'updated_at'],
+                                 marker=self.marker,
+                                 sort_dirs=[
+                                     'asc-nullslast', 'desc-nullsfirst'])
+            mock_isnot.assert_called_once_with(None)
+            mock_is_a.assert_called_once_with(None)
+            mock_is_b.assert_has_calls([mock.call(None), mock.call(None)])
 
-        self.mox.StubOutWithMock(sqlalchemy.sql, 'and_')
-        self.mox.StubOutWithMock(sqlalchemy.sql, 'or_')
-        self.mox.StubOutWithMock(self.model.user_id, 'is_')
+        self.mock_asc.assert_called_once_with(self.model.user_id)
+        self.mock_desc.assert_has_calls([
+            mock.call('asc_null_1'),
+            mock.call('desc_null_1'),
+            mock.call(self.model.updated_at),
+        ])
+        mock_and.assert_called_once_with('or_1')
+        mock_or.assert_has_calls([
+            mock.call(mock.ANY, 'asc_null_filter_2'),
+            mock.call('some_crit'),
+        ])
+        self.query.order_by.assert_has_calls([
+            mock.call('asc_null_2'),
+            mock.call('asc_1'),
+            mock.call('desc_null_2'),
+            mock.call('desc_1'),
+        ])
+        self.query.filter.assert_called_once_with('some_f')
+        self.query.limit.assert_called_once_with(5)
 
-        self.model.user_id.is_(None).AndReturn('asc_null_filter_1')
-        self.model.user_id.is_(None).AndReturn('asc_null_filter_2')
-        sqlalchemy.sql.or_(mock.ANY, 'asc_null_filter_2').AndReturn('or_1')
+    @mock.patch.object(sqlalchemy.sql, 'and_')
+    @mock.patch.object(sqlalchemy.sql, 'or_')
+    def test_paginate_query_marker_null_with_two_primary_keys(
+            self, mock_or, mock_and):
+        self.mock_asc.return_value = 'asc_1'
+        self.mock_desc.side_effect = [
+            'asc_null_2',
+            'desc_null_2',
+            'desc_1',
+            'desc_null_4',
+            'desc_4',
+        ]
+        self.query.order_by.return_value = self.query
+        mock_or.side_effect = [
+            'or_1',
+            'or_2',
+            'some_f',
+        ]
+        mock_and.side_effect = [
+            'some_crit',
+            'other_crit',
+        ]
+        self.query.filter.return_value = self.query
 
-        sqlalchemy.sql.and_('or_1').AndReturn('some_crit')
-        sqlalchemy.sql.or_('some_crit').AndReturn('some_f')
-        self.query.filter('some_f').AndReturn(self.query)
-        self.query.limit(5).AndReturn(self.query)
-        self.mox.ReplayAll()
-        utils.paginate_query(self.query, self.model, 5,
-                             ['user_id', 'updated_at'],
-                             marker=self.marker,
-                             sort_dirs=['asc-nullslast', 'desc-nullsfirst'])
+        with mock.patch.object(self.model.user_id, 'isnot') as mock_isnot, \
+                mock.patch.object(self.model.updated_at, 'is_') as mock_is_a, \
+                mock.patch.object(self.model.user_id, 'is_') as mock_is_b, \
+                mock.patch.object(self.model.project_id, 'is_') as mock_is_c:
 
-    def test_paginate_query_marker_null_with_two_primary_keys(self):
-        self.mox.StubOutWithMock(self.model.user_id, 'isnot')
-        self.model.user_id.isnot(None).AndReturn('asc_null_1')
-        sqlalchemy.desc('asc_null_1').AndReturn('asc_null_2')
-        self.query.order_by('asc_null_2').AndReturn(self.query)
+            mock_isnot.return_value = 'asc_null_1'
+            mock_is_a.return_value = 'desc_null_1'
+            mock_is_b.side_effect = ['asc_null_filter_1', 'asc_null_filter_2']
+            mock_is_c.side_effect = ['desc_null_3', 'desc_null_filter_3']
 
-        sqlalchemy.asc(self.model.user_id).AndReturn('asc_1')
-        self.query.order_by('asc_1').AndReturn(self.query)
+            utils.paginate_query(self.query, self.model, 5,
+                                 ['user_id', 'updated_at', 'project_id'],
+                                 marker=self.marker,
+                                 sort_dirs=['asc-nullslast', 'desc-nullsfirst',
+                                            'desc-nullsfirst'])
 
-        self.mox.StubOutWithMock(self.model.updated_at, 'is_')
-        self.model.updated_at.is_(None).AndReturn('desc_null_1')
-        sqlalchemy.desc('desc_null_1').AndReturn('desc_null_2')
-        self.query.order_by('desc_null_2').AndReturn(self.query)
+            mock_isnot.assert_called_once_with(None)
+            mock_is_a.assert_called_once_with(None)
+            mock_is_b.assert_has_calls([mock.call(None), mock.call(None)])
+            mock_is_c.assert_has_calls([mock.call(None), mock.call(None)])
 
-        sqlalchemy.desc(self.model.updated_at).AndReturn('desc_1')
-        self.query.order_by('desc_1').AndReturn(self.query)
-
-        self.mox.StubOutWithMock(self.model.project_id, 'is_')
-        self.model.project_id.is_(None).AndReturn('desc_null_3')
-        sqlalchemy.desc('desc_null_3').AndReturn('desc_null_4')
-        self.query.order_by('desc_null_4').AndReturn(self.query)
-
-        sqlalchemy.desc(self.model.project_id).AndReturn('desc_4')
-        self.query.order_by('desc_4').AndReturn(self.query)
-
-        self.mox.StubOutWithMock(sqlalchemy.sql, 'and_')
-        self.mox.StubOutWithMock(sqlalchemy.sql, 'or_')
-        self.mox.StubOutWithMock(self.model.user_id, 'is_')
-
-        self.model.user_id.is_(None).AndReturn('asc_null_filter_1')
-        self.model.user_id.is_(None).AndReturn('asc_null_filter_2')
-        self.model.project_id.is_(None).AndReturn('desc_null_filter_3')
-
-        sqlalchemy.sql.or_(mock.ANY, 'asc_null_filter_2').AndReturn('or_1')
-        sqlalchemy.sql.or_(mock.ANY, 'desc_null_filter_3').AndReturn('or_2')
-        sqlalchemy.sql.and_('or_1').AndReturn('some_crit')
-        sqlalchemy.sql.and_(mock.ANY, 'or_2').AndReturn('other_crit')
-        sqlalchemy.sql.or_('some_crit', 'other_crit').AndReturn('some_f')
-        self.query.filter('some_f').AndReturn(self.query)
-        self.query.limit(5).AndReturn(self.query)
-        self.mox.ReplayAll()
-        utils.paginate_query(self.query, self.model, 5,
-                             ['user_id', 'updated_at', 'project_id'],
-                             marker=self.marker,
-                             sort_dirs=['asc-nullslast', 'desc-nullsfirst',
-                                        'desc-nullsfirst'])
+        self.mock_asc.assert_called_once_with(self.model.user_id)
+        self.mock_desc.assert_has_calls([
+            mock.call('asc_null_1'),
+            mock.call('desc_null_1'),
+            mock.call(self.model.updated_at),
+            mock.call('desc_null_3'),
+            mock.call(self.model.project_id),
+        ])
+        self.query.order_by.assert_has_calls = [
+            mock.call('asc_null_2'),
+            mock.call('asc_1'),
+            mock.call('desc_null_2'),
+            mock.call('desc_1'),
+            mock.call('desc_null_4'),
+            mock.call('desc_4'),
+        ]
+        mock_or.assert_has_calls([
+            mock.call(mock.ANY, 'asc_null_filter_2'),
+            mock.call(mock.ANY, 'desc_null_filter_3'),
+            mock.call('some_crit', 'other_crit'),
+        ])
+        mock_and.assert_has_calls([
+            mock.call('or_1'),
+            mock.call(mock.ANY, 'or_2'),
+        ])
+        self.query.filter.assert_called_once_with('some_f')
+        self.query.limit.assert_called_once_with(5)
 
     def test_paginate_query_value_error(self):
-        sqlalchemy.asc(self.model.user_id).AndReturn('asc_1')
-        self.query.order_by('asc_1').AndReturn(self.query)
-        self.mox.ReplayAll()
+        self.mock_asc.return_value = 'asc_1'
+        self.query.order_by.return_value = self.query
+
         self.assertRaises(ValueError, utils.paginate_query,
                           self.query, self.model, 5, ['user_id', 'project_id'],
                           marker=self.marker, sort_dirs=['asc', 'mixed'])
 
+        self.mock_asc.assert_called_once_with(self.model.user_id)
+        self.query.order_by.assert_called_once_with('asc_1')
+
     def test_paginate_on_hybrid(self):
-        sqlalchemy.asc(self.model.user_id).AndReturn('asc_1')
-        self.query.order_by('asc_1').AndReturn(self.query)
+        self.mock_asc.return_value = 'asc_1'
+        self.mock_desc.return_value = 'desc_1'
+        self.query.order_by.return_value = self.query
 
-        sqlalchemy.desc(self.model.some_hybrid).AndReturn('desc_1')
-        self.query.order_by('desc_1').AndReturn(self.query)
-
-        self.query.limit(5).AndReturn(self.query)
-        self.mox.ReplayAll()
         utils.paginate_query(self.query, self.model, 5,
                              ['user_id', 'some_hybrid'],
                              sort_dirs=['asc', 'desc'])
+
+        self.mock_asc.assert_called_once_with(self.model.user_id)
+        self.mock_desc.assert_called_once_with(self.model.some_hybrid)
+        self.query.order_by.assert_has_calls([
+            mock.call('asc_1'),
+            mock.call('desc_1'),
+        ])
+        self.query.limit.assert_called_once_with(5)
 
 
 class Test_UnstableSortingOrder(test_base.BaseTestCase):
@@ -999,52 +1118,58 @@ class TestConnectionUtils(test_utils.BaseTestCase):
         self.addCleanup(patch_onconnect.stop)
 
     def test_ensure_backend_available(self):
-        self.mox.StubOutWithMock(sqlalchemy.engine.base.Engine, 'connect')
-        fake_connection = self.mox.CreateMockAnything()
-        fake_connection.close()
-        sqlalchemy.engine.base.Engine.connect().AndReturn(fake_connection)
-        self.mox.ReplayAll()
+        with mock.patch.object(
+                sqlalchemy.engine.base.Engine, 'connect') as mock_connect:
+            fake_connection = mock.Mock()
+            mock_connect.return_value = fake_connection
 
-        eng = provision.Backend._ensure_backend_available(self.connect_string)
-        self.assertIsInstance(eng, sqlalchemy.engine.base.Engine)
-        self.assertEqual(self.connect_string, str(eng.url))
+            eng = provision.Backend._ensure_backend_available(
+                self.connect_string)
+
+            self.assertIsInstance(eng, sqlalchemy.engine.base.Engine)
+            self.assertEqual(self.connect_string, str(eng.url))
+
+            mock_connect.assert_called_once()
+            fake_connection.close.assert_called_once()
 
     def test_ensure_backend_available_no_connection_raises(self):
         log = self.useFixture(fixtures.FakeLogger())
         err = OperationalError("Can't connect to database", None, None)
-        self.mox.StubOutWithMock(sqlalchemy.engine.base.Engine, 'connect')
-        sqlalchemy.engine.base.Engine.connect().AndRaise(err)
-        self.mox.ReplayAll()
+        with mock.patch.object(
+                sqlalchemy.engine.base.Engine, 'connect') as mock_connect:
+            mock_connect.side_effect = err
 
-        exc = self.assertRaises(
-            exception.BackendNotAvailable,
-            provision.Backend._ensure_backend_available, self.connect_string
-        )
-        self.assertEqual(
-            "Backend 'postgresql' is unavailable: "
-            "Could not connect", str(exc))
-        self.assertEqual(
-            "The postgresql backend is unavailable: %s" % err,
-            log.output.strip())
+            exc = self.assertRaises(
+                exception.BackendNotAvailable,
+                provision.Backend._ensure_backend_available,
+                self.connect_string)
+            self.assertEqual(
+                "Backend 'postgresql' is unavailable: "
+                "Could not connect", str(exc))
+            self.assertEqual(
+                "The postgresql backend is unavailable: %s" % err,
+                log.output.strip())
 
     def test_ensure_backend_available_no_dbapi_raises(self):
         log = self.useFixture(fixtures.FakeLogger())
-        self.mox.StubOutWithMock(sqlalchemy, 'create_engine')
-        sqlalchemy.create_engine(
-            sa_url.make_url(self.connect_string)).AndRaise(
-            ImportError("Can't import DBAPI module foobar"))
-        self.mox.ReplayAll()
+        with mock.patch.object(sqlalchemy, 'create_engine') as mock_create:
+            mock_create.side_effect = ImportError(
+                "Can't import DBAPI module foobar")
 
-        exc = self.assertRaises(
-            exception.BackendNotAvailable,
-            provision.Backend._ensure_backend_available, self.connect_string
-        )
-        self.assertEqual(
-            "Backend 'postgresql' is unavailable: "
-            "No DBAPI installed", str(exc))
-        self.assertEqual(
-            "The postgresql backend is unavailable: Can't import "
-            "DBAPI module foobar", log.output.strip())
+            exc = self.assertRaises(
+                exception.BackendNotAvailable,
+                provision.Backend._ensure_backend_available,
+                self.connect_string)
+
+            mock_create.assert_called_once_with(
+                sa_url.make_url(self.connect_string))
+
+            self.assertEqual(
+                "Backend 'postgresql' is unavailable: "
+                "No DBAPI installed", str(exc))
+            self.assertEqual(
+                "The postgresql backend is unavailable: Can't import "
+                "DBAPI module foobar", log.output.strip())
 
     def test_get_db_connection_info(self):
         conn_pieces = parse.urlparse(self.connect_string)
