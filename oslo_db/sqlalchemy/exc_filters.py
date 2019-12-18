@@ -519,10 +519,5 @@ def register_engine(engine):
 
 
 def handle_connect_error(engine):
-    """Connect to the engine, including handle_error handlers.
-
-    The compat library now builds this into the engine.connect()
-    system as per SQLAlchemy 1.0's behavior.
-
-    """
+    """Connect to the engine, including handle_error handlers."""
     return engine.connect()

@@ -15,7 +15,6 @@
 
 import re
 
-from oslo_db.sqlalchemy.compat import utils as compat_utils
 from oslo_db.sqlalchemy.types import String
 
 from sqlalchemy import event, schema
@@ -100,8 +99,8 @@ def _compile_ndb_string(element, compiler, **kw):
         return compiler.visit_string(element, **kw)
 
     if element.mysql_ndb_length:
-        effective_type = compat_utils.adapt_type_object(
-            element, _String, length=element.mysql_ndb_length)
+        effective_type = element.adapt(
+            _String, length=element.mysql_ndb_length)
         return compiler.visit_string(effective_type, **kw)
     elif element.mysql_ndb_type:
         effective_type = to_instance(element.mysql_ndb_type)

@@ -23,6 +23,7 @@ from sqlalchemy import Boolean, Index, Integer, DateTime, String, SmallInteger
 from sqlalchemy import CheckConstraint
 from sqlalchemy import MetaData, Table, Column
 from sqlalchemy import ForeignKey, ForeignKeyConstraint
+from sqlalchemy.dialects.postgresql import psycopg2
 from sqlalchemy.engine import reflection
 from sqlalchemy.engine import url as sa_url
 from sqlalchemy.exc import OperationalError
@@ -33,11 +34,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import PrimaryKeyConstraint
 from sqlalchemy.sql.expression import cast
 from sqlalchemy.sql import select
-from sqlalchemy.types import UserDefinedType, NullType
-from sqlalchemy.dialects.postgresql import psycopg2
+from sqlalchemy.types import UserDefinedType
 
 from oslo_db import exception
-from oslo_db.sqlalchemy.compat import utils as compat_utils
 from oslo_db.sqlalchemy import models
 from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import session
@@ -47,7 +46,6 @@ from oslo_db.tests import utils as test_utils
 
 
 Base = declarative_base()
-SA_VERSION = compat_utils.SQLA_VERSION
 
 
 class TestSanitizeDbUrl(test_base.BaseTestCase):
@@ -841,12 +839,6 @@ class TestMigrationUtils(db_test_base._DbTestCase):
                       Column('deleted', Boolean))
         table.create()
 
-        # reflection of custom types has been fixed upstream
-        if SA_VERSION < (0, 9, 0):
-            self.assertRaises(exception.ColumnError,
-                              utils.change_deleted_column_type_to_id_type,
-                              self.engine, table_name)
-
         fooColumn = Column('foo', CustomType())
         utils.change_deleted_column_type_to_id_type(self.engine, table_name,
                                                     foo=fooColumn)
@@ -908,11 +900,6 @@ class TestMigrationUtils(db_test_base._DbTestCase):
                                                     foo=fooColumn)
 
         table = utils.get_table(self.engine, table_name)
-        # NOTE(boris-42): There is no way to check has foo type CustomType.
-        #                 but sqlalchemy will set it to NullType. This has
-        #                 been fixed upstream in recent SA versions
-        if SA_VERSION < (0, 9, 0):
-            self.assertIsInstance(table.c.foo.type, NullType)
         self.assertIsInstance(table.c.deleted.type, Boolean)
 
     def test_detect_boolean_deleted_constraint_detection(self):
