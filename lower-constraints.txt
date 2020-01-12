@@ -66,6 +66,5 @@ testresources==2.0.0
 testscenarios==0.4
 testtools==2.2.0
 traceback2==1.4.0
-unittest2==1.1.0
 wrapt==1.7.0
 xattr==0.9.2

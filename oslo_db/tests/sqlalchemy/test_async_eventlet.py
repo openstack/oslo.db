@@ -16,7 +16,7 @@
 """Unit tests for SQLAlchemy and eventlet interaction."""
 
 import logging
-import unittest2
+import unittest
 
 from oslo_utils import importutils
 import sqlalchemy as sa
@@ -46,8 +46,8 @@ class EventletTestMixin(object):
         TmpTable.__table__.create(self.engine)
         self.addCleanup(lambda: TmpTable.__table__.drop(self.engine))
 
-    @unittest2.skipIf(not tests.should_run_eventlet_tests(),
-                      'eventlet tests disabled unless TEST_EVENTLET=1')
+    @unittest.skipIf(not tests.should_run_eventlet_tests(),
+                     'eventlet tests disabled unless TEST_EVENTLET=1')
     def test_concurrent_transaction(self):
         # Cause sqlalchemy to log executed SQL statements.  Useful to
         # determine exactly what and when was sent to DB.
