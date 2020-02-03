@@ -27,3 +27,5 @@ ChangeLog
 .stestr/
 oslo.db.egg-info/
 doc/source/reference/api
+RELEASENOTES.rst
+releasenotes/notes/reno.cache
