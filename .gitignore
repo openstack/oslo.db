@@ -25,6 +25,8 @@ ChangeLog
 *.egg
 *.eggs
 .stestr/
+RELEASENOTES.rst
+releasenotes/notes/reno.cache
 oslo.db.egg-info/
 doc/source/reference/api
 RELEASENOTES.rst
