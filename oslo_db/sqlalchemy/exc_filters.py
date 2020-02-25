@@ -516,8 +516,3 @@ def register_engine(engine):
     @event.listens_for(engine, "checkin")
     def pop_exc_checkin(dbapi_conn, connection_record):
         connection_record.info.pop(ROLLBACK_CAUSE_KEY, None)
-
-
-def handle_connect_error(engine):
-    """Connect to the engine, including handle_error handlers."""
-    return engine.connect()
