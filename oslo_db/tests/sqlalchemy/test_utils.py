@@ -77,8 +77,6 @@ class FakeTable(Base):
     updated_at = Column(DateTime, nullable=True)
     enabled = Column(Boolean, default=True)
 
-    # mox is comparing in some awkward way that
-    # in this case requires the same identity of object
     _expr_to_appease_mox = project_id + snapshot_id
 
     @hybrid_property

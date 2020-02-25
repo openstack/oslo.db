@@ -17,7 +17,6 @@ import contextlib
 
 from oslo_config import cfg
 from oslotest import base as test_base
-from oslotest import moxstubout
 import six
 
 
@@ -33,8 +32,5 @@ else:
 class BaseTestCase(test_base.BaseTestCase):
     def setUp(self, conf=cfg.CONF):
         super(BaseTestCase, self).setUp()
-        moxfixture = self.useFixture(moxstubout.MoxStubout())
-        self.mox = moxfixture.mox
-        self.stubs = moxfixture.stubs
         self.conf = conf
         self.addCleanup(self.conf.reset)
