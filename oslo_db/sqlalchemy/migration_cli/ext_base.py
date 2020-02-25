@@ -12,11 +12,8 @@
 
 import abc
 
-import six
 
-
-@six.add_metaclass(abc.ABCMeta)
-class MigrationExtensionBase(object):
+class MigrationExtensionBase(object, metaclass=abc.ABCMeta):
 
     # used to sort migration in logical order
     order = 0

@@ -24,7 +24,6 @@ import alembic
 import alembic.autogenerate
 import alembic.migration
 import pkg_resources as pkg
-import six
 import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.sql.expression as expr
@@ -37,8 +36,7 @@ from oslo_db.sqlalchemy import utils
 LOG = logging.getLogger(__name__)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class WalkVersionsMixin(object):
+class WalkVersionsMixin(object, metaclass=abc.ABCMeta):
     """Test mixin to check upgrade and downgrade ability of migration.
 
     This is only suitable for testing of migrate_ migration scripts. An
@@ -274,8 +272,7 @@ class WalkVersionsMixin(object):
             raise
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ModelsMigrationsSync(object):
+class ModelsMigrationsSync(object, metaclass=abc.ABCMeta):
     """A helper class for comparison of DB migration scripts and models.
 
     It's intended to be inherited by test cases in target projects. They have

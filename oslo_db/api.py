@@ -23,6 +23,7 @@ takes no arguments. The method can return any object that implements DB
 API methods.
 """
 
+import functools
 import logging
 import random
 import threading
@@ -31,7 +32,6 @@ import time
 from oslo_utils import excutils
 from oslo_utils import importutils
 from oslo_utils import reflection
-import six
 
 from oslo_db import exception
 from oslo_db import options
@@ -132,7 +132,7 @@ class wrap_db_retry(object):
         self.max_retry_interval = max_retry_interval
 
     def __call__(self, f):
-        @six.wraps(f)
+        @functools.wraps(f)
         def wrapper(*args, **kwargs):
             sleep_time = next_interval = self.retry_interval
             remaining = self.max_retries

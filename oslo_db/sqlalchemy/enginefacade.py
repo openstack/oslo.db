@@ -634,7 +634,6 @@ class _TransactionContext(object):
                         # TODO(zzzeek) do we need save_and_reraise() here,
                         # or do newer eventlets not have issues?  we are using
                         # raw "raise" in many other places in oslo.db already
-                        # (and one six.reraise()).
                         raise
                     finally:
                         self.transaction = None

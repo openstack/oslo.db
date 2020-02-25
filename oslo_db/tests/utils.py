@@ -17,16 +17,12 @@ import contextlib
 
 from oslo_config import cfg
 from oslotest import base as test_base
-import six
 
 
-if six.PY3:
-    @contextlib.contextmanager
-    def nested(*contexts):
-        with contextlib.ExitStack() as stack:
-            yield [stack.enter_context(c) for c in contexts]
-else:
-    nested = contextlib.nested
+@contextlib.contextmanager
+def nested(*contexts):
+    with contextlib.ExitStack() as stack:
+        yield [stack.enter_context(c) for c in contexts]
 
 
 class BaseTestCase(test_base.BaseTestCase):

@@ -23,8 +23,6 @@ import random
 import re
 import string
 
-import six
-from six import moves
 import sqlalchemy
 from sqlalchemy.engine import url as sa_url
 from sqlalchemy import schema
@@ -370,8 +368,7 @@ class Backend(object):
                 Backend(database_type, url)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class BackendImpl(object):
+class BackendImpl(object, metaclass=abc.ABCMeta):
     """Provide database-specific implementations of key provisioning
 
     functions.
@@ -627,9 +624,7 @@ class PostgresqlBackendImpl(BackendImpl):
 
 
 def _random_ident():
-    return ''.join(
-        random.choice(string.ascii_lowercase)
-        for i in moves.range(10))
+    return ''.join(random.choice(string.ascii_lowercase) for i in range(10))
 
 
 Backend._setup()

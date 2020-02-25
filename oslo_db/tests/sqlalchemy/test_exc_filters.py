@@ -19,7 +19,6 @@ import itertools
 
 import mock
 from oslotest import base as oslo_test_base
-import six
 import sqlalchemy as sqla
 from sqlalchemy.engine import url as sqla_url
 from sqlalchemy import event
@@ -53,11 +52,8 @@ class _SQLAExceptionMatcher(object):
             self.assertEqual(exception_type, exc.__class__.__name__)
         if isinstance(message, tuple):
             self.assertEqual(
-                [m.lower()
-                 if isinstance(m, six.string_types) else m for m in message],
-                [a.lower()
-                 if isinstance(a, six.string_types) else a
-                 for a in exc.orig.args]
+                [m.lower() if isinstance(m, str) else m for m in message],
+                [a.lower() if isinstance(a, str) else a for a in exc.orig.args]
             )
         else:
             self.assertEqual(message.lower(), str(exc.orig).lower())
@@ -227,14 +223,14 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
         # or at least not documented anywhere.
         uee_ref = None
         try:
-            six.u('\u2435').encode('ascii')
+            '\u2435'.encode('ascii')
         except UnicodeEncodeError as uee:
             # Python3.x added new scoping rules here (sadly)
             # http://legacy.python.org/dev/peps/pep-3110/#semantic-changes
             uee_ref = uee
 
         self._run_test(
-            "postgresql", six.u('select \u2435'),
+            'postgresql', 'select \u2435',
             uee_ref,
             exception.DBInvalidUnicodeParameter
             )
@@ -736,42 +732,6 @@ class TestExceptionCauseMySQLSavepoint(test_base._MySQLOpportunisticTestCase):
             session.rollback()
         else:
             assert False, "no exception raised"
-
-
-class TestDBDataErrorSQLite(_SQLAExceptionMatcher, test_base._DbTestCase):
-
-    def setUp(self):
-        super(TestDBDataErrorSQLite, self).setUp()
-
-        if six.PY3:
-            self.skipTest("SQLite database supports unicode value for python3")
-
-        meta = sqla.MetaData(bind=self.engine)
-
-        self.table_1 = sqla.Table(
-            "resource_foo", meta,
-            sqla.Column("name", sqla.String),
-        )
-        self.table_1.create()
-
-    def test_raise(self):
-
-        matched = self.assertRaises(
-            exception.DBDataError,
-            self.engine.execute,
-            self.table_1.insert({'name': u'\u2713'.encode('utf-8')})
-        )
-
-        self.assertInnerException(
-            matched,
-            "ProgrammingError",
-            "You must not use 8-bit bytestrings unless you use a "
-            "text_factory that can interpret 8-bit bytestrings "
-            "(like text_factory = str). It is highly recommended that "
-            "you instead just switch your application to Unicode strings.",
-            "INSERT INTO resource_foo (name) VALUES (?)",
-            (u'\u2713'.encode('utf-8'),)
-        )
 
 
 class TestConstraint(TestsExceptionFilter):

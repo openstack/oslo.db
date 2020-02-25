@@ -18,7 +18,6 @@ import fixtures
 from migrate.versioning import api as versioning_api
 import mock
 from oslotest import base as test
-import six
 import sqlalchemy as sa
 import sqlalchemy.ext.declarative as sa_decl
 
@@ -304,8 +303,7 @@ class ModelsMigrationSyncMixin(test_base._DbTestCase):
                 ]
             filter_mock.side_effect = filter_diffs
 
-            msg = six.text_type(self.assertRaises(AssertionError,
-                                self.test_models_sync))
+            msg = str(self.assertRaises(AssertionError, self.test_models_sync))
             self.assertNotIn('defaulttest', msg)
             self.assertNotIn('defaulttest3', msg)
             self.assertNotIn('remove_fk', msg)
@@ -342,8 +340,7 @@ class ModelsMigrationSyncMixin(test_base._DbTestCase):
             mysql_engine='InnoDB'
         )
 
-        msg = six.text_type(self.assertRaises(AssertionError,
-                                              self.test_models_sync))
+        msg = str(self.assertRaises(AssertionError, self.test_models_sync))
         # NOTE(I159): Check mentioning of the table and columns.
         # The log is invalid json, so we can't parse it and check it for
         # full compliance. We have no guarantee of the log items ordering,

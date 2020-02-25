@@ -45,7 +45,6 @@ database errors.
 
 from debtcollector import moves
 from oslo_utils.excutils import CausedByException
-import six
 
 from oslo_db._i18n import _
 from oslo_db import warning
@@ -61,7 +60,7 @@ class DBError(CausedByException):
 
     def __init__(self, inner_exception=None, cause=None):
         self.inner_exception = inner_exception
-        super(DBError, self).__init__(six.text_type(inner_exception), cause)
+        super(DBError, self).__init__(str(inner_exception), cause)
 
 
 class DBDuplicateEntry(DBError):

@@ -21,9 +21,9 @@ import logging
 import os
 import re
 import time
+from urllib import parse
 
 import debtcollector.renames
-import six
 import sqlalchemy
 from sqlalchemy import event
 from sqlalchemy import exc
@@ -105,7 +105,7 @@ def _setup_logging(connection_debug=0):
 
 
 def _extend_url_parameters(url, connection_parameters):
-    for key, value in six.moves.urllib.parse.parse_qs(
+    for key, value in parse.parse_qs(
             connection_parameters).items():
         if key in url.query:
             existing = url.query[key]
@@ -262,10 +262,7 @@ def _init_connection_args(url, engine_args, **kw):
     # to internal usage of Python unicode objects in the driver
     #  http://docs.sqlalchemy.org/en/rel_0_9/dialects/mysql.html
     if 'use_unicode' not in url.query:
-        if six.PY3:
-            engine_args['connect_args']['use_unicode'] = 1
-        else:
-            engine_args['connect_args']['use_unicode'] = 0
+        engine_args['connect_args']['use_unicode'] = 1
 
 
 @utils.dispatch_for_dialect('*', multiple=True)
@@ -327,7 +324,7 @@ def _init_events(engine, sqlite_synchronous=True, sqlite_fk=False, **kw):
 
     def regexp(expr, item):
         reg = re.compile(expr)
-        return reg.search(six.text_type(item)) is not None
+        return reg.search(str(item)) is not None
 
     @sqlalchemy.event.listens_for(engine, "connect")
     def _sqlite_connect_events(dbapi_con, con_record):
@@ -369,7 +366,7 @@ def _test_connection(engine, max_retries, retry_interval):
     if max_retries == -1:
         attempts = itertools.count()
     else:
-        attempts = six.moves.range(max_retries)
+        attempts = range(max_retries)
     # See: http://legacy.python.org/dev/peps/pep-3110/#semantic-changes for
     # why we are not using 'de' directly (it can be removed from the local
     # scope).
@@ -384,7 +381,7 @@ def _test_connection(engine, max_retries, retry_interval):
             de_ref = de
     else:
         if de_ref is not None:
-            six.reraise(type(de_ref), de_ref)
+            raise de_ref
 
 
 def _add_process_guards(engine):

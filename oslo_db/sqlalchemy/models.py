@@ -20,8 +20,6 @@
 SQLAlchemy models.
 """
 
-import six
-
 from oslo_utils import timeutils
 from sqlalchemy import Column
 from sqlalchemy import DateTime
@@ -30,7 +28,7 @@ from sqlalchemy.orm import object_mapper
 from oslo_db.sqlalchemy import types
 
 
-class ModelBase(six.Iterator):
+class ModelBase(object):
     """Base class for models."""
     __table_initialized__ = False
 
@@ -119,7 +117,7 @@ class ModelBase(six.Iterator):
         return [key for key, value in self.iteritems()]
 
 
-class ModelIterator(six.Iterator):
+class ModelIterator(object):
 
     def __init__(self, model, columns):
         self.model = model
@@ -128,9 +126,8 @@ class ModelIterator(six.Iterator):
     def __iter__(self):
         return self
 
-    # In Python 3, __next__() has replaced next().
     def __next__(self):
-        n = six.advance_iterator(self.i)
+        n = next(self.i)
         return n, getattr(self.model, n)
 
 

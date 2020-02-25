@@ -13,12 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-# TODO(smcginnis) update this once six has support for collections.abc
-# (https://github.com/benjaminp/six/pull/241) or clean up once we drop py2.7.
-try:
-    from collections.abc import Iterable
-except ImportError:
-    from collections import Iterable
+from collections import abc
 import datetime
 
 import mock
@@ -56,7 +51,7 @@ class ModelBaseTest(test_base._DbTestCase):
                             "Method %s() is not found" % method)
 
     def test_modelbase_is_iterable(self):
-        self.assertTrue(issubclass(models.ModelBase, Iterable))
+        self.assertTrue(issubclass(models.ModelBase, abc.Iterable))
 
     def test_modelbase_set(self):
         self.mb['world'] = 'hello'

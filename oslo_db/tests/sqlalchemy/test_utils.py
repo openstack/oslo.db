@@ -13,10 +13,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from urllib import parse
+
 import fixtures
 import mock
 from oslotest import base as test_base
-from six.moves.urllib import parse
 import sqlalchemy
 from sqlalchemy.dialects import mysql
 from sqlalchemy import Boolean, Index, Integer, DateTime, String, SmallInteger

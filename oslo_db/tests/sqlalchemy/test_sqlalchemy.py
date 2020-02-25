@@ -24,7 +24,6 @@ import fixtures
 import mock
 from oslo_config import cfg
 from oslotest import base as oslo_test
-import six
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table
 from sqlalchemy.engine import url
@@ -683,12 +682,8 @@ class CreateEngineTest(oslo_test.BaseTestCase):
         self.assertNotIn('poolclass', self.args)
 
     def _test_mysql_connect_args_default(self, connect_args):
-        if six.PY3:
-            self.assertEqual({'charset': 'utf8', 'use_unicode': 1},
-                             connect_args)
-        else:
-            self.assertEqual({'charset': 'utf8', 'use_unicode': 0},
-                             connect_args)
+        self.assertEqual({'charset': 'utf8', 'use_unicode': 1},
+                         connect_args)
 
     def test_mysql_connect_args_default(self):
         engines._init_connection_args(

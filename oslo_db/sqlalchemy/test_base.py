@@ -13,6 +13,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import functools
+
 import debtcollector
 import debtcollector.moves
 import fixtures
@@ -26,7 +28,6 @@ except ImportError:
 
 
 from oslo_utils import reflection
-import six
 
 from oslo_db import exception
 from oslo_db.sqlalchemy import enginefacade
@@ -200,6 +201,7 @@ class DbTestCase(test_base.BaseTestCase):
 class OpportunisticTestCase(DbTestCase):
     """Placeholder for backwards compatibility."""
 
+
 ALLOWED_DIALECTS = ['sqlite', 'mysql', 'postgresql']
 
 
@@ -209,7 +211,7 @@ def backend_specific(*dialects):
     ::dialects: list of dialects names under which the test will be launched.
     """
     def wrap(f):
-        @six.wraps(f)
+        @functools.wraps(f)
         def ins_wrap(self):
             if not set(dialects).issubset(ALLOWED_DIALECTS):
                 raise ValueError(
