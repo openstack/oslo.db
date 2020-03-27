@@ -427,6 +427,7 @@ def _raise_for_all_others(error, match, engine_name, is_disconnect):
     LOG.warn('DB exception wrapped.', exc_info=True)
     raise exception.DBError(error)
 
+
 ROLLBACK_CAUSE_KEY = 'oslo.db.sp_rollback_cause'
 
 

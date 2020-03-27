@@ -1026,6 +1026,7 @@ class DialectMultiFunctionDispatcher(DialectFunctionDispatcher):
                     "Return value not allowed for "
                     "multiple filtered function")
 
+
 dispatch_for_dialect = DialectFunctionDispatcher.dispatch_for_dialect
 
 

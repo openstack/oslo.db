@@ -1076,6 +1076,7 @@ class _TransactionContextManager(object):
 def async_compat(self):
     return self.async_
 
+
 setattr(
     _TransactionContextManager,
     "async", async_compat

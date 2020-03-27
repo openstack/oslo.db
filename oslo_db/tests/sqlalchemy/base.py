@@ -25,6 +25,7 @@ from oslotest import base as test_base
 class Context(object):
     pass
 
+
 context = Context()
 
 
