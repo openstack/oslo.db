@@ -16,9 +16,9 @@ import copy
 import fixtures
 import pickle
 import sys
+from unittest import mock
 import warnings
 
-import mock
 from oslo_config import cfg
 from oslo_context import context as oslo_context
 from oslotest import base as oslo_test_base

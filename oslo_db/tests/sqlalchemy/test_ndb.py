@@ -14,8 +14,7 @@
 """Tests for MySQL Cluster (NDB) Support."""
 
 import logging
-
-import mock
+from unittest import mock
 
 from oslo_db import exception
 from oslo_db.sqlalchemy import enginefacade

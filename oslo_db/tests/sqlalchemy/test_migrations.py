@@ -13,10 +13,10 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from unittest import mock
 
 import fixtures
 from migrate.versioning import api as versioning_api
-import mock
 from oslotest import base as test
 import sqlalchemy as sa
 import sqlalchemy.ext.declarative as sa_decl

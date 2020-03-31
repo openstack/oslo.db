@@ -14,8 +14,7 @@
 #    under the License.
 
 import sys
-
-import mock
+from unittest import mock
 
 from oslo_db import concurrency
 from oslo_db.tests import utils as test_utils

@@ -16,10 +16,10 @@
 
 import os
 import tempfile
+from unittest import mock
 
 from migrate import exceptions as migrate_exception
 from migrate.versioning import api as versioning_api
-import mock
 import sqlalchemy
 
 from oslo_db import exception as db_exception

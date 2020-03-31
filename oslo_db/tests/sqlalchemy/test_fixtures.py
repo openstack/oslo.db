@@ -10,11 +10,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
 import os
 import testresources
 import testscenarios
 import unittest
+from unittest import mock
 
 from oslo_db import exception
 from oslo_db.sqlalchemy import enginefacade

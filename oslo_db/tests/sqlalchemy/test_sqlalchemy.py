@@ -19,9 +19,9 @@
 
 import logging
 import os
+from unittest import mock
 
 import fixtures
-import mock
 from oslo_config import cfg
 from oslotest import base as oslo_test
 import sqlalchemy

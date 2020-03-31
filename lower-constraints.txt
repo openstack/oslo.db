@@ -23,7 +23,6 @@ linecache2==1.0.0
 Mako==0.4.0
 MarkupSafe==1.0
 mccabe==0.2.1
-mock==2.0.0
 monotonic==0.6
 netaddr==0.7.18
 netifaces==0.10.4

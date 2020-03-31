@@ -15,8 +15,8 @@
 
 from collections import abc
 import datetime
+from unittest import mock
 
-import mock
 from oslotest import base as oslo_test
 from sqlalchemy import Column
 from sqlalchemy import Integer, String

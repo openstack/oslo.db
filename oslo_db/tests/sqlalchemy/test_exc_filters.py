@@ -16,8 +16,8 @@
 
 import contextlib
 import itertools
+from unittest import mock
 
-import mock
 from oslotest import base as oslo_test_base
 import sqlalchemy as sqla
 from sqlalchemy.engine import url as sqla_url

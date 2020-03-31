@@ -10,8 +10,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
 import os
+from unittest import mock
 
 from oslotest import base as oslo_test_base
 from sqlalchemy import exc as sa_exc
