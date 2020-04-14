@@ -413,7 +413,7 @@ def _raise_for_remaining_DBAPIError(error, match, engine_name, is_disconnect):
     if is_disconnect:
         raise exception.DBConnectionError(error)
     else:
-        LOG.warn('DBAPIError exception wrapped.', exc_info=True)
+        LOG.warning('DBAPIError exception wrapped.', exc_info=True)
         raise exception.DBError(error)
 
 
@@ -424,7 +424,7 @@ def _raise_for_unicode_encode(error, match, engine_name, is_disconnect):
 
 @filters("*", Exception, r".*")
 def _raise_for_all_others(error, match, engine_name, is_disconnect):
-    LOG.warn('DB exception wrapped.', exc_info=True)
+    LOG.warning('DB exception wrapped.', exc_info=True)
     raise exception.DBError(error)
 
 
