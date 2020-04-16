@@ -14,6 +14,12 @@ utils.
    user/index
    reference/index
 
+Release Notes
+=============
+
+Read also the `oslo.db Release Notes
+<https://docs.openstack.org/releasenotes/oslo.db/>`_.
+
 Indices and tables
 ==================
 
