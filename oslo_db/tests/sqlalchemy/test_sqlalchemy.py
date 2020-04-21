@@ -115,10 +115,16 @@ class SQLiteSavepointTest(test_base._DbTestCase):
             ).fetchall()
         )
         trans.rollback()
-        self.assertEqual(
-            0,
-            self.engine.scalar(self.test_table.count())
-        )
+
+        with self.engine.connect() as conn:
+            self.assertEqual(
+                0,
+                conn.scalar(
+                    sqlalchemy.select(
+                        [sqlalchemy.func.count(self.test_table.c.id)],
+                    ).select_from(self.test_table)
+                )
+            )
 
     def test_savepoint_middle(self):
         with self.engine.begin() as conn:
