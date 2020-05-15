@@ -42,9 +42,9 @@ extensions = [
     'reno.sphinxext',
 ]
 # openstackdocstheme options
-repository_name = 'openstack/oslo.db'
-bug_project = 'oslo.db'
-bug_tag = ''
+openstackdocs_repo_name = 'openstack/oslo.db'
+openstackdocs_bug_project = 'oslo.db'
+openstackdocs_bug_tag = ''
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

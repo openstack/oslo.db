@@ -23,15 +23,14 @@ extensions = [
     'stevedore.sphinxext'
 ]
 # openstackdocstheme options
-repository_name = 'openstack/oslo.db'
-bug_project = 'oslo.db'
-bug_tag = ''
+openstackdocs_repo_name = 'openstack/oslo.db'
+openstackdocs_bug_project = 'oslo.db'
+openstackdocs_bug_tag = ''
 
 # The master toctree document.
 master_doc = 'index'
 
 # General information about the project.
-project = u'oslo.db'
 copyright = u'2014, OpenStack Foundation'
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
