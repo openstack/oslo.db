@@ -905,7 +905,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
         table_name = 'abc'
         table = Table(table_name, self.meta,
                       Column('id', Integer, primary_key=True),
-                      Column('deleted', Boolean))
+                      Column('deleted', Boolean(create_constraint=True)))
         ck = [
             const for const in table.constraints if
             isinstance(const, CheckConstraint)][0]
