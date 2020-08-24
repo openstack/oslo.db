@@ -495,7 +495,16 @@ class BackendImpl(object, metaclass=abc.ABCMeta):
         """
 
         url = sa_url.make_url(str(base_url))
-        url.database = ident
+
+        # TODO(zzzeek): remove hasattr() conditional in favor of "url.set()"
+        # when SQLAlchemy 1.4 is the minimum version in requirements
+        if hasattr(url, "set"):
+            url = url.set(database=ident)
+        else:
+            # TODO(zzzeek): remove when SQLAlchemy 1.4
+            # is the minimum version in requirements
+            url.database = ident
+
         return url
 
 

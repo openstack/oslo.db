@@ -386,8 +386,16 @@ class TestNonExistentDatabase(
         super(TestNonExistentDatabase, self).setUp()
 
         url = sqla_url.make_url(str(self.engine.url))
-        url.database = 'non_existent_database'
-        self.url = url
+
+        # TODO(zzzeek): remove hasattr() conditional in favor of "url.set()"
+        # when SQLAlchemy 1.4 is the minimum version in requirements
+        if hasattr(url, "set"):
+            self.url = url.set(database="non_existent_database")
+        else:
+            # TODO(zzzeek): remove when SQLAlchemy 1.4
+            # is the minimum version in requirements
+            url.database = 'non_existent_database'
+            self.url = url
 
     def test_raise(self):
         matched = self.assertRaises(
