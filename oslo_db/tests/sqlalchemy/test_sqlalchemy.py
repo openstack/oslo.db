@@ -229,6 +229,16 @@ class QueryParamTest(test_base.DbTestCase):
             "oslo_db.sqlalchemy.engines.sqlalchemy.create_engine",
             side_effect=_mock_create_engine)
 
+    def _normalize_query_dict(self, qdict):
+        # SQLAlchemy 1.4 returns url.query as:
+        # immutabledict({k1: v1, k2: (v2a, v2b, ...), ...})
+        # that is with tuples not lists for multiparams
+
+        return {
+            k: list(v) if isinstance(v, tuple) else v
+            for k, v in qdict.items()
+        }
+
     def test_add_assorted_params(self):
         with self._fixture() as ce:
             engines.create_engine(
@@ -236,7 +246,7 @@ class QueryParamTest(test_base.DbTestCase):
                 connection_parameters="foo=bar&bat=hoho&bat=param2")
 
         self.assertEqual(
-            ce.mock_calls[0][1][0].query,
+            self._normalize_query_dict(ce.mock_calls[0][1][0].query),
             {'bat': ['hoho', 'param2'], 'foo': 'bar'}
         )
 
@@ -247,7 +257,7 @@ class QueryParamTest(test_base.DbTestCase):
 
         self.assertEqual(
             ce.mock_calls[0][1][0].query,
-            {}
+            self._normalize_query_dict({})
         )
 
     def test_combine_params(self):
@@ -260,7 +270,7 @@ class QueryParamTest(test_base.DbTestCase):
                                       "bind_host=192.168.1.5")
 
         self.assertEqual(
-            ce.mock_calls[0][1][0].query,
+            self._normalize_query_dict(ce.mock_calls[0][1][0].query),
             {
                 'bind_host': '192.168.1.5',
                 'charset': 'utf8',
@@ -280,7 +290,7 @@ class QueryParamTest(test_base.DbTestCase):
                                       "bind_host=192.168.1.5")
 
         self.assertEqual(
-            ce.mock_calls[0][1][0].query,
+            self._normalize_query_dict(ce.mock_calls[0][1][0].query),
             {
                 'bind_host': '192.168.1.5',
                 'charset': 'utf8',
@@ -751,7 +761,7 @@ class CreateEngineTest(oslo_test.BaseTestCase):
         def warn_interpolate(msg, args):
             # test the interpolation itself to ensure the password
             # is concealed
-            warnings.warning(msg % args)
+            warnings.warning(msg % (args, ))
 
         with mock.patch(
                 "oslo_db.sqlalchemy.engines.LOG.warning",
