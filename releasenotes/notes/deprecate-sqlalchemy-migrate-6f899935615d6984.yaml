@@ -1,0 +1,8 @@
+---
+deprecations:
+  - |
+    The ``oslo_db.sqlalchemy.migration`` module is deprecated for removal.
+    It only supports ``sqlalchemy-migrate``, which is no longer under active
+    development and has been effectively replaced by ``alembic``. Users of
+    this module should consider switching to ``alembic`` or, if necessary,
+    using ``sqlalchemy-migrate`` directly.
