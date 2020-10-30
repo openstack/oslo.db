@@ -6,3 +6,9 @@ deprecations:
     development and has been effectively replaced by ``alembic``. Users of
     this module should consider switching to ``alembic`` or, if necessary,
     using ``sqlalchemy-migrate`` directly.
+  - |
+    The ``oslo_db.sqlalchemy.migration_cli`` module is deprecated for removal.
+    It was intended to provide an abstraction layer over different migration
+    backends - specifically ``sqlalchemy-migrate`` and ``alembic`` - however,
+    takeup has been limited and its expected that users will use ``alembic``
+    directly nowadays.
