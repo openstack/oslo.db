@@ -41,6 +41,7 @@
 
 import os
 
+from debtcollector import removals
 from migrate import exceptions as versioning_exceptions
 from migrate.versioning import api as versioning_api
 from migrate.versioning.repository import Repository
@@ -50,6 +51,13 @@ from oslo_db._i18n import _
 from oslo_db import exception
 
 
+_removed_msg = (
+    'sqlalchemy-migrate support in oslo_db is deprecated; consider '
+    'migrating to alembic'
+)
+
+
+@removals.remove(message=_removed_msg, version='8.3.0')
 def db_sync(engine, abs_path, version=None, init_version=0, sanity_check=True):
     """Upgrade or downgrade a database.
 
@@ -116,6 +124,7 @@ def _db_schema_sanity_check(engine):
                                ) % ','.join(table_names))
 
 
+@removals.remove(message=_removed_msg, version='8.3.0')
 def db_version(engine, abs_path, init_version):
     """Show the current version of the repository.
 
@@ -141,6 +150,7 @@ def db_version(engine, abs_path, init_version):
                   "manually."))
 
 
+@removals.remove(message=_removed_msg, version='8.3.0')
 def db_version_control(engine, abs_path, version=None):
     """Mark a database as under this repository's version control.
 
