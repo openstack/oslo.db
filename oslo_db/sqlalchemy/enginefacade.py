@@ -188,8 +188,6 @@ class _TransactionFactory(object):
         self._legacy_facade = None
         self._start_lock = threading.Lock()
 
-    @debtcollector.renames.renamed_kwarg(
-        "idle_timeout", "connection_recycle_time", replace=True)
     def configure_defaults(self, **kw):
         """Apply default configurational options.
 
@@ -298,8 +296,6 @@ class _TransactionFactory(object):
         """
         self._configure(True, kw)
 
-    @debtcollector.renames.renamed_kwarg(
-        "idle_timeout", "connection_recycle_time", replace=True)
     def configure(self, **kw):
         """Apply configurational options.
 
