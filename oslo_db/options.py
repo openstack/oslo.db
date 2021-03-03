@@ -69,10 +69,6 @@ database_opts = [
              'the pool.'),
     cfg.IntOpt('max_pool_size',
                default=5,
-               deprecated_opts=[cfg.DeprecatedOpt('sql_max_pool_size',
-                                                  group='DEFAULT'),
-                                cfg.DeprecatedOpt('sql_max_pool_size',
-                                                  group='DATABASE')],
                help='Maximum number of SQL connections to keep open in a '
                     'pool. Setting a value of 0 indicates no limit.'),
     cfg.IntOpt('max_retries',
