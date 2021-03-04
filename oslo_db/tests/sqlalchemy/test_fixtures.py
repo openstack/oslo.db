@@ -250,9 +250,7 @@ class TestLoadHook(unittest.TestCase):
         found_tests = loader.discover(start_dir, pattern="test_fixtures.py")
         new_loader = load_tests(loader, found_tests, "test_fixtures.py")
 
-        self.assertTrue(
-            isinstance(new_loader, testresources.OptimisingTestSuite)
-        )
+        self.assertIsInstance(new_loader, testresources.OptimisingTestSuite)
 
         actual_tests = unittest.TestSuite(
             testscenarios.generate_scenarios(found_tests)
@@ -274,9 +272,7 @@ class TestLoadHook(unittest.TestCase):
         new_loader = load_tests(
             loader, unittest.suite.TestSuite(), "test_fixtures.py")
 
-        self.assertTrue(
-            isinstance(new_loader, testresources.OptimisingTestSuite)
-        )
+        self.assertIsInstance(new_loader, testresources.OptimisingTestSuite)
 
         actual_tests = unittest.TestSuite(
             testscenarios.generate_scenarios(

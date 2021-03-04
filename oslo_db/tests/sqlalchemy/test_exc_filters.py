@@ -663,19 +663,11 @@ class TestExceptionCauseMySQLSavepoint(test_base._MySQLOpportunisticTestCase):
                     # session even though the SAVEPOINT was lost;
                     # the net result here is that one exception is thrown
                     # instead of two.  This is SQLAlchemy ticket #3680
-                    self.assertTrue(
-                        isinstance(
-                            dbe_inner.cause,
-                            exception.DBDuplicateEntry
-                        )
-                    )
+                    self.assertIsInstance(
+                        dbe_inner.cause, exception.DBDuplicateEntry)
+
         except exception.DBError as dbe_outer:
-            self.assertTrue(
-                isinstance(
-                    dbe_outer.cause,
-                    exception.DBDuplicateEntry
-                )
-            )
+            self.AssertIsInstance(dbe_outer.cause, exception.DBDuplicateEntry)
 
         # resets itself afterwards
         try:
