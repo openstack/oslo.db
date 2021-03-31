@@ -20,7 +20,7 @@ import fixtures
 from oslotest import base as test_base
 import sqlalchemy
 from sqlalchemy.dialects import mysql
-from sqlalchemy import Boolean, Index, Integer, DateTime, String, SmallInteger
+from sqlalchemy import Boolean, Index, Integer, DateTime, String
 from sqlalchemy import CheckConstraint
 from sqlalchemy import MetaData, Table, Column
 from sqlalchemy import ForeignKey, ForeignKeyConstraint
@@ -847,8 +847,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
         self.assertIsInstance(table.c.deleted.type, Integer)
 
     def test_change_deleted_column_type_to_boolean(self):
-        expected_types = {'mysql': mysql.TINYINT,
-                          'ibm_db_sa': SmallInteger}
+        expected_types = {'mysql': mysql.TINYINT}
         table_name = 'abc'
         table = Table(table_name, self.meta,
                       Column('id', Integer, primary_key=True),
@@ -862,8 +861,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
                               expected_types.get(self.engine.name, Boolean))
 
     def test_change_deleted_column_type_to_boolean_with_fc(self):
-        expected_types = {'mysql': mysql.TINYINT,
-                          'ibm_db_sa': SmallInteger}
+        expected_types = {'mysql': mysql.TINYINT}
         table_name_1 = 'abc'
         table_name_2 = 'bcd'
 
@@ -1605,7 +1603,6 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
 
         dispatcher("postgresql+pyodbc://", 1)
         dispatcher("mysql+pymysql://", 2)
-        dispatcher("ibm_db_sa+db2://", 3)
         dispatcher("postgresql+psycopg2://", 4)
         dispatcher("postgresql://", 5)
 
@@ -1620,7 +1617,6 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
                 mock.call.mysql_pymysql('mysql+pymysql://', 2),
                 mock.call.mysql('mysql+pymysql://', 2),
                 mock.call.default('mysql+pymysql://', 2),
-                mock.call.default('ibm_db_sa+db2://', 3),
                 mock.call.postgresql_psycopg2('postgresql+psycopg2://', 4),
                 mock.call.postgresql('postgresql+psycopg2://', 4),
                 mock.call.default('postgresql+psycopg2://', 4),

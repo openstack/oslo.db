@@ -67,29 +67,25 @@ def filters(dbname, exception_type, regex):
          r"^.*\b1213\b.*Deadlock: wsrep aborted.*")
 @filters("postgresql", sqla_exc.OperationalError, r"^.*deadlock detected.*")
 @filters("postgresql", sqla_exc.DBAPIError, r"^.*deadlock detected.*")
-@filters("ibm_db_sa", sqla_exc.DBAPIError, r"^.*SQL0911N.*")
 def _deadlock_error(operational_error, match, engine_name, is_disconnect):
     """Filter for MySQL or Postgresql deadlock error.
 
     NOTE(comstud): In current versions of DB backends, Deadlock violation
     messages follow the structure:
 
-    mysql+mysqldb:
-    (OperationalError) (1213, 'Deadlock found when trying to get lock; try '
-                         'restarting transaction') <query_str> <query_args>
+    mysql+mysqldb::
 
-    mysql+mysqlconnector:
-    (InternalError) 1213 (40001): Deadlock found when trying to get lock; try
-                         restarting transaction
+        (OperationalError) (1213, 'Deadlock found when trying to get lock; '
+            'try restarting transaction') <query_str> <query_args>
 
-    postgresql:
-    (TransactionRollbackError) deadlock detected <deadlock_details>
+    mysql+mysqlconnector::
 
+        (InternalError) 1213 (40001): Deadlock found when trying to get lock;
+            try restarting transaction
 
-    ibm_db_sa:
-    SQL0911N The current transaction has been rolled back because of a
-    deadlock or timeout <deadlock details>
+    postgresql::
 
+        (TransactionRollbackError) deadlock detected <deadlock_details>
     """
     raise exception.DBDeadlock(operational_error)
 
@@ -137,9 +133,6 @@ def _default_dupe_key_error(integrity_error, match, engine_name,
                key 'c1'
     N columns - (IntegrityError) 1062 (23000): Duplicate entry 'values
                joined with -' for key 'name_of_our_constraint'
-
-
-
     """
 
     columns = match.group('columns')
@@ -184,7 +177,6 @@ def _sqlite_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
 
     sqlite since 3.8.2:
     (IntegrityError) PRIMARY KEY must be unique
-
     """
     columns = []
     # NOTE(ochuprykov): We can get here by last filter in which there are no
@@ -321,24 +313,6 @@ def _check_database_non_existing(
     raise exception.DBNonExistentDatabase(database, error)
 
 
-@filters("ibm_db_sa", sqla_exc.IntegrityError, r"^.*SQL0803N.*$")
-def _db2_dupe_key_error(integrity_error, match, engine_name, is_disconnect):
-    """Filter for DB2 duplicate key errors.
-
-    N columns - (IntegrityError) SQL0803N  One or more values in the INSERT
-                statement, UPDATE statement, or foreign key update caused by a
-                DELETE statement are not valid because the primary key, unique
-                constraint or unique index identified by "2" constrains table
-                "NOVA.KEY_PAIRS" from having duplicate values for the index
-                key.
-
-    """
-
-    # NOTE(mriedem): The ibm_db_sa integrity error message doesn't provide the
-    # columns so we have to omit that from the DBDuplicateEntry error.
-    raise exception.DBDuplicateEntry([], integrity_error)
-
-
 @filters("mysql", sqla_exc.DBAPIError, r".*\b1146\b")
 def _raise_mysql_table_doesnt_exist_asis(
         error, match, engine_name, is_disconnect):
@@ -400,7 +374,6 @@ def _raise_operational_errors_directly_filter(operational_error,
 @filters("mysql", sqla_exc.InternalError, r".*\(.*(?:1927)")  # noqa
 @filters("mysql", sqla_exc.InternalError, r".*Packet sequence number wrong")  # noqa
 @filters("postgresql", sqla_exc.OperationalError, r".*could not connect to server")  # noqa
-@filters("ibm_db_sa", sqla_exc.OperationalError, r".*(?:30081)")
 def _is_db_connection_error(operational_error, match, engine_name,
                             is_disconnect):
     """Detect the exception as indicating a recoverable error on connect."""

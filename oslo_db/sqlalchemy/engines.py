@@ -69,7 +69,7 @@ def _connect_ping_listener(connection, branch):
     connection.should_close_with_result = False
     try:
         # run a SELECT 1.   use a core select() so that
-        # any details like that needed by Oracle, DB2 etc. are handled.
+        # any details like that needed by the backend are handled.
         connection.scalar(select([1]))
     except exception.DBConnectionError:
         # catch DBConnectionError, which is raised by the filter

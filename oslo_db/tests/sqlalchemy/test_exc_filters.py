@@ -881,28 +881,6 @@ class TestDuplicate(TestsExceptionFilter):
             exception.DBError
         )
 
-    def test_ibm_db_sa(self):
-        self._run_dupe_constraint_test(
-            'ibm_db_sa',
-            'SQL0803N  One or more values in the INSERT statement, UPDATE '
-            'statement, or foreign key update caused by a DELETE statement are'
-            ' not valid because the primary key, unique constraint or unique '
-            'index identified by "2" constrains table "NOVA.KEY_PAIRS" from '
-            'having duplicate values for the index key.',
-            expected_columns=[]
-        )
-
-    def test_ibm_db_sa_notadupe(self):
-        self._not_dupe_constraint_test(
-            'ibm_db_sa',
-            'ALTER TABLE instance_types ADD CONSTRAINT '
-            'uniq_name_x_deleted UNIQUE (name, deleted)',
-            'SQL0542N  The column named "NAME" cannot be a column of a '
-            'primary key or unique key constraint because it can contain null '
-            'values.',
-            exception.DBError
-        )
-
 
 class TestDeadlock(TestsExceptionFilter):
     statement = ('SELECT quota_usages.created_at AS '
@@ -1002,25 +980,6 @@ class TestDeadlock(TestsExceptionFilter):
             (exception.DBError, sqla.exc.OperationalError),
             "TransactionRollbackError",
             orig_exception_cls=self.TransactionRollbackError
-        )
-
-    def test_ibm_db_sa_deadlock(self):
-        self._run_deadlock_detect_test(
-            "ibm_db_sa",
-            "SQL0911N The current transaction has been "
-            "rolled back because of a deadlock or timeout",
-            # use the lowest class b.c. I don't know what actual error
-            # class DB2's driver would raise for this
-            orig_exception_cls=self.Error
-        )
-
-    def test_ibm_db_sa_not_deadlock(self):
-        self._not_deadlock_test(
-            "ibm_db_sa",
-            "SQL01234B Some other error.",
-            exception.DBError,
-            "Error",
-            orig_exception_cls=self.Error
         )
 
 
@@ -1256,21 +1215,6 @@ class TestDBDisconnected(TestsExceptionFilter):
             is_disconnect=False
         )
 
-    def test_db2_ping_listener_disconnected(self):
-        self._test_ping_listener_disconnected(
-            "ibm_db_sa",
-            self.OperationalError(
-                'SQL30081N: DB2 Server connection is no longer active')
-        )
-
-    def test_db2_ping_listener_disconnected_regex_only(self):
-        self._test_ping_listener_disconnected(
-            "ibm_db_sa",
-            self.OperationalError(
-                'SQL30081N: DB2 Server connection is no longer active'),
-            is_disconnect=False
-        )
-
     def test_postgresql_ping_listener_disconnected(self):
         self._test_ping_listener_disconnected(
             "postgresql",
@@ -1353,24 +1297,6 @@ class TestDBConnectRetry(TestsExceptionFilter):
             "mysql",
             self.OperationalError("Error: (2003) something wrong"),
             3, 2
-        )
-
-    def test_db2_error_positive(self):
-        conn = self._run_test(
-            "ibm_db_sa",
-            self.OperationalError("blah blah -30081 blah blah"),
-            2, -1
-        )
-        # conn is good
-        self.assertEqual(1, conn.scalar(sqla.select([1])))
-
-    def test_db2_error_negative(self):
-        self.assertRaises(
-            sqla.exc.OperationalError,
-            self._run_test,
-            "ibm_db_sa",
-            self.OperationalError("blah blah -39981 blah blah"),
-            2, 3
         )
 
 
