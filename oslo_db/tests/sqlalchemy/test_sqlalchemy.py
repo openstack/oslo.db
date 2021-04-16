@@ -67,7 +67,7 @@ class RegexpFilterTestCase(test_base._DbTestCase):
     def _test_regexp_filter(self, regexp, expected):
         with enginefacade.writer.using(test_base.context):
             _session = test_base.context.session
-            for i in ['10', '20', u'♥']:
+            for i in ['10', '20', '♥']:
                 tbl = RegexpTable()
                 tbl.update({'bar': i})
                 tbl.save(session=_session)
@@ -83,10 +83,10 @@ class RegexpFilterTestCase(test_base._DbTestCase):
         self._test_regexp_filter('11', [])
 
     def test_regexp_filter_unicode(self):
-        self._test_regexp_filter(u'♥', [u'♥'])
+        self._test_regexp_filter('♥', ['♥'])
 
     def test_regexp_filter_unicode_nomatch(self):
-        self._test_regexp_filter(u'♦', [])
+        self._test_regexp_filter('♦', [])
 
 
 class SQLiteSavepointTest(test_base._DbTestCase):

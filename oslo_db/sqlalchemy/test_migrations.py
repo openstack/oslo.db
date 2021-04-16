@@ -500,9 +500,9 @@ class ModelsMigrationsSync(object, metaclass=abc.ABCMeta):
              [('drop_key',
                'testtbl_fk_check_fkey',
                'testtbl',
-               fk_info(constrained_columns=(u'fk_check',),
-                       referred_table=u'table',
-                       referred_columns=(u'fk_check',)))]
+               fk_info(constrained_columns=('fk_check',),
+                       referred_table='table',
+                       referred_columns=('fk_check',)))]
 
         DEPRECATED: this function is deprecated and will be removed from
         oslo.db in a few releases. Alembic autogenerate.compare_metadata()
