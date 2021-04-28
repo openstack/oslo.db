@@ -484,11 +484,10 @@ def _update_stmt_from_query(mapper, query, values):
             mapper.column_attrs[key], value
         ) for key, value in values.items()
     )
-    query = query.enable_eagerloads(False)
-    context = query._compile_context()
-    primary_table = context.statement.froms[0]
+    primary_table = inspect(query.column_descriptions[0]['entity']).local_table
+    where_criteria = query.whereclause
     update_stmt = sql.update(primary_table,
-                             context.whereclause,
+                             where_criteria,
                              upd_values)
     return update_stmt
 
