@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Removed deprecated database option ``sql_max_pool_size``.
