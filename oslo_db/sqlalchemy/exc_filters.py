@@ -120,6 +120,12 @@ def _default_dupe_key_error(integrity_error, match, engine_name,
     N columns - (IntegrityError) duplicate key value violates unique
                constraint "name_of_our_constraint"
 
+    mysql since 8.0.19:
+    1 column - (IntegrityError) (1062, "Duplicate entry 'value_of_c1' for key
+               'table_name.c1'")
+    N columns - (IntegrityError) (1062, "Duplicate entry 'values joined
+               with -' for key 'table_name.name_of_our_constraint'")
+
     mysql+mysqldb:
     1 column - (IntegrityError) (1062, "Duplicate entry 'value_of_c1' for key
                'c1'")
@@ -145,6 +151,9 @@ def _default_dupe_key_error(integrity_error, match, engine_name,
     if not columns.startswith(uniqbase):
         if engine_name == "postgresql":
             columns = [columns[columns.index("_") + 1:columns.rindex("_")]]
+        elif (engine_name == "mysql") and \
+             (uniqbase in str(columns.split("0")[:1])):
+            columns = columns.split("0")[1:]
         else:
             columns = [columns]
     else:
