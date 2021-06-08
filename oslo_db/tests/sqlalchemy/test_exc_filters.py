@@ -821,6 +821,14 @@ class TestDuplicate(TestsExceptionFilter):
             expected_value='2'
         )
 
+    def test_mysql_duplicate_entry_key_start_with_tablename(self):
+        self._run_dupe_constraint_test(
+            "mysql",
+            "1062 (23000): Duplicate entry '2' for key 'tbl.uniq_tbl0b'",
+            expected_columns=['b'],
+            expected_value='2'
+        )
+
     def test_mysql_binary(self):
         self._run_dupe_constraint_test(
             "mysql",
@@ -836,6 +844,24 @@ class TestDuplicate(TestsExceptionFilter):
             "''\\\\x8A$\\\\x8D\\\\xA6\"s\\\\x8E!,' "
             "for key 'PRIMARY'\')",
             expected_columns=['PRIMARY'],
+            expected_value="'\\\\x8A$\\\\x8D\\\\xA6\"s\\\\x8E!,"
+        )
+
+    def test_mysql_duplicate_entry_key_start_with_tablename_binary(self):
+        self._run_dupe_constraint_test(
+            "mysql",
+            "(1062, \'Duplicate entry "
+            "\\\'\\\\x8A$\\\\x8D\\\\xA6\"s\\\\x8E\\\' "
+            "for key \\\'tbl.uniq_tbl0c1\\\'\')",
+            expected_columns=['c1'],
+            expected_value="\\\\x8A$\\\\x8D\\\\xA6\"s\\\\x8E"
+        )
+        self._run_dupe_constraint_test(
+            "mysql",
+            "(1062, \'Duplicate entry "
+            "''\\\\x8A$\\\\x8D\\\\xA6\"s\\\\x8E!,' "
+            "for key 'tbl.uniq_tbl0c1'\')",
+            expected_columns=['c1'],
             expected_value="'\\\\x8A$\\\\x8D\\\\xA6\"s\\\\x8E!,"
         )
 
