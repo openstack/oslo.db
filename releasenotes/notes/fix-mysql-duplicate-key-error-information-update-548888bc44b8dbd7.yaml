@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    In mysql 8.0.19, duplicate key error information is extended to
+    include the table name of the key. Previously, duplicate key error
+    information included only the key value and key name.
+    This extends capabilities to handle changes in duplicate key error
+    information with newer mysql version since 8.0.19.
