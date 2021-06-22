@@ -21,6 +21,8 @@ class JsonEncodedType(TypeDecorator):
 
     type = None
     impl = Text
+    cache_ok = True
+    """This type is safe to cache."""
 
     def __init__(self, mysql_as_long=False, mysql_as_medium=False):
         """Initialize JSON-encoding type."""
@@ -101,6 +103,8 @@ class SoftDeleteInteger(TypeDecorator):
     """
 
     impl = Integer
+    cache_ok = True
+    """This type is safe to cache."""
 
     def process_bind_param(self, value, dialect):
         """Return the binding parameter."""
