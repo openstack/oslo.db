@@ -106,8 +106,7 @@ class SoftDeleteInteger(TypeDecorator):
         """Return the binding parameter."""
         if value is None:
             return None
-        else:
-            return int(value)
+        return int(value)
 
 
 class String(_String):
