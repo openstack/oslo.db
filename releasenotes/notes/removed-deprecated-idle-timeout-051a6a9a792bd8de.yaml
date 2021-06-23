@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Removed the ``[DATABASE] idle_timeout``, ``[database] idle_timeout``,
+    ``[sql] idle_timeout``, ``[DEFAULT] sql_idle_timeout`` and
+    ``[DATABASE] sql_idle_timeout`` options. These were all legacy
+    aliases for ``[database] connection_recycle_time``.

@@ -51,18 +51,6 @@ database_opts = [
     cfg.IntOpt(
         'connection_recycle_time',
         default=3600,
-        deprecated_opts=[
-            cfg.DeprecatedOpt('idle_timeout',
-                              group="DATABASE"),
-            cfg.DeprecatedOpt('idle_timeout',
-                              group="database"),
-            cfg.DeprecatedOpt('sql_idle_timeout',
-                              group='DEFAULT'),
-            cfg.DeprecatedOpt('sql_idle_timeout',
-                              group='DATABASE'),
-            cfg.DeprecatedOpt('idle_timeout',
-                              group='sql')
-        ],
         help='Connections which have been present in the connection '
              'pool longer than this number of seconds will be replaced '
              'with a new one the next time they are checked out from '
