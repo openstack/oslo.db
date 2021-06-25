@@ -23,7 +23,6 @@ import pprint
 import alembic
 import alembic.autogenerate
 import alembic.migration
-import pkg_resources as pkg
 import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.sql.expression as expr
@@ -557,22 +556,12 @@ class ModelsMigrationsSync(object, metaclass=abc.ABCMeta):
         filtering is performed, changes are returned as is.
 
         :param diff: a list of differences (see `compare_metadata()` docs for
-                     details on format)
+            details on format)
         :returns: a list of differences
-
         """
-
         return diff
 
     def test_models_sync(self):
-        # recent versions of sqlalchemy and alembic are needed for running of
-        # this test, but we already have them in requirements
-        try:
-            pkg.require('sqlalchemy>=0.8.4', 'alembic>=0.6.2')
-        except (pkg.VersionConflict, pkg.DistributionNotFound) as e:
-            self.skipTest('sqlalchemy>=0.8.4 and alembic>=0.6.3 are required'
-                          ' for running of this test: %s' % e)
-
         # drop all objects after a test run
         engine = self.get_engine()
         backend = provision.Backend(engine.name, engine.url)

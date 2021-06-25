@@ -38,11 +38,6 @@ class AlembicExtension(ext_base.MigrationExtensionBase):
     def __init__(self, engine, migration_config):
         self.alembic_ini_path = migration_config.get('alembic_ini_path', '')
         self.config = alembic_config.Config(self.alembic_ini_path)
-        # TODO(viktors): Remove this, when we will use Alembic 0.7.5 or
-        #                higher, because the ``attributes`` dictionary was
-        #                added to Alembic in version 0.7.5.
-        if not hasattr(self.config, 'attributes'):
-            self.config.attributes = {}
         # option should be used if script is not in default directory
         repo_path = migration_config.get('alembic_repo_path')
         if repo_path:
