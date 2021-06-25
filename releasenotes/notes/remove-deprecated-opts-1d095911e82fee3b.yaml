@@ -1,0 +1,18 @@
+---
+upgrade:
+  - |
+    The following deprecated option aliases have been removed:
+
+    - ``[DEFAULT] sqlite_synchronous`` (use ``[database] sqlite_synchronous``)
+    - ``[DEFAULT] db_backend`` (use ``[database] backend``)
+    - ``[DEFAULT] sql_connection``, ``[DATABASE] sql_connection``,
+      ``[sql] connection`` (use ``[database] connection``)
+    - ``[DEFAULT] sql_max_retries``, ``[DATABASE] sql_max_retries``
+      (use ``[database] max_retries``)
+    - ``[DEFAULT] sql_retry_interval``, ``[DATABASE] reconnect_interval``
+      (use ``[database] retry_interval``)
+    - ``[DEFAULT] sql_max_overflow``, ``[DATABASE] sqlalchemy_max_overflow``
+      (use ``[database] max_overflow``)
+    - ``[DEFAULT] sql_connection_debug`` (use ``[database] connection_debug``)
+    - ``[DEFAULT] sql_connection_trace`` (use ``[database] connection_trace``)
+    - ``[DATABASE] sqlalchemy_pool_timeout`` (use ``[database] pool_timeout``)

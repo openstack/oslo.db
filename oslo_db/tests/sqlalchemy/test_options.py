@@ -26,23 +26,6 @@ class DbApiOptionsTestCase(test_base.BaseTestCase):
         self.conf = self.useFixture(config_fixture.Config()).conf
         self.conf.register_opts(options.database_opts, group='database')
 
-    def test_deprecated_session_parameters(self):
-        path = self.create_tempfiles([["tmp", b"""[DEFAULT]
-sql_connection=x://y.z
-sql_max_retries=30
-sql_retry_interval=40
-sql_max_overflow=50
-sql_connection_debug=60
-sql_connection_trace=True
-"""]])[0]
-        self.conf(['--config-file', path])
-        self.assertEqual('x://y.z', self.conf.database.connection)
-        self.assertEqual(30, self.conf.database.max_retries)
-        self.assertEqual(40, self.conf.database.retry_interval)
-        self.assertEqual(50, self.conf.database.max_overflow)
-        self.assertEqual(60, self.conf.database.connection_debug)
-        self.assertEqual(True, self.conf.database.connection_trace)
-
     def test_session_parameters(self):
         path = self.create_tempfiles([["tmp", b"""[database]
 connection=x://y.z
@@ -63,36 +46,6 @@ pool_timeout=7
         self.assertEqual(60, self.conf.database.connection_debug)
         self.assertEqual(True, self.conf.database.connection_trace)
         self.assertEqual(7, self.conf.database.pool_timeout)
-
-    def test_dbapi_database_deprecated_parameters(self):
-        path = self.create_tempfiles([['tmp', b'[DATABASE]\n'
-                                       b'sql_connection=fake_connection\n'
-                                       b'sql_max_retries=22\n'
-                                       b'reconnect_interval=17\n'
-                                       b'sqlalchemy_max_overflow=101\n'
-                                       b'sqlalchemy_pool_timeout=5\n'
-                                       ]])[0]
-        self.conf(['--config-file', path])
-        self.assertEqual('fake_connection', self.conf.database.connection)
-        self.assertEqual(22, self.conf.database.max_retries)
-        self.assertEqual(17, self.conf.database.retry_interval)
-        self.assertEqual(101, self.conf.database.max_overflow)
-        self.assertEqual(5, self.conf.database.pool_timeout)
-
-    def test_dbapi_database_deprecated_parameters_sql(self):
-        path = self.create_tempfiles([['tmp', b'[sql]\n'
-                                       b'connection=test_sql_connection\n'
-                                       ]])[0]
-        self.conf(['--config-file', path])
-        self.assertEqual('test_sql_connection', self.conf.database.connection)
-
-    def test_deprecated_dbapi_parameters(self):
-        path = self.create_tempfiles([['tmp', b'[DEFAULT]\n'
-                                      b'db_backend=test_123\n'
-                                       ]])[0]
-
-        self.conf(['--config-file', path])
-        self.assertEqual('test_123', self.conf.database.backend)
 
     def test_dbapi_parameters(self):
         path = self.create_tempfiles([['tmp', b'[database]\n'
