@@ -182,15 +182,13 @@ Efficient use of soft deletes:
 
 """
 
-from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import orm
 
-EngineFacade = enginefacade.LegacyEngineFacade
 create_engine = engines.create_engine
 get_maker = orm.get_maker
 Query = orm.Query
 Session = orm.Session
 
 
-__all__ = ["EngineFacade", "create_engine", "get_maker", "Query", "Session"]
+__all__ = ["create_engine", "get_maker", "Query", "Session"]

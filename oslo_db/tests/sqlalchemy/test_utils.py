@@ -34,9 +34,9 @@ from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType
 
 from oslo_db import exception
+from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import models
 from oslo_db.sqlalchemy import provision
-from oslo_db.sqlalchemy import session
 from oslo_db.sqlalchemy import utils
 from oslo_db.tests import base as test_base
 from oslo_db.tests.sqlalchemy import base as db_test_base
@@ -751,8 +751,9 @@ class TestMigrationUtils(db_test_base._DbTestCase):
     def test_drop_dup_entries_in_file_conn(self):
         table_name = "__test_tmp_table__"
         tmp_db_file = self.create_tempfiles([['name', '']], ext='.sql')[0]
-        in_file_engine = session.EngineFacade(
-            'sqlite:///%s' % tmp_db_file).get_engine()
+        facade = enginefacade.transaction_context()
+        facade.configure(connection=f'sqlite:///{tmp_db_file}')
+        in_file_engine = facade.writer.get_engine()
         meta = MetaData()
         test_table, values = self._populate_db_for_drop_duplicate_entries(
             in_file_engine, meta, table_name)
