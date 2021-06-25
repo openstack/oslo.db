@@ -15,7 +15,6 @@
 #    under the License.
 
 import abc
-import collections
 import functools
 import logging
 import pprint
@@ -120,30 +119,6 @@ class WalkVersionsMixin(object, metaclass=abc.ABCMeta):
         :returns: sqlalchemy engine instance
         """
         pass
-
-    def _walk_versions(self, snake_walk=False, downgrade=True):
-        """Check if migration upgrades and downgrades successfully.
-
-        DEPRECATED: this function is deprecated and will be removed from
-        oslo.db in a few releases. Please use walk_versions() method instead.
-        """
-        self.walk_versions(snake_walk, downgrade)
-
-    def _migrate_down(self, version, with_data=False):
-        """Migrate down to a previous version of the db.
-
-        DEPRECATED: this function is deprecated and will be removed from
-        oslo.db in a few releases. Please use migrate_down() method instead.
-        """
-        return self.migrate_down(version, with_data)
-
-    def _migrate_up(self, version, with_data=False):
-        """Migrate up to a new version of the db.
-
-        DEPRECATED: this function is deprecated and will be removed from
-        oslo.db in a few releases. Please use migrate_up() method instead.
-        """
-        self.migrate_up(version, with_data)
 
     def walk_versions(self, snake_walk=False, downgrade=True):
         """Check if migration upgrades and downgrades successfully.
@@ -477,77 +452,6 @@ class ModelsMigrationsSync(object, metaclass=abc.ABCMeta):
                 isinstance(meta_def.arg, expr.True_) and insp_def == "1" or
                 isinstance(meta_def.arg, expr.False_) and insp_def == "0"
             )
-
-    FKInfo = collections.namedtuple('fk_info', ['constrained_columns',
-                                                'referred_table',
-                                                'referred_columns'])
-
-    def check_foreign_keys(self, metadata, bind):
-        """Compare foreign keys between model and db table.
-
-        :returns: a list that contains information about:
-
-         * should be a new key added or removed existing,
-         * name of that key,
-         * source table,
-         * referred table,
-         * constrained columns,
-         * referred columns
-
-         Output::
-
-             [('drop_key',
-               'testtbl_fk_check_fkey',
-               'testtbl',
-               fk_info(constrained_columns=('fk_check',),
-                       referred_table='table',
-                       referred_columns=('fk_check',)))]
-
-        DEPRECATED: this function is deprecated and will be removed from
-        oslo.db in a few releases. Alembic autogenerate.compare_metadata()
-        now includes foreign key comparison directly.
-
-        """
-
-        diff = []
-        insp = sqlalchemy.engine.reflection.Inspector.from_engine(bind)
-        # Get all tables from db
-        db_tables = insp.get_table_names()
-        # Get all tables from models
-        model_tables = metadata.tables
-        for table in db_tables:
-            if table not in model_tables:
-                continue
-            # Get all necessary information about key of current table from db
-            fk_db = dict((self._get_fk_info_from_db(i), i['name'])
-                         for i in insp.get_foreign_keys(table))
-            fk_db_set = set(fk_db.keys())
-            # Get all necessary information about key of current table from
-            # models
-            fk_models = dict((self._get_fk_info_from_model(fk), fk)
-                             for fk in model_tables[table].foreign_keys)
-            fk_models_set = set(fk_models.keys())
-            for key in (fk_db_set - fk_models_set):
-                diff.append(('drop_key', fk_db[key], table, key))
-                LOG.info(("Detected removed foreign key %(fk)r on "
-                          "table %(table)r"), {'fk': fk_db[key],
-                                               'table': table})
-            for key in (fk_models_set - fk_db_set):
-                diff.append(('add_key', fk_models[key], table, key))
-                LOG.info((
-                    "Detected added foreign key for column %(fk)r on table "
-                    "%(table)r"), {'fk': fk_models[key].column.name,
-                                   'table': table})
-        return diff
-
-    def _get_fk_info_from_db(self, fk):
-        return self.FKInfo(tuple(fk['constrained_columns']),
-                           fk['referred_table'],
-                           tuple(fk['referred_columns']))
-
-    def _get_fk_info_from_model(self, fk):
-        return self.FKInfo((fk.parent.name,), fk.column.table.name,
-                           (fk.column.name,))
 
     def filter_metadata_diff(self, diff):
         """Filter changes before assert in test_models_sync().

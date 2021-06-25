@@ -1,0 +1,12 @@
+---
+upgrade:
+  - |
+    The ``check_foreign_keys`` helper of the
+    ``oslo_db.sqlalchemy.test_migrations.ModelsMigrationsSync`` base test class
+    has been removed. This was deprecated in 1.4.1 as alembic now supports this
+    capability.
+  - The ``_walk_versions``, ``_migrate_down``, and ``_migrate_up`` methods of
+    the ``oslo_db.sqlalchemy.test_migrations.ModelsMigrationsSync`` base test
+    class have been removed. These were deprecated in 0.5.0 in favour of their
+    non-private equivalents, ``walk_versions``, ``migrate_down``, and
+    ``migrate_up`` respectively.
