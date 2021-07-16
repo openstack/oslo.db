@@ -25,6 +25,7 @@ import re
 
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
+import debtcollector.removals
 from oslo_utils import timeutils
 import sqlalchemy
 from sqlalchemy import Boolean
@@ -544,6 +545,12 @@ def _restore_indexes_on_deleted_columns(engine, table_name, indexes):
         new_index.create(engine)
 
 
+@debtcollector.removals.remove(
+    message='This API is intended for use with sqlalchemy-migrate, support '
+    'for which is deprecated for removal; it will be removed in a future '
+    'release',
+    version='10.1.0',
+)
 def change_deleted_column_type_to_boolean(engine, table_name,
                                           **col_name_col_instance):
     if engine.name == "sqlite":
@@ -617,6 +624,12 @@ def _change_deleted_column_type_to_boolean_sqlite(engine, table_name,
         execute()
 
 
+@debtcollector.removals.remove(
+    message='This API is intended for use with sqlalchemy-migrate, support '
+    'for which is deprecated for removal; it will be removed in a future '
+    'release',
+    version='10.1.0',
+)
 def change_deleted_column_type_to_id_type(engine, table_name,
                                           **col_name_col_instance):
     if engine.name == "sqlite":
