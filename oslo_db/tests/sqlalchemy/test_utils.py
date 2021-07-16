@@ -927,7 +927,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
 
         utils._change_deleted_column_type_to_id_type_sqlite(self.engine,
                                                             table_name)
-        table = Table(table_name, self.meta, autoload=True)
+        table = Table(table_name, self.meta, autoload_with=self.engine)
         # NOTE(I159): if the CHECK constraint has been dropped (expected
         # behavior), any integer value can be inserted, otherwise only 1 or 0.
         # NOTE(zzzeek): SQLAlchemy 1.2 Boolean type will disallow non 1/0
