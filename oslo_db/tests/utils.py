@@ -15,7 +15,6 @@
 
 import contextlib
 
-from oslo_config import cfg
 from oslotest import base as test_base
 
 
@@ -25,8 +24,6 @@ def nested(*contexts):
         yield [stack.enter_context(c) for c in contexts]
 
 
+# TODO(stephenfin): Remove as this is no longer necessary
 class BaseTestCase(test_base.BaseTestCase):
-    def setUp(self, conf=cfg.CONF):
-        super(BaseTestCase, self).setUp()
-        self.conf = conf
-        self.addCleanup(self.conf.reset)
+    pass

@@ -16,6 +16,8 @@
 import sys
 from unittest import mock
 
+from oslo_config import fixture as config_fixture
+
 from oslo_db import concurrency
 from oslo_db.tests import utils as test_utils
 
@@ -26,6 +28,9 @@ class TpoolDbapiWrapperTestCase(test_utils.BaseTestCase):
 
     def setUp(self):
         super(TpoolDbapiWrapperTestCase, self).setUp()
+
+        self.conf = self.useFixture(config_fixture.Config()).conf
+
         self.db_api = concurrency.TpoolDbapiWrapper(
             conf=self.conf, backend_mapping=FAKE_BACKEND_MAPPING)
 

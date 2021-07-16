@@ -12,7 +12,7 @@
 #    under the License.
 
 from oslo_config import cfg
-from oslo_config import fixture as config
+from oslo_config import fixture as config_fixture
 
 from oslo_db import options
 from oslo_db.tests import utils as test_utils
@@ -22,10 +22,8 @@ class DbApiOptionsTestCase(test_utils.BaseTestCase):
     def setUp(self):
         super(DbApiOptionsTestCase, self).setUp()
 
-        config_fixture = self.useFixture(config.Config())
-        self.conf = config_fixture.conf
+        self.conf = self.useFixture(config_fixture.Config()).conf
         self.conf.register_opts(options.database_opts, group='database')
-        self.config = config_fixture.config
 
     def test_deprecated_session_parameters(self):
         path = self.create_tempfiles([["tmp", b"""[DEFAULT]
