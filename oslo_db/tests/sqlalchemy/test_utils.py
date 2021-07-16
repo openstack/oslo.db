@@ -666,9 +666,11 @@ class TestMigrationUtils(db_test_base._DbTestCase):
 
     def setUp(self):
         super(TestMigrationUtils, self).setUp()
-        self.meta = MetaData(bind=self.engine)
+        self.meta = MetaData()
         self.conn = self.engine.connect()
-        self.addCleanup(self.meta.drop_all)
+
+        # self.conn would be better here but does not work right now
+        self.addCleanup(self.meta.drop_all, self.engine)
         self.addCleanup(self.conn.close)
 
     def _populate_db_for_drop_duplicate_entries(self, engine, meta,
@@ -695,7 +697,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
                            Column('deleted_at', DateTime),
                            Column('updated_at', DateTime))
 
-        test_table.create()
+        test_table.create(engine)
         engine.execute(test_table.insert(), values)
         return test_table, values
 
@@ -731,7 +733,6 @@ class TestMigrationUtils(db_test_base._DbTestCase):
         in_file_engine = session.EngineFacade(
             'sqlite:///%s' % tmp_db_file).get_engine()
         meta = MetaData()
-        meta.bind = in_file_engine
         test_table, values = self._populate_db_for_drop_duplicate_entries(
             in_file_engine, meta, table_name)
         utils.drop_old_duplicate_entries_from_table(
@@ -793,7 +794,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
                       Column('b', String(255)),
                       Column('deleted', Boolean),
                       *index_instances)
-        table.create()
+        table.create(self.engine)
         utils.change_deleted_column_type_to_id_type(self.engine, table_name)
         utils.change_deleted_column_type_to_boolean(self.engine, table_name)
 
@@ -811,7 +812,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
         table = Table(table_name, self.meta,
                       Column('id', Integer, primary_key=True),
                       Column('deleted', Boolean))
-        table.create()
+        table.create(self.engine)
         utils.change_deleted_column_type_to_id_type(self.engine, table_name)
 
         table = utils.get_table(self.engine, table_name)
@@ -822,7 +823,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
         table = Table(table_name, self.meta,
                       Column('id', String(255), primary_key=True),
                       Column('deleted', Boolean))
-        table.create()
+        table.create(self.engine)
         utils.change_deleted_column_type_to_id_type(self.engine, table_name)
 
         table = utils.get_table(self.engine, table_name)
@@ -835,7 +836,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
                       Column('id', Integer, primary_key=True),
                       Column('foo', CustomType),
                       Column('deleted', Boolean))
-        table.create()
+        table.create(self.engine)
 
         fooColumn = Column('foo', CustomType())
         utils.change_deleted_column_type_to_id_type(self.engine, table_name,
@@ -851,7 +852,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
         table = Table(table_name, self.meta,
                       Column('id', Integer, primary_key=True),
                       Column('deleted', Integer))
-        table.create()
+        table.create(self.engine)
 
         utils.change_deleted_column_type_to_boolean(self.engine, table_name)
 
@@ -867,14 +868,14 @@ class TestMigrationUtils(db_test_base._DbTestCase):
         table_1 = Table(table_name_1, self.meta,
                         Column('id', Integer, primary_key=True),
                         Column('deleted', Integer))
-        table_1.create()
+        table_1.create(self.engine)
 
         table_2 = Table(table_name_2, self.meta,
                         Column('id', Integer, primary_key=True),
                         Column('foreign_id', Integer,
                                ForeignKey('%s.id' % table_name_1)),
                         Column('deleted', Integer))
-        table_2.create()
+        table_2.create(self.engine)
 
         utils.change_deleted_column_type_to_boolean(self.engine, table_name_2)
 
@@ -889,7 +890,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
                       Column('id', Integer, primary_key=True),
                       Column('foo', CustomType),
                       Column('deleted', Integer))
-        table.create()
+        table.create(self.engine)
 
         fooColumn = Column('foo', CustomType())
         utils.change_deleted_column_type_to_boolean(self.engine, table_name,
@@ -921,7 +922,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
         table = Table(table_name, self.meta,
                       Column('id', Integer, primary_key=True),
                       Column('deleted', Boolean))
-        table.create()
+        table.create(self.engine)
 
         utils._change_deleted_column_type_to_id_type_sqlite(self.engine,
                                                             table_name)
@@ -954,7 +955,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
                                              name='table_name_2_fk1'),
                         Column('deleted', Integer))
 
-        self.meta.create_all(tables=[table_1, table_2])
+        self.meta.create_all(self.engine, tables=[table_1, table_2])
         fkc = utils.get_foreign_key_constraint_name(self.engine,
                                                     'table_name_2',
                                                     'foreign_id')
@@ -984,7 +985,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
                 ['key', 'archive_id'], ['b.key', 'b.archive_id'],
                 name="some_composite_fk")
         )
-        self.meta.create_all(tables=[a, b, c])
+        self.meta.create_all(self.engine, tables=[a, b, c])
 
         def get_fk_entries():
             inspector = sqlalchemy.inspect(self.engine)
@@ -1257,15 +1258,15 @@ class TestModelQuery(test_base.BaseTestCase):
 class TestUtils(db_test_base._DbTestCase):
     def setUp(self):
         super(TestUtils, self).setUp()
-        meta = MetaData(bind=self.engine)
+        meta = MetaData()
         self.test_table = Table(
             'test_table',
             meta,
             Column('a', Integer),
             Column('b', Integer)
         )
-        self.test_table.create()
-        self.addCleanup(meta.drop_all)
+        self.test_table.create(self.engine)
+        self.addCleanup(meta.drop_all, self.engine)
 
     def test_get_indexes(self):
         Index('index_a', self.test_table.c.a).create(self.engine)

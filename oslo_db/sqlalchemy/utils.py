@@ -441,8 +441,7 @@ def get_table(engine, name):
        with ForeignKey creation.
     """
     metadata = MetaData()
-    metadata.bind = engine
-    return Table(name, metadata, autoload=True)
+    return Table(name, metadata, autoload_with=engine)
 
 
 def _get_not_supported_column(col_name_col_instance, column_name):
@@ -476,9 +475,8 @@ def drop_old_duplicate_entries_from_table(engine, table_name,
     :param uc_column_names: Unique constraint columns
     """
     meta = MetaData()
-    meta.bind = engine
 
-    table = Table(table_name, meta, autoload=True)
+    table = Table(table_name, meta, autoload_with=engine)
     columns_for_group_by = [table.c[name] for name in uc_column_names]
 
     columns_for_select = [func.max(table.c.id)]
@@ -565,15 +563,24 @@ def change_deleted_column_type_to_boolean(engine, table_name,
     table = get_table(engine, table_name)
 
     old_deleted = Column('old_deleted', Boolean, default=False)
-    old_deleted.create(table, populate_default=False)
+    table.metadata.bind = engine
+    try:
+        old_deleted.create(table, populate_default=False)
+    finally:
+        table.metadata.bind = None
 
-    table.update().\
-        where(table.c.deleted == table.c.id).\
-        values(old_deleted=True).\
-        execute()
+    engine.execute(
+        table.update().
+        where(table.c.deleted == table.c.id).
+        values(old_deleted=True)
+    )
 
-    table.c.deleted.drop()
-    table.c.old_deleted.alter(name="deleted")
+    table.metadata.bind = engine
+    try:
+        table.c.deleted.drop()
+        table.c.old_deleted.alter(name="deleted")
+    finally:
+        table.metadata.bind = None
 
     _restore_indexes_on_deleted_columns(engine, table_name, indexes)
 
@@ -603,7 +610,7 @@ def _change_deleted_column_type_to_boolean_sqlite(engine, table_name,
     meta = table.metadata
     new_table = Table(table_name + "__tmp__", meta,
                       *(columns + constraints))
-    new_table.create()
+    new_table.create(engine)
 
     indexes = []
     for index in get_indexes(engine, table_name):
@@ -618,15 +625,21 @@ def _change_deleted_column_type_to_boolean_sqlite(engine, table_name,
         else:
             c_select.append(table.c.deleted == table.c.id)
 
-    table.drop()
+    table.drop(engine)
     for index in indexes:
         index.create(engine)
 
-    new_table.rename(table_name)
-    new_table.update().\
-        where(new_table.c.deleted == new_table.c.id).\
-        values(deleted=True).\
-        execute()
+    table.metadata.bind = engine
+    try:
+        new_table.rename(table_name)
+    finally:
+        table.metadata.bind = None
+
+    engine.execute(
+        new_table.update().
+        where(new_table.c.deleted == new_table.c.id).
+        values(deleted=True)
+    )
 
 
 @debtcollector.removals.remove(
@@ -645,15 +658,24 @@ def change_deleted_column_type_to_id_type(engine, table_name,
 
     new_deleted = Column('new_deleted', table.c.id.type,
                          default=_get_default_deleted_value(table))
-    new_deleted.create(table, populate_default=True)
+    table.metadata.bind = engine
+    try:
+        new_deleted.create(table, populate_default=True)
+    finally:
+        table.metadata.bind = None
 
     deleted = True  # workaround for pyflakes
-    table.update().\
-        where(table.c.deleted == deleted).\
-        values(new_deleted=table.c.id).\
-        execute()
-    table.c.deleted.drop()
-    table.c.new_deleted.alter(name="deleted")
+    engine.execute(
+        table.update().
+        where(table.c.deleted == deleted).
+        values(new_deleted=table.c.id)
+    )
+    table.metadata.bind = engine
+    try:
+        table.c.deleted.drop()
+        table.c.new_deleted.alter(name="deleted")
+    finally:
+        table.metadata.bind = None
 
     _restore_indexes_on_deleted_columns(engine, table_name, indexes)
 
@@ -682,8 +704,8 @@ def _change_deleted_column_type_to_id_type_sqlite(engine, table_name,
     # 2) Copy all data from old to new table.
     # 3) Drop old table.
     # 4) Rename new table to old table name.
-    meta = MetaData(bind=engine)
-    table = Table(table_name, meta, autoload=True)
+    meta = MetaData()
+    table = Table(table_name, meta, autoload_with=engine)
     default_deleted_value = _get_default_deleted_value(table)
 
     columns = []
@@ -711,7 +733,7 @@ def _change_deleted_column_type_to_id_type_sqlite(engine, table_name,
 
     new_table = Table(table_name + "__tmp__", meta,
                       *(columns + constraints))
-    new_table.create()
+    new_table.create(engine)
 
     indexes = []
     for index in get_indexes(engine, table_name):
@@ -719,23 +741,30 @@ def _change_deleted_column_type_to_id_type_sqlite(engine, table_name,
         indexes.append(Index(index["name"], *column_names,
                              unique=index["unique"]))
 
-    table.drop()
+    table.drop(engine)
     for index in indexes:
         index.create(engine)
 
-    new_table.rename(table_name)
+    new_table.metadata.bind = engine
+    try:
+        new_table.rename(table_name)
+    finally:
+        new_table.metadata.bind = None
+
     deleted = True  # workaround for pyflakes
-    new_table.update().\
-        where(new_table.c.deleted == deleted).\
-        values(deleted=new_table.c.id).\
-        execute()
+    engine.execute(
+        new_table.update().
+        where(new_table.c.deleted == deleted).
+        values(deleted=new_table.c.id)
+    )
 
     # NOTE(boris-42): Fix value of deleted column: False -> "" or 0.
     deleted = False  # workaround for pyflakes
-    new_table.update().\
-        where(new_table.c.deleted == deleted).\
-        values(deleted=default_deleted_value).\
-        execute()
+    engine.execute(
+        new_table.update().
+        where(new_table.c.deleted == deleted).
+        values(deleted=default_deleted_value)
+    )
 
 
 def get_db_connection_info(conn_pieces):
@@ -804,7 +833,7 @@ def add_index(engine, table_name, index_name, idx_columns):
         index = Index(
             index_name, *[getattr(table.c, col) for col in idx_columns]
         )
-        index.create()
+        index.create(engine)
     else:
         raise ValueError("Index '%s' already exists!" % index_name)
 
@@ -819,7 +848,7 @@ def drop_index(engine, table_name, index_name):
     table = get_table(engine, table_name)
     for index in table.indexes:
         if index.name == index_name:
-            index.drop()
+            index.drop(engine)
             break
     else:
         raise ValueError("Index '%s' not found!" % index_name)

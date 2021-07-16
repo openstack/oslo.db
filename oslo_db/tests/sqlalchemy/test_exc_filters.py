@@ -252,7 +252,7 @@ class TestNonExistentConstraint(
     def setUp(self):
         super(TestNonExistentConstraint, self).setUp()
 
-        meta = sqla.MetaData(bind=self.engine)
+        meta = sqla.MetaData()
 
         self.table_1 = sqla.Table(
             "resource_foo", meta,
@@ -260,7 +260,7 @@ class TestNonExistentConstraint(
             mysql_engine='InnoDB',
             mysql_charset='utf8',
         )
-        self.table_1.create()
+        self.table_1.create(self.engine)
 
 
 class TestNonExistentConstraintPostgreSQL(
@@ -321,7 +321,7 @@ class TestNonExistentTable(
     def setUp(self):
         super(TestNonExistentTable, self).setUp()
 
-        self.meta = sqla.MetaData(bind=self.engine)
+        self.meta = sqla.MetaData()
 
         self.table_1 = sqla.Table(
             "foo", self.meta,
@@ -465,7 +465,7 @@ class TestReferenceErrorSQLite(
     def setUp(self):
         super(TestReferenceErrorSQLite, self).setUp()
 
-        meta = sqla.MetaData(bind=self.engine)
+        meta = sqla.MetaData()
 
         self.table_1 = sqla.Table(
             "resource_foo", meta,
@@ -474,7 +474,7 @@ class TestReferenceErrorSQLite(
             mysql_engine='InnoDB',
             mysql_charset='utf8',
         )
-        self.table_1.create()
+        self.table_1.create(self.engine)
 
         self.table_2 = sqla.Table(
             "resource_entity", meta,
@@ -484,7 +484,7 @@ class TestReferenceErrorSQLite(
             mysql_engine='InnoDB',
             mysql_charset='utf8',
         )
-        self.table_2.create()
+        self.table_2.create(self.engine)
 
     def test_raise(self):
         self.engine.execute("PRAGMA foreign_keys = ON;")
