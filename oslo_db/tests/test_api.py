@@ -22,7 +22,7 @@ from oslo_utils import importutils
 
 from oslo_db import api
 from oslo_db import exception
-from oslo_db.tests import utils as test_utils
+from oslo_db.tests import base as test_base
 
 sqla = importutils.try_import('sqlalchemy')
 if not sqla:
@@ -65,7 +65,8 @@ class DBAPI(object):
         return args, kwargs
 
 
-class DBAPITestCase(test_utils.BaseTestCase):
+class DBAPITestCase(test_base.BaseTestCase):
+
     def test_dbapi_full_path_module_method(self):
         dbapi = api.DBAPI('oslo_db.tests.test_api')
         result = dbapi.api_class_call1(1, 2, kwarg1='meow')
@@ -91,8 +92,9 @@ class DBAPITestCase(test_utils.BaseTestCase):
 
 
 class DBReconnectTestCase(DBAPITestCase):
+
     def setUp(self):
-        super(DBReconnectTestCase, self).setUp()
+        super().setUp()
 
         self.test_db_api = DBAPI()
         patcher = mock.patch(__name__ + '.get_backend',
@@ -200,6 +202,7 @@ class DBReconnectTestCase(DBAPITestCase):
 
 
 class DBRetryRequestCase(DBAPITestCase):
+
     def test_retry_wrapper_succeeds(self):
         @api.wrap_db_retry(max_retries=10)
         def some_method():
@@ -294,6 +297,7 @@ class DBRetryRequestCase(DBAPITestCase):
         x = api.wrap_db_retry(max_retries=5, retry_on_deadlock=True,
                               max_retry_interval=11)
         self.assertEqual(11, x.max_retry_interval)
+
         for i in (1, 2, 4):
             # With jitter: sleep_time = [0, 2 ** retry_times)
             sleep_time, n = x._get_inc_interval(i, True)
@@ -303,6 +307,7 @@ class DBRetryRequestCase(DBAPITestCase):
             sleep_time, n = x._get_inc_interval(i, False)
             self.assertEqual(2 * i, n)
             self.assertEqual(2 * i, sleep_time)
+
         for i in (8, 16, 32):
             sleep_time, n = x._get_inc_interval(i, False)
             self.assertEqual(x.max_retry_interval, sleep_time)

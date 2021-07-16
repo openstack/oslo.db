@@ -18,7 +18,7 @@ import debtcollector
 from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy.test_base import backend_specific  # noqa
 from oslo_db.sqlalchemy import test_fixtures as db_fixtures
-from oslotest import base as test_base
+from oslo_db.tests import base as test_base
 
 
 @enginefacade.transaction_context_provider
@@ -62,7 +62,8 @@ class PostgreSQLOpportunisticTestCase(DbTestCase):
 # make use of oslo_db.sqlalchemy.test_fixtures directly.
 
 class _DbTestCase(
-        db_fixtures.OpportunisticDBTestMixin, test_base.BaseTestCase):
+    db_fixtures.OpportunisticDBTestMixin, test_base.BaseTestCase,
+):
 
     def setUp(self):
         super(_DbTestCase, self).setUp()

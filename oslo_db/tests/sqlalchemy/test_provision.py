@@ -13,7 +13,6 @@
 import os
 from unittest import mock
 
-from oslotest import base as oslo_test_base
 from sqlalchemy import exc as sa_exc
 from sqlalchemy import inspect
 from sqlalchemy import schema
@@ -24,10 +23,11 @@ from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import test_fixtures
 from oslo_db.sqlalchemy import utils
-from oslo_db.tests.sqlalchemy import base as test_base
+from oslo_db.tests import base as test_base
+from oslo_db.tests.sqlalchemy import base as db_test_base
 
 
-class DropAllObjectsTest(test_base._DbTestCase):
+class DropAllObjectsTest(db_test_base._DbTestCase):
 
     def setUp(self):
         super(DropAllObjectsTest, self).setUp()
@@ -81,7 +81,7 @@ class DropAllObjectsTest(test_base._DbTestCase):
         )
 
 
-class BackendNotAvailableTest(oslo_test_base.BaseTestCase):
+class BackendNotAvailableTest(test_base.BaseTestCase):
     def test_no_dbapi(self):
         backend = provision.Backend(
             "postgresql", "postgresql+nosuchdbapi://hostname/dsn")
@@ -138,16 +138,18 @@ class BackendNotAvailableTest(oslo_test_base.BaseTestCase):
 
 
 class MySQLDropAllObjectsTest(
-        DropAllObjectsTest, test_base._MySQLOpportunisticTestCase):
+    DropAllObjectsTest, db_test_base._MySQLOpportunisticTestCase,
+):
     pass
 
 
 class PostgreSQLDropAllObjectsTest(
-        DropAllObjectsTest, test_base._PostgreSQLOpportunisticTestCase):
+    DropAllObjectsTest, db_test_base._PostgreSQLOpportunisticTestCase,
+):
     pass
 
 
-class RetainSchemaTest(oslo_test_base.BaseTestCase):
+class RetainSchemaTest(test_base.BaseTestCase):
     DRIVER = "sqlite"
 
     def setUp(self):
@@ -222,7 +224,7 @@ class PostgresqlRetainSchemaTest(RetainSchemaTest):
     DRIVER = "postgresql"
 
 
-class AdHocURLTest(oslo_test_base.BaseTestCase):
+class AdHocURLTest(test_base.BaseTestCase):
     def test_sqlite_setup_teardown(self):
 
         fixture = test_fixtures.AdHocDbFixture("sqlite:///foo.db")

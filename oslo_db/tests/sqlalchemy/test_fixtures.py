@@ -21,12 +21,12 @@ from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import test_base as legacy_test_base
 from oslo_db.sqlalchemy import test_fixtures
-from oslotest import base as oslo_test_base
+from oslo_db.tests import base as test_base
 
 start_dir = os.path.dirname(__file__)
 
 
-class BackendSkipTest(oslo_test_base.BaseTestCase):
+class BackendSkipTest(test_base.BaseTestCase):
 
     def test_skip_no_dbapi(self):
 
@@ -35,7 +35,7 @@ class BackendSkipTest(oslo_test_base.BaseTestCase):
             DRIVER = 'postgresql'
 
         class SomeTest(test_fixtures.OpportunisticDBTestMixin,
-                       oslo_test_base.BaseTestCase):
+                       test_base.BaseTestCase):
             FIXTURE = FakeDatabaseOpportunisticFixture
 
             def runTest(self):
@@ -77,7 +77,7 @@ class BackendSkipTest(oslo_test_base.BaseTestCase):
             DRIVER = 'postgresql+nosuchdbapi'
 
         class SomeTest(test_fixtures.OpportunisticDBTestMixin,
-                       oslo_test_base.BaseTestCase):
+                       test_base.BaseTestCase):
 
             FIXTURE = FakeDatabaseOpportunisticFixture
 
@@ -99,7 +99,8 @@ class BackendSkipTest(oslo_test_base.BaseTestCase):
     def test_skip_no_dbapi_legacy(self):
 
         class FakeDatabaseOpportunisticFixture(
-                legacy_test_base.DbFixture):
+            legacy_test_base.DbFixture,
+        ):
             DRIVER = 'postgresql'
 
         class SomeTest(legacy_test_base.DbTestCase):
@@ -140,7 +141,8 @@ class BackendSkipTest(oslo_test_base.BaseTestCase):
     def test_skip_no_such_backend_legacy(self):
 
         class FakeDatabaseOpportunisticFixture(
-                legacy_test_base.DbFixture):
+            legacy_test_base.DbFixture,
+        ):
             DRIVER = 'postgresql+nosuchdbapi'
 
         class SomeTest(legacy_test_base.DbTestCase):
@@ -163,7 +165,7 @@ class BackendSkipTest(oslo_test_base.BaseTestCase):
         )
 
 
-class EnginefacadeIntegrationTest(oslo_test_base.BaseTestCase):
+class EnginefacadeIntegrationTest(test_base.BaseTestCase):
     def test_db_fixture(self):
         normal_mgr = enginefacade.transaction_context()
         normal_mgr.configure(
@@ -204,7 +206,7 @@ class EnginefacadeIntegrationTest(oslo_test_base.BaseTestCase):
         self.assertFalse(normal_mgr._factory._started)
 
 
-class LegacyBaseClassTest(oslo_test_base.BaseTestCase):
+class LegacyBaseClassTest(test_base.BaseTestCase):
     def test_new_db_is_provisioned_by_default_pg(self):
         self._test_new_db_is_provisioned_by_default(
             legacy_test_base.PostgreSQLOpportunisticTestCase

@@ -18,16 +18,16 @@ from unittest import mock
 
 import fixtures
 from migrate.versioning import api as versioning_api
-from oslotest import base as test
 import sqlalchemy as sa
 import sqlalchemy.ext.declarative as sa_decl
 
 from oslo_db import exception as exc
 from oslo_db.sqlalchemy import test_migrations as migrate
-from oslo_db.tests.sqlalchemy import base as test_base
+from oslo_db.tests import base as test_base
+from oslo_db.tests.sqlalchemy import base as db_test_base
 
 
-class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
+class TestWalkVersions(test_base.BaseTestCase, migrate.WalkVersionsMixin):
     migration_api = mock.MagicMock()
     REPOSITORY = mock.MagicMock()
     engine = mock.MagicMock()
@@ -185,7 +185,7 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
         self.assertEqual(upgraded, self.migrate_up.call_args_list)
 
 
-class ModelsMigrationSyncMixin(test_base._DbTestCase):
+class ModelsMigrationSyncMixin(db_test_base._DbTestCase):
 
     def setUp(self):
         super(ModelsMigrationSyncMixin, self).setUp()
@@ -367,7 +367,7 @@ class ModelsMigrationSyncMixin(test_base._DbTestCase):
 class ModelsMigrationsSyncMySQL(
     ModelsMigrationSyncMixin,
     migrate.ModelsMigrationsSync,
-    test_base._MySQLOpportunisticTestCase,
+    db_test_base._MySQLOpportunisticTestCase,
 ):
 
     def test_models_not_sync(self):
@@ -380,7 +380,7 @@ class ModelsMigrationsSyncMySQL(
 class ModelsMigrationsSyncPostgreSQL(
     ModelsMigrationSyncMixin,
     migrate.ModelsMigrationsSync,
-    test_base._PostgreSQLOpportunisticTestCase,
+    db_test_base._PostgreSQLOpportunisticTestCase,
 ):
 
     def test_models_not_sync(self):

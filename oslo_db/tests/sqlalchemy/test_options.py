@@ -15,12 +15,13 @@ from oslo_config import cfg
 from oslo_config import fixture as config_fixture
 
 from oslo_db import options
-from oslo_db.tests import utils as test_utils
+from oslo_db.tests import base as test_base
 
 
-class DbApiOptionsTestCase(test_utils.BaseTestCase):
+class DbApiOptionsTestCase(test_base.BaseTestCase):
+
     def setUp(self):
-        super(DbApiOptionsTestCase, self).setUp()
+        super().setUp()
 
         self.conf = self.useFixture(config_fixture.Config()).conf
         self.conf.register_opts(options.database_opts, group='database')

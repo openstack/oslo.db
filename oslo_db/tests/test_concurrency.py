@@ -19,12 +19,12 @@ from unittest import mock
 from oslo_config import fixture as config_fixture
 
 from oslo_db import concurrency
-from oslo_db.tests import utils as test_utils
+from oslo_db.tests import base as test_base
 
 FAKE_BACKEND_MAPPING = {'sqlalchemy': 'fake.db.sqlalchemy.api'}
 
 
-class TpoolDbapiWrapperTestCase(test_utils.BaseTestCase):
+class TpoolDbapiWrapperTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(TpoolDbapiWrapperTestCase, self).setUp()

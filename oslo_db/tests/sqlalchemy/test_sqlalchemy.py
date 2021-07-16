@@ -23,7 +23,6 @@ from unittest import mock
 
 import fixtures
 from oslo_config import cfg
-from oslotest import base as oslo_test
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table
 from sqlalchemy.engine import url
@@ -36,7 +35,8 @@ from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import models
 from oslo_db.sqlalchemy import session
-from oslo_db.tests.sqlalchemy import base as test_base
+from oslo_db.tests import base as test_base
+from oslo_db.tests.sqlalchemy import base as db_test_base
 
 
 BASE = declarative_base()
@@ -51,7 +51,7 @@ class RegexpTable(BASE, models.ModelBase):
     bar = Column(String(255))
 
 
-class RegexpFilterTestCase(test_base._DbTestCase):
+class RegexpFilterTestCase(db_test_base._DbTestCase):
 
     def setUp(self):
         super(RegexpFilterTestCase, self).setUp()
@@ -65,8 +65,8 @@ class RegexpFilterTestCase(test_base._DbTestCase):
         self.addCleanup(test_table.drop)
 
     def _test_regexp_filter(self, regexp, expected):
-        with enginefacade.writer.using(test_base.context):
-            _session = test_base.context.session
+        with enginefacade.writer.using(db_test_base.context):
+            _session = db_test_base.context.session
             for i in ['10', '20', '♥']:
                 tbl = RegexpTable()
                 tbl.update({'bar': i})
@@ -89,7 +89,7 @@ class RegexpFilterTestCase(test_base._DbTestCase):
         self._test_regexp_filter('♦', [])
 
 
-class SQLiteSavepointTest(test_base._DbTestCase):
+class SQLiteSavepointTest(db_test_base._DbTestCase):
     def setUp(self):
         super(SQLiteSavepointTest, self).setUp()
         meta = MetaData()
@@ -202,7 +202,7 @@ class ProgrammingError(Exception):
     pass
 
 
-class QueryParamTest(test_base.DbTestCase):
+class QueryParamTest(db_test_base.DbTestCase):
     def _fixture(self):
         from sqlalchemy import create_engine
 
@@ -285,7 +285,7 @@ class QueryParamTest(test_base.DbTestCase):
         )
 
 
-class MySQLDefaultModeTestCase(test_base._MySQLOpportunisticTestCase):
+class MySQLDefaultModeTestCase(db_test_base._MySQLOpportunisticTestCase):
     def test_default_is_traditional(self):
         with self.engine.connect() as conn:
             sql_mode = conn.execute(
@@ -295,7 +295,7 @@ class MySQLDefaultModeTestCase(test_base._MySQLOpportunisticTestCase):
         self.assertIn("TRADITIONAL", sql_mode)
 
 
-class MySQLModeTestCase(test_base._MySQLOpportunisticTestCase):
+class MySQLModeTestCase(db_test_base._MySQLOpportunisticTestCase):
 
     def __init__(self, *args, **kwargs):
         super(MySQLModeTestCase, self).__init__(*args, **kwargs)
@@ -364,7 +364,7 @@ class MySQLTraditionalModeTestCase(MySQLStrictAllTablesModeTestCase):
         self.mysql_mode = 'TRADITIONAL'
 
 
-class EngineFacadeTestCase(oslo_test.BaseTestCase):
+class EngineFacadeTestCase(test_base.BaseTestCase):
     def setUp(self):
         super(EngineFacadeTestCase, self).setUp()
 
@@ -470,7 +470,7 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
         self.assertEqual(master_path, str(slave_session.bind.url))
 
 
-class SQLiteConnectTest(oslo_test.BaseTestCase):
+class SQLiteConnectTest(test_base.BaseTestCase):
 
     def _fixture(self, **kw):
         return session.create_engine("sqlite://", **kw)
@@ -507,7 +507,7 @@ class SQLiteConnectTest(oslo_test.BaseTestCase):
         )
 
 
-class MysqlConnectTest(test_base._MySQLOpportunisticTestCase):
+class MysqlConnectTest(db_test_base._MySQLOpportunisticTestCase):
 
     def _fixture(self, sql_mode):
         return session.create_engine(self.engine.url, mysql_sql_mode=sql_mode)
@@ -627,7 +627,7 @@ class MysqlConnectTest(test_base._MySQLOpportunisticTestCase):
                          log.output)
 
 
-class CreateEngineTest(oslo_test.BaseTestCase):
+class CreateEngineTest(test_base.BaseTestCase):
     """Test that dialect-specific arguments/ listeners are set up correctly.
 
     """
@@ -781,7 +781,7 @@ class CreateEngineTest(oslo_test.BaseTestCase):
         )
 
 
-class ProcessGuardTest(test_base._DbTestCase):
+class ProcessGuardTest(db_test_base._DbTestCase):
     def test_process_guard(self):
         self.engine.dispose()
 
@@ -809,7 +809,7 @@ class ProcessGuardTest(test_base._DbTestCase):
         self.assertEqual(new_dbapi_id, newer_dbapi_id)
 
 
-class PatchStacktraceTest(test_base._DbTestCase):
+class PatchStacktraceTest(db_test_base._DbTestCase):
 
     def test_trace(self):
         engine = self.engine

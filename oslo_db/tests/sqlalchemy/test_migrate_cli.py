@@ -9,16 +9,17 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from unittest import mock
 
 import alembic
-from oslotest import base as test_base
 import sqlalchemy
 
 from oslo_db import exception
 from oslo_db.sqlalchemy.migration_cli import ext_alembic
 from oslo_db.sqlalchemy.migration_cli import ext_migrate
 from oslo_db.sqlalchemy.migration_cli import manager
+from oslo_db.tests import base as test_base
 
 
 class MockWithCmp(mock.MagicMock):

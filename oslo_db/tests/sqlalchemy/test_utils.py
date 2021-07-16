@@ -17,7 +17,6 @@ from unittest import mock
 from urllib import parse
 
 import fixtures
-from oslotest import base as test_base
 import sqlalchemy
 from sqlalchemy.dialects import mysql
 from sqlalchemy import Boolean, Index, Integer, DateTime, String
@@ -42,9 +41,8 @@ from oslo_db.sqlalchemy import models
 from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import session
 from oslo_db.sqlalchemy import utils
+from oslo_db.tests import base as test_base
 from oslo_db.tests.sqlalchemy import base as db_test_base
-from oslo_db.tests import utils as test_utils
-
 
 Base = declarative_base()
 
@@ -1073,7 +1071,7 @@ class MySQLTestMigrations(TestMigrationUtils,
     pass
 
 
-class TestConnectionUtils(test_utils.BaseTestCase):
+class TestConnectionUtils(test_base.BaseTestCase):
 
     def setUp(self):
         super(TestConnectionUtils, self).setUp()

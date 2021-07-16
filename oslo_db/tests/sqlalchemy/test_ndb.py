@@ -21,23 +21,19 @@ from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import ndb
 from oslo_db.sqlalchemy import test_fixtures
-from oslo_db.sqlalchemy import utils
-
 from oslo_db.sqlalchemy.types import String
-
-from oslotest import base as test_base
+from oslo_db.sqlalchemy import utils
+from oslo_db.tests import base as test_base
 
 from sqlalchemy import Column
-from sqlalchemy import Integer
-from sqlalchemy import MetaData
-from sqlalchemy import Table
-from sqlalchemy import Text
-
 from sqlalchemy import create_engine
-from sqlalchemy import schema
-
 from sqlalchemy.dialects.mysql import TEXT
 from sqlalchemy.dialects.mysql import TINYTEXT
+from sqlalchemy import Integer
+from sqlalchemy import MetaData
+from sqlalchemy import schema
+from sqlalchemy import Table
+from sqlalchemy import Text
 
 LOG = logging.getLogger(__name__)
 
@@ -155,7 +151,8 @@ class NDBDatatypesDefaultTestCase(NDBMockTestBase):
 
 
 class NDBOpportunisticTestCase(
-        test_fixtures.OpportunisticDBTestMixin, test_base.BaseTestCase):
+    test_fixtures.OpportunisticDBTestMixin, test_base.BaseTestCase,
+):
 
     FIXTURE = test_fixtures.MySQLOpportunisticFixture
 

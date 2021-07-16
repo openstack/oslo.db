@@ -11,14 +11,14 @@
 #    under the License.
 
 
-from oslotest import base as oslo_test_base
 from sqlalchemy.ext import declarative
 from sqlalchemy import schema
 from sqlalchemy import sql
 from sqlalchemy import types as sqltypes
 
 from oslo_db.sqlalchemy import update_match
-from oslo_db.tests.sqlalchemy import base as test_base
+from oslo_db.tests import base as test_base
+from oslo_db.tests.sqlalchemy import base as db_test_base
 
 Base = declarative.declarative_base()
 
@@ -33,7 +33,7 @@ class MyModel(Base):
     z = schema.Column(sqltypes.String(40))
 
 
-class ManufactureCriteriaTest(oslo_test_base.BaseTestCase):
+class ManufactureCriteriaTest(test_base.BaseTestCase):
     def test_instance_criteria_basic(self):
         specimen = MyModel(
             y='y1', z='z3',
@@ -85,7 +85,7 @@ class ManufactureCriteriaTest(oslo_test_base.BaseTestCase):
         )
 
 
-class UpdateMatchTest(test_base._DbTestCase):
+class UpdateMatchTest(db_test_base._DbTestCase):
     def setUp(self):
         super(UpdateMatchTest, self).setUp()
         Base.metadata.create_all(self.engine)
@@ -434,12 +434,14 @@ class UpdateMatchTest(test_base._DbTestCase):
 
 
 class PGUpdateMatchTest(
-        UpdateMatchTest,
-        test_base._PostgreSQLOpportunisticTestCase):
+    UpdateMatchTest,
+    db_test_base._PostgreSQLOpportunisticTestCase,
+):
     pass
 
 
 class MySQLUpdateMatchTest(
-        UpdateMatchTest,
-        test_base._MySQLOpportunisticTestCase):
+    UpdateMatchTest,
+    db_test_base._MySQLOpportunisticTestCase,
+):
     pass

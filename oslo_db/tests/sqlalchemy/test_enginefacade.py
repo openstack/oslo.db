@@ -21,7 +21,6 @@ import warnings
 
 from oslo_config import cfg
 from oslo_context import context as oslo_context
-from oslotest import base as oslo_test_base
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import MetaData
@@ -36,9 +35,9 @@ from oslo_db import options
 from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import engines as oslo_engines
 from oslo_db.sqlalchemy import orm
-from oslo_db.tests.sqlalchemy import base as test_base
+from oslo_db.tests import base as test_base
+from oslo_db.tests.sqlalchemy import base as db_test_base
 from oslo_db import warning
-
 
 enginefacade.transaction_context_provider(oslo_context.RequestContext)
 
@@ -92,7 +91,7 @@ class AssertDataSource(collections.namedtuple(
             assert False, "Unknown constant: %s" % const
 
 
-class MockFacadeTest(oslo_test_base.BaseTestCase):
+class MockFacadeTest(test_base.BaseTestCase):
     """test by applying mocks to internal call-points.
 
     This applies mocks to
@@ -1186,7 +1185,7 @@ class MockFacadeTest(oslo_test_base.BaseTestCase):
                     session.execute("test")
 
 
-class PatchFactoryTest(oslo_test_base.BaseTestCase):
+class PatchFactoryTest(test_base.BaseTestCase):
 
     def test_patch_manager(self):
         normal_mgr = enginefacade.transaction_context()
@@ -1396,7 +1395,7 @@ class AsyncReaderWSlaveMockFacadeTest(MockFacadeTest):
     slave_uri = 'some_slave_connection'
 
 
-class LegacyIntegrationtest(test_base._DbTestCase):
+class LegacyIntegrationtest(db_test_base._DbTestCase):
 
     def test_legacy_integration(self):
         legacy_facade = enginefacade.get_legacy_facade()
@@ -1454,7 +1453,7 @@ class LegacyIntegrationtest(test_base._DbTestCase):
         )
 
 
-class ThreadingTest(test_base._DbTestCase):
+class ThreadingTest(db_test_base._DbTestCase):
     """Test copy/pickle on new threads using real connections and sessions."""
 
     def _assert_ctx_connection(self, context, connection):
@@ -1647,7 +1646,7 @@ class ThreadingTest(test_base._DbTestCase):
                 assert session is not session2
 
 
-class LiveFacadeTest(test_base._DbTestCase):
+class LiveFacadeTest(db_test_base._DbTestCase):
     """test using live SQL with test-provisioned databases.
 
     Several of these tests require that multiple transactions run
@@ -1809,7 +1808,7 @@ class LiveFacadeTest(test_base._DbTestCase):
             session.query(self.User.name).scalar()
         )
 
-    @test_base.backend_specific("postgresql", "mysql")
+    @db_test_base.backend_specific("postgresql", "mysql")
     def test_external_session_transaction(self):
         context = oslo_context.RequestContext()
         with enginefacade.writer.using(context) as session:
@@ -1916,7 +1915,7 @@ class LiveFacadeTest(test_base._DbTestCase):
                 self.User.name).order_by(self.User.name).all()
         )
 
-    @test_base.backend_specific("postgresql", "mysql")
+    @db_test_base.backend_specific("postgresql", "mysql")
     def test_external_session_transaction_decorator(self):
         context = oslo_context.RequestContext()
 
@@ -1964,7 +1963,7 @@ class LiveFacadeTest(test_base._DbTestCase):
                 self.User.name).order_by(self.User.name).all()
         )
 
-    @test_base.backend_specific("postgresql", "mysql")
+    @db_test_base.backend_specific("postgresql", "mysql")
     def test_external_connection_transaction(self):
         context = oslo_context.RequestContext()
         with enginefacade.writer.connection.using(context) as connection:
@@ -2001,7 +2000,7 @@ class LiveFacadeTest(test_base._DbTestCase):
                 self.User.name).order_by(self.User.name).all()
         )
 
-    @test_base.backend_specific("postgresql", "mysql")
+    @db_test_base.backend_specific("postgresql", "mysql")
     def test_external_writer_in_reader(self):
         context = oslo_context.RequestContext()
         with enginefacade.reader.using(context) as session:
@@ -2188,16 +2187,18 @@ class LiveFacadeTest(test_base._DbTestCase):
 
 
 class MySQLLiveFacadeTest(
-        test_base._MySQLOpportunisticTestCase, LiveFacadeTest):
+    db_test_base._MySQLOpportunisticTestCase, LiveFacadeTest,
+):
     pass
 
 
 class PGLiveFacadeTest(
-        test_base._PostgreSQLOpportunisticTestCase, LiveFacadeTest):
+    db_test_base._PostgreSQLOpportunisticTestCase, LiveFacadeTest,
+):
     pass
 
 
-class ConfigOptionsTest(oslo_test_base.BaseTestCase):
+class ConfigOptionsTest(test_base.BaseTestCase):
     def test_all_options(self):
         """test that everything in CONF.database.iteritems() is accepted.
 
@@ -2242,7 +2243,7 @@ class ConfigOptionsTest(oslo_test_base.BaseTestCase):
         )
 
 
-class TestTransactionFactoryCallback(oslo_test_base.BaseTestCase):
+class TestTransactionFactoryCallback(test_base.BaseTestCase):
 
     def test_setup_for_connection_called_with_profiler(self):
         context_manager = enginefacade.transaction_context()

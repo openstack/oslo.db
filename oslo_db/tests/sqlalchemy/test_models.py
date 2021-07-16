@@ -17,20 +17,19 @@ from collections import abc
 import datetime
 from unittest import mock
 
-from oslotest import base as oslo_test
 from sqlalchemy import Column
 from sqlalchemy import Integer, String
 from sqlalchemy import event
 from sqlalchemy.ext.declarative import declarative_base
 
 from oslo_db.sqlalchemy import models
-from oslo_db.tests.sqlalchemy import base as test_base
-
+from oslo_db.tests import base as test_base
+from oslo_db.tests.sqlalchemy import base as db_test_base
 
 BASE = declarative_base()
 
 
-class ModelBaseTest(test_base._DbTestCase):
+class ModelBaseTest(db_test_base._DbTestCase):
     def setUp(self):
         super(ModelBaseTest, self).setUp()
         self.mb = models.ModelBase()
@@ -174,7 +173,7 @@ class ExtraKeysModel(BASE, models.ModelBase):
         return ['name']
 
 
-class TimestampMixinTest(oslo_test.BaseTestCase):
+class TimestampMixinTest(test_base.BaseTestCase):
 
     def test_timestampmixin_attr(self):
         methods = ('created_at',
@@ -191,7 +190,7 @@ class SoftDeletedModel(BASE, models.ModelBase, models.SoftDeleteMixin):
     smth = Column('smth', String(255))
 
 
-class SoftDeleteMixinTest(test_base._DbTestCase):
+class SoftDeleteMixinTest(db_test_base._DbTestCase):
     def setUp(self):
         super(SoftDeleteMixinTest, self).setUp()
 

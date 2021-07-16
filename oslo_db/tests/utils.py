@@ -15,15 +15,8 @@
 
 import contextlib
 
-from oslotest import base as test_base
-
 
 @contextlib.contextmanager
 def nested(*contexts):
     with contextlib.ExitStack() as stack:
         yield [stack.enter_context(c) for c in contexts]
-
-
-# TODO(stephenfin): Remove as this is no longer necessary
-class BaseTestCase(test_base.BaseTestCase):
-    pass

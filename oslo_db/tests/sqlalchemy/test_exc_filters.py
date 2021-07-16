@@ -18,7 +18,6 @@ import contextlib
 import itertools
 from unittest import mock
 
-from oslotest import base as oslo_test_base
 import sqlalchemy as sqla
 from sqlalchemy.engine import url as sqla_url
 from sqlalchemy import event
@@ -29,7 +28,8 @@ from sqlalchemy.orm import mapper
 from oslo_db import exception
 from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import exc_filters
-from oslo_db.tests.sqlalchemy import base as test_base
+from oslo_db.tests import base as test_base
+from oslo_db.tests.sqlalchemy import base as db_test_base
 from oslo_db.tests import utils as test_utils
 
 _TABLE_NAME = '__tmp__test__tmp__'
@@ -68,7 +68,7 @@ class _SQLAExceptionMatcher(object):
                 self.assertEqual(sql, exc.statement)
 
 
-class TestsExceptionFilter(_SQLAExceptionMatcher, oslo_test_base.BaseTestCase):
+class TestsExceptionFilter(_SQLAExceptionMatcher, test_base.BaseTestCase):
 
     class Error(Exception):
         """DBAPI base error.
@@ -245,8 +245,9 @@ class TestFallthroughsAndNonDBAPI(TestsExceptionFilter):
 
 
 class TestNonExistentConstraint(
-        _SQLAExceptionMatcher,
-        test_base._DbTestCase):
+    _SQLAExceptionMatcher,
+    db_test_base._DbTestCase,
+):
 
     def setUp(self):
         super(TestNonExistentConstraint, self).setUp()
@@ -263,8 +264,9 @@ class TestNonExistentConstraint(
 
 
 class TestNonExistentConstraintPostgreSQL(
-        TestNonExistentConstraint,
-        test_base._PostgreSQLOpportunisticTestCase):
+    TestNonExistentConstraint,
+    db_test_base._PostgreSQLOpportunisticTestCase,
+):
 
     def test_raise(self):
         matched = self.assertRaises(
@@ -287,8 +289,9 @@ class TestNonExistentConstraintPostgreSQL(
 
 
 class TestNonExistentConstraintMySQL(
-        TestNonExistentConstraint,
-        test_base._MySQLOpportunisticTestCase):
+    TestNonExistentConstraint,
+    db_test_base._MySQLOpportunisticTestCase,
+):
 
     def test_raise(self):
         matched = self.assertRaises(
@@ -311,8 +314,9 @@ class TestNonExistentConstraintMySQL(
 
 
 class TestNonExistentTable(
-        _SQLAExceptionMatcher,
-        test_base._DbTestCase):
+    _SQLAExceptionMatcher,
+    db_test_base._DbTestCase,
+):
 
     def setUp(self):
         super(TestNonExistentTable, self).setUp()
@@ -342,8 +346,9 @@ class TestNonExistentTable(
 
 
 class TestNonExistentTablePostgreSQL(
-        TestNonExistentTable,
-        test_base._PostgreSQLOpportunisticTestCase):
+    TestNonExistentTable,
+    db_test_base._PostgreSQLOpportunisticTestCase,
+):
 
     def test_raise(self):
         matched = self.assertRaises(
@@ -361,8 +366,9 @@ class TestNonExistentTablePostgreSQL(
 
 
 class TestNonExistentTableMySQL(
-        TestNonExistentTable,
-        test_base._MySQLOpportunisticTestCase):
+    TestNonExistentTable,
+    db_test_base._MySQLOpportunisticTestCase,
+):
 
     def test_raise(self):
         matched = self.assertRaises(
@@ -379,8 +385,9 @@ class TestNonExistentTableMySQL(
 
 
 class TestNonExistentDatabase(
-        _SQLAExceptionMatcher,
-        test_base._DbTestCase):
+    _SQLAExceptionMatcher,
+    db_test_base._DbTestCase,
+):
 
     def setUp(self):
         super(TestNonExistentDatabase, self).setUp()
@@ -413,8 +420,9 @@ class TestNonExistentDatabase(
 
 
 class TestNonExistentDatabaseMySQL(
-        TestNonExistentDatabase,
-        test_base._MySQLOpportunisticTestCase):
+    TestNonExistentDatabase,
+    db_test_base._MySQLOpportunisticTestCase,
+):
 
     def test_raise(self):
         matched = self.assertRaises(
@@ -432,8 +440,9 @@ class TestNonExistentDatabaseMySQL(
 
 
 class TestNonExistentDatabasePostgreSQL(
-        TestNonExistentDatabase,
-        test_base._PostgreSQLOpportunisticTestCase):
+    TestNonExistentDatabase,
+    db_test_base._PostgreSQLOpportunisticTestCase,
+):
 
     def test_raise(self):
         matched = self.assertRaises(
@@ -449,7 +458,9 @@ class TestNonExistentDatabasePostgreSQL(
         )
 
 
-class TestReferenceErrorSQLite(_SQLAExceptionMatcher, test_base._DbTestCase):
+class TestReferenceErrorSQLite(
+    _SQLAExceptionMatcher, db_test_base._DbTestCase,
+):
 
     def setUp(self):
         super(TestReferenceErrorSQLite, self).setUp()
@@ -522,8 +533,10 @@ class TestReferenceErrorSQLite(_SQLAExceptionMatcher, test_base._DbTestCase):
         self.assertIsNone(matched.key_table)
 
 
-class TestReferenceErrorPostgreSQL(TestReferenceErrorSQLite,
-                                   test_base._PostgreSQLOpportunisticTestCase):
+class TestReferenceErrorPostgreSQL(
+    TestReferenceErrorSQLite,
+    db_test_base._PostgreSQLOpportunisticTestCase,
+):
     def test_raise(self):
         params = {'id': 1, 'foo_id': 2}
         matched = self.assertRaises(
@@ -573,8 +586,10 @@ class TestReferenceErrorPostgreSQL(TestReferenceErrorSQLite,
         self.assertEqual("resource_entity", matched.key_table)
 
 
-class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
-                              test_base._MySQLOpportunisticTestCase):
+class TestReferenceErrorMySQL(
+    TestReferenceErrorSQLite,
+    db_test_base._MySQLOpportunisticTestCase,
+):
     def test_raise(self):
         matched = self.assertRaises(
             exception.DBReferenceError,
@@ -635,7 +650,9 @@ class TestReferenceErrorMySQL(TestReferenceErrorSQLite,
         self.assertEqual("resource_foo", matched.key_table)
 
 
-class TestExceptionCauseMySQLSavepoint(test_base._MySQLOpportunisticTestCase):
+class TestExceptionCauseMySQLSavepoint(
+    db_test_base._MySQLOpportunisticTestCase,
+):
     def setUp(self):
         super(TestExceptionCauseMySQLSavepoint, self).setUp()
 
@@ -1011,7 +1028,7 @@ class TestDataError(TestsExceptionFilter):
                                 self.DataError)
 
 
-class IntegrationTest(test_base._DbTestCase):
+class IntegrationTest(db_test_base._DbTestCase):
     """Test an actual error-raising round trips against the database."""
 
     def setUp(self):
