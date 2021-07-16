@@ -327,7 +327,7 @@ class MySQLModeTestCase(db_test_base._MySQLOpportunisticTestCase):
             self.connection.execute(self.test_table.insert(),
                                     bar=value)
             result = self.connection.execute(self.test_table.select())
-            return result.fetchone()['bar']
+            return result.fetchone().bar
 
     def test_string_too_long(self):
         value = 'a' * 512

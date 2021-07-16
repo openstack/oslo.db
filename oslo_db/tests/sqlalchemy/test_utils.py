@@ -761,17 +761,19 @@ class TestMigrationUtils(db_test_base._DbTestCase):
         base_select = table.select()
 
         rows_select = base_select.where(table.c.deleted != table.c.id)
-        row_ids = [row['id'] for row in
-                   self.engine.execute(rows_select).fetchall()]
+        row_ids = [
+            row.id for row in self.engine.execute(rows_select).fetchall()
+        ]
         self.assertEqual(len(expected_values), len(row_ids))
         for value in expected_values:
             self.assertIn(value['id'], row_ids)
 
         deleted_rows_select = base_select.where(
             table.c.deleted == table.c.id)
-        deleted_rows_ids = [row['id'] for row in
-                            self.engine.execute(
-                                deleted_rows_select).fetchall()]
+        deleted_rows_ids = [
+            row.id for row in
+            self.engine.execute(deleted_rows_select).fetchall()
+        ]
         self.assertEqual(len(values) - len(row_ids),
                          len(deleted_rows_ids))
         for value in soft_deleted_values:

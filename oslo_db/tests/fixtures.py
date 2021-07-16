@@ -49,11 +49,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'Using non-integer/slice indices on Row is deprecated .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'The Engine.execute\(\) method is considered legacy .*',
             category=sqla_exc.SADeprecationWarning)
 
