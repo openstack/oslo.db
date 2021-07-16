@@ -104,11 +104,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'Passing a string to Connection.execute\(\) .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'Using plain strings to indicate SQL statements .*',
             category=sqla_exc.SADeprecationWarning)
 
@@ -135,6 +130,17 @@ class WarningsFixture(fixtures.Fixture):
         warnings.filterwarnings(
             'once',
             message=r'The ``declarative_base\(\)`` function is now .*',
+            category=sqla_exc.SADeprecationWarning)
+
+        # ...plus things that aren't our fault
+
+        # FIXME(stephenfin): These are caused by sqlalchemy-migrate, not us,
+        # and should be removed when we drop support for that library
+
+        warnings.filterwarnings(
+            'ignore',
+            message=r'Passing a string to Connection.execute\(\) .*',
+            module='migrate',
             category=sqla_exc.SADeprecationWarning)
 
         self.addCleanup(warnings.resetwarnings)

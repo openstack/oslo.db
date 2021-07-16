@@ -24,6 +24,7 @@ from unittest import mock
 import fixtures
 from oslo_config import cfg
 import sqlalchemy
+from sqlalchemy import sql
 from sqlalchemy import Column, MetaData, Table
 from sqlalchemy.engine import url
 from sqlalchemy import Integer, String
@@ -289,7 +290,7 @@ class MySQLDefaultModeTestCase(db_test_base._MySQLOpportunisticTestCase):
     def test_default_is_traditional(self):
         with self.engine.connect() as conn:
             sql_mode = conn.execute(
-                "SHOW VARIABLES LIKE 'sql_mode'"
+                sql.text("SHOW VARIABLES LIKE 'sql_mode'")
             ).first()[1]
 
         self.assertIn("TRADITIONAL", sql_mode)
@@ -479,14 +480,14 @@ class SQLiteConnectTest(test_base.BaseTestCase):
         engine = self._fixture(sqlite_fk=True)
         self.assertEqual(
             1,
-            engine.scalar("pragma foreign_keys")
+            engine.scalar(sql.text('pragma foreign_keys'))
         )
 
         engine = self._fixture(sqlite_fk=False)
 
         self.assertEqual(
             0,
-            engine.scalar("pragma foreign_keys")
+            engine.scalar(sql.text("pragma foreign_keys"))
         )
 
     def test_sqlite_synchronous_listener(self):
@@ -496,14 +497,14 @@ class SQLiteConnectTest(test_base.BaseTestCase):
         # http://www.sqlite.org/pragma.html#pragma_synchronous
         self.assertEqual(
             2,
-            engine.scalar("pragma synchronous")
+            engine.scalar(sql.text('pragma synchronous'))
         )
 
         engine = self._fixture(sqlite_synchronous=False)
 
         self.assertEqual(
             0,
-            engine.scalar("pragma synchronous")
+            engine.scalar(sql.text('pragma synchronous'))
         )
 
 
@@ -513,7 +514,9 @@ class MysqlConnectTest(db_test_base._MySQLOpportunisticTestCase):
         return session.create_engine(self.engine.url, mysql_sql_mode=sql_mode)
 
     def _assert_sql_mode(self, engine, sql_mode_present, sql_mode_non_present):
-        mode = engine.execute("SHOW VARIABLES LIKE 'sql_mode'").fetchone()[1]
+        mode = engine.execute(
+            sql.text("SHOW VARIABLES LIKE 'sql_mode'")
+        ).fetchone()[1]
         self.assertIn(
             sql_mode_present, mode
         )
@@ -538,7 +541,8 @@ class MysqlConnectTest(db_test_base._MySQLOpportunisticTestCase):
         # we get what is configured for the MySQL database, as opposed
         # to what our own session.create_engine() has set it to.
         expected = self.engine.execute(
-            "SELECT @@GLOBAL.sql_mode").scalar()
+            sql.text("SELECT @@GLOBAL.sql_mode")
+        ).scalar()
 
         engine = self._fixture(sql_mode=None)
         self._assert_sql_mode(engine, expected, None)
@@ -591,7 +595,8 @@ class MysqlConnectTest(db_test_base._MySQLOpportunisticTestCase):
         engine = self._fixture(sql_mode='TRADITIONAL')
 
         actual_mode = engine.execute(
-            "SHOW VARIABLES LIKE 'sql_mode'").fetchone()[1]
+            sql.text("SHOW VARIABLES LIKE 'sql_mode'")
+        ).fetchone()[1]
 
         self.assertIn('MySQL server mode set to %s' % actual_mode,
                       log.output)
@@ -832,7 +837,7 @@ class PatchStacktraceTest(db_test_base._DbTestCase):
             with mock.patch.object(engine.dialect, "do_execute") as mock_exec:
 
                 mock_exec.side_effect = orig_do_exec
-                conn.execute("select 1;")
+                conn.execute(sql.text("select 1"))
 
             call = mock_exec.mock_calls[0]
 

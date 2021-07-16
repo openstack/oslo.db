@@ -24,6 +24,7 @@ from sqlalchemy import event
 import sqlalchemy.exc
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper
+from sqlalchemy import sql
 
 from oslo_db import exception
 from oslo_db.sqlalchemy import engines
@@ -157,7 +158,7 @@ class TestsExceptionFilter(_SQLAExceptionMatcher, test_base.BaseTestCase):
         with self._fixture(dialect_name, raises, is_disconnect=is_disconnect):
             with self.engine.connect() as conn:
                 matched = self.assertRaises(
-                    expected, conn.execute, statement, params
+                    expected, conn.execute, sql.text(statement), params
                 )
                 return matched
 
@@ -487,7 +488,7 @@ class TestReferenceErrorSQLite(
         self.table_2.create(self.engine)
 
     def test_raise(self):
-        self.engine.execute("PRAGMA foreign_keys = ON;")
+        self.engine.execute(sql.text("PRAGMA foreign_keys = ON"))
 
         matched = self.assertRaises(
             exception.DBReferenceError,
@@ -509,7 +510,7 @@ class TestReferenceErrorSQLite(
         self.assertIsNone(matched.key_table)
 
     def test_raise_delete(self):
-        self.engine.execute("PRAGMA foreign_keys = ON;")
+        self.engine.execute(sql.text("PRAGMA foreign_keys = ON"))
 
         with self.engine.connect() as conn:
             conn.execute(self.table_1.insert({"id": 1234, "foo": 42}))
@@ -612,7 +613,7 @@ class TestReferenceErrorMySQL(
             conn.detach()  # will not be returned to the pool when closed
 
             # this is incompatible with some internals of the engine
-            conn.execute("SET SESSION sql_mode = 'ANSI';")
+            conn.execute(sql.text("SET SESSION sql_mode = 'ANSI';"))
 
             matched = self.assertRaises(
                 exception.DBReferenceError,

@@ -26,6 +26,7 @@ import string
 import sqlalchemy
 from sqlalchemy.engine import url as sa_url
 from sqlalchemy import schema
+from sqlalchemy import sql
 import testresources
 
 from oslo_db import exception
@@ -517,15 +518,16 @@ class MySQLBackendImpl(BackendImpl):
     def create_named_database(self, engine, ident, conditional=False):
         with engine.connect() as conn:
             if not conditional or not self.database_exists(conn, ident):
-                conn.execute("CREATE DATABASE %s" % ident)
+                conn.exec_driver_sql("CREATE DATABASE %s" % ident)
 
     def drop_named_database(self, engine, ident, conditional=False):
         with engine.connect() as conn:
             if not conditional or self.database_exists(conn, ident):
-                conn.execute("DROP DATABASE %s" % ident)
+                conn.exec_driver_sql("DROP DATABASE %s" % ident)
 
     def database_exists(self, engine, ident):
-        return bool(engine.scalar("SHOW DATABASES LIKE '%s'" % ident))
+        s = sql.text("SHOW DATABASES LIKE :ident")
+        return bool(engine.scalar(s, {'ident': ident}))
 
 
 @BackendImpl.impl.dispatch_for("sqlite")
@@ -582,29 +584,29 @@ class PostgresqlBackendImpl(BackendImpl):
         with engine.connect().execution_options(
                 isolation_level="AUTOCOMMIT") as conn:
             if not conditional or not self.database_exists(conn, ident):
-                conn.execute("CREATE DATABASE %s" % ident)
+                conn.exec_driver_sql("CREATE DATABASE %s" % ident)
 
     def drop_named_database(self, engine, ident, conditional=False):
         with engine.connect().execution_options(
                 isolation_level="AUTOCOMMIT") as conn:
             self._close_out_database_users(conn, ident)
             if conditional:
-                conn.execute("DROP DATABASE IF EXISTS %s" % ident)
+                conn.exec_driver_sql("DROP DATABASE IF EXISTS %s" % ident)
             else:
-                conn.execute("DROP DATABASE %s" % ident)
+                conn.exec_driver_sql("DROP DATABASE %s" % ident)
 
     def drop_additional_objects(self, conn):
         enums = [e['name'] for e in sqlalchemy.inspect(conn).get_enums()]
 
         for e in enums:
-            conn.execute("DROP TYPE %s" % e)
+            conn.exec_driver_sql("DROP TYPE %s" % e)
 
     def database_exists(self, engine, ident):
         return bool(
             engine.scalar(
                 sqlalchemy.text(
-                    "select datname from pg_database "
-                    "where datname=:name"), name=ident)
+                    "SELECT datname FROM pg_database "
+                    "WHERE datname=:name"), name=ident)
             )
 
     def _close_out_database_users(self, conn, ident):
@@ -624,11 +626,11 @@ class PostgresqlBackendImpl(BackendImpl):
         if conn.dialect.server_version_info >= (9, 2):
             conn.execute(
                 sqlalchemy.text(
-                    "select pg_terminate_backend(pid) "
-                    "from pg_stat_activity "
-                    "where usename=current_user and "
-                    "pid != pg_backend_pid() "
-                    "and datname=:dname"
+                    "SELECT pg_terminate_backend(pid) "
+                    "FROM pg_stat_activity "
+                    "WHERE usename=current_user AND "
+                    "pid != pg_backend_pid() AND "
+                    "datname=:dname"
                 ), dname=ident)
 
 

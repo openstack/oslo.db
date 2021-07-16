@@ -31,6 +31,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import mapper
 from sqlalchemy.orm import Session
 from sqlalchemy import PrimaryKeyConstraint
+from sqlalchemy import sql
 from sqlalchemy.sql.expression import cast
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType
@@ -933,14 +934,14 @@ class TestMigrationUtils(db_test_base._DbTestCase):
         # value here, 1.1 also coerces to "1/0" so use raw SQL to test the
         # constraint
         with self.engine.connect() as conn:
-            conn.execute(
+            conn.exec_driver_sql(
                 "INSERT INTO abc (deleted) VALUES (?)",
-                (10, )
+                (10, ),
             )
 
             self.assertEqual(
                 10,
-                conn.scalar("SELECT deleted FROM abc")
+                conn.scalar(sql.text("SELECT deleted FROM abc")),
             )
 
     def test_get_foreign_key_constraint_name(self):
@@ -1646,41 +1647,43 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
 class TestGetInnoDBTables(db_test_base._MySQLOpportunisticTestCase):
 
     def test_all_tables_use_innodb(self):
-        self.engine.execute("CREATE TABLE customers "
-                            "(a INT, b CHAR (20), INDEX (a)) ENGINE=InnoDB")
+        self.engine.execute(
+            sql.text(
+                "CREATE TABLE customers "
+                "(a INT, b CHAR (20), INDEX (a)) ENGINE=InnoDB"))
         self.assertEqual([], utils.get_non_innodb_tables(self.engine))
 
     def test_all_tables_use_innodb_false(self):
-        self.engine.execute("CREATE TABLE employee "
-                            "(i INT) ENGINE=MEMORY")
+        self.engine.execute(
+            sql.text("CREATE TABLE employee (i INT) ENGINE=MEMORY"))
         self.assertEqual(['employee'],
                          utils.get_non_innodb_tables(self.engine))
 
     def test_skip_tables_use_default_value(self):
-        self.engine.execute("CREATE TABLE migrate_version "
-                            "(i INT) ENGINE=MEMORY")
+        self.engine.execute(
+            sql.text("CREATE TABLE migrate_version (i INT) ENGINE=MEMORY"))
         self.assertEqual([],
                          utils.get_non_innodb_tables(self.engine))
 
     def test_skip_tables_use_passed_value(self):
-        self.engine.execute("CREATE TABLE some_table "
-                            "(i INT) ENGINE=MEMORY")
+        self.engine.execute(
+            sql.text("CREATE TABLE some_table (i INT) ENGINE=MEMORY"))
         self.assertEqual([],
                          utils.get_non_innodb_tables(
                              self.engine, skip_tables=('some_table',)))
 
     def test_skip_tables_use_empty_list(self):
-        self.engine.execute("CREATE TABLE some_table_3 "
-                            "(i INT) ENGINE=MEMORY")
+        self.engine.execute(
+            sql.text("CREATE TABLE some_table_3 (i INT) ENGINE=MEMORY"))
         self.assertEqual(['some_table_3'],
                          utils.get_non_innodb_tables(
                          self.engine, skip_tables=()))
 
     def test_skip_tables_use_several_values(self):
-        self.engine.execute("CREATE TABLE some_table_1 "
-                            "(i INT) ENGINE=MEMORY")
-        self.engine.execute("CREATE TABLE some_table_2 "
-                            "(i INT) ENGINE=MEMORY")
+        self.engine.execute(
+            sql.text("CREATE TABLE some_table_1 (i INT) ENGINE=MEMORY"))
+        self.engine.execute(
+            sql.text("CREATE TABLE some_table_2 (i INT) ENGINE=MEMORY"))
         self.assertEqual([],
                          utils.get_non_innodb_tables(
                              self.engine,
