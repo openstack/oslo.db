@@ -24,11 +24,12 @@ class WarningsFixture(fixtures.Fixture):
 
         self._original_warning_filters = warnings.filters[:]
 
-        # Make deprecation warnings only happen once to avoid spamming
         warnings.simplefilter('once', DeprecationWarning)
 
+        # Enable generic warnings to ensure we're not doing anything odd
+
         warnings.filterwarnings(
-            'error', message='Evaluating non-mapped column expression',
+            'error',
             category=sqla_exc.SAWarning)
 
         # Enable deprecation warnings to capture upcoming SQLAlchemy changes
