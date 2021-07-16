@@ -57,13 +57,12 @@ class RegexpFilterTestCase(db_test_base._DbTestCase):
     def setUp(self):
         super(RegexpFilterTestCase, self).setUp()
         meta = MetaData()
-        meta.bind = self.engine
         test_table = Table(_REGEXP_TABLE_NAME, meta,
                            Column('id', Integer, primary_key=True,
                                   nullable=False),
                            Column('bar', String(255)))
-        test_table.create()
-        self.addCleanup(test_table.drop)
+        test_table.create(self.engine)
+        self.addCleanup(test_table.drop, self.engine)
 
     def _test_regexp_filter(self, regexp, expected):
         with enginefacade.writer.using(db_test_base.context):

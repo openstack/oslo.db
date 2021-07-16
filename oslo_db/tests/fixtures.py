@@ -39,11 +39,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'The ``bind`` argument for schema methods .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'The Session.autocommit parameter is deprecated .*',
             category=sqla_exc.SADeprecationWarning)
 
