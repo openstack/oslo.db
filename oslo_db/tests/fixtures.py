@@ -104,11 +104,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'The update.whereclause parameter will be removed .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'The Engine.scalar\(\) method is considered legacy .*',
             category=sqla_exc.SADeprecationWarning)
 

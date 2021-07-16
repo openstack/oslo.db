@@ -487,7 +487,9 @@ def _update_stmt_from_query(mapper, query, values):
     primary_table = inspect(query.column_descriptions[0]['entity']).local_table
     where_criteria = query.whereclause
     update_stmt = sql.update(
-        primary_table, where_criteria,
+        primary_table,
+    ).where(
+        where_criteria,
     ).values(upd_values)
     return update_stmt
 
