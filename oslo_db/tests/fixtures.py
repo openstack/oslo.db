@@ -84,11 +84,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'Using plain strings to indicate SQL statements .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'The current statement is being autocommitted .*',
             category=sqla_exc.SADeprecationWarning)
 

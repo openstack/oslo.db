@@ -679,7 +679,7 @@ class TestExceptionCauseMySQLSavepoint(
             with session.begin():
                 try:
                     with session.begin_nested():
-                        session.execute("rollback")
+                        session.execute(sql.text("rollback"))
                         session.add(self.A(id=1))
                 # outermost is the failed SAVEPOINT rollback
                 # from the "with session.begin_nested()"
@@ -707,7 +707,7 @@ class TestExceptionCauseMySQLSavepoint(
 
         session.begin()
         try:
-            session.execute("select 1")
+            session.execute(sql.text("select 1"))
 
             # close underying DB connection
             session.connection().connection.connection.close()
@@ -717,7 +717,7 @@ class TestExceptionCauseMySQLSavepoint(
             # session.execute("kill connection %s" % conn_id)
 
             # try using it, will raise an error
-            session.execute("select 1")
+            session.execute(sql.text("select 1"))
         except exception.DBConnectionError:
             # issue being tested is that this session.rollback()
             # does not itself try to re-connect and raise another
@@ -732,7 +732,7 @@ class TestExceptionCauseMySQLSavepoint(
         session.begin()
         try:
             session.begin_nested()
-            session.execute("select 1")
+            session.execute(sql.text("select 1"))
 
             # close underying DB connection
             session.connection().connection.connection.close()
@@ -742,7 +742,7 @@ class TestExceptionCauseMySQLSavepoint(
             # session.execute("kill connection %s" % conn_id)
 
             # try using it, will raise an error
-            session.execute("select 1")
+            session.execute(sql.text("select 1"))
         except exception.DBConnectionError:
             # issue being tested is that this session.rollback()
             # does not itself try to re-connect and raise another
