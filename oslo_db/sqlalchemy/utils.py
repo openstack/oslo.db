@@ -31,7 +31,6 @@ from sqlalchemy import Boolean
 from sqlalchemy import CheckConstraint
 from sqlalchemy import Column
 from sqlalchemy.engine import Connectable
-from sqlalchemy.engine import reflection
 from sqlalchemy.engine import url as sa_url
 from sqlalchemy import exc
 from sqlalchemy import func
@@ -578,12 +577,16 @@ def _change_deleted_column_type_to_boolean_sqlite(engine, table_name,
                 column_copy = _get_not_supported_column(col_name_col_instance,
                                                         column.name)
             else:
-                column_copy = column.copy()
+                # FIXME(stephenfin): We shouldn't be using this private API;
+                # figure out how else to copy an arbitrary column schema
+                column_copy = column._copy()
         else:
             column_copy = Column('deleted', Boolean, default=0)
         columns.append(column_copy)
 
-    constraints = [constraint.copy() for constraint in table.constraints]
+    # FIXME(stephenfin): We shouldn't be using this private API;
+    # figure out how else to copy an arbitrary column schema
+    constraints = [constraint._copy() for constraint in table.constraints]
 
     meta = table.metadata
     new_table = Table(table_name + "__tmp__", meta,
@@ -652,15 +655,15 @@ def _is_deleted_column_constraint(constraint):
 
 def _change_deleted_column_type_to_id_type_sqlite(engine, table_name,
                                                   **col_name_col_instance):
-    # NOTE(boris-42): sqlaclhemy-migrate can't drop column with check
-    #                 constraints in sqlite DB and our `deleted` column has
-    #                 2 check constraints. So there is only one way to remove
-    #                 these constraints:
-    #                 1) Create new table with the same columns, constraints
-    #                 and indexes. (except deleted column).
-    #                 2) Copy all data from old to new table.
-    #                 3) Drop old table.
-    #                 4) Rename new table to old table name.
+    # NOTE(boris-42): sqlalchemy-migrate can't drop column with check
+    # constraints in sqlite DB and our `deleted` column has two check
+    # constraints. There is only one way to remove these constraints:
+    #
+    # 1) Create new table with the same columns, constraints and indexes.
+    #    (except deleted column).
+    # 2) Copy all data from old to new table.
+    # 3) Drop old table.
+    # 4) Rename new table to old table name.
     meta = MetaData(bind=engine)
     table = Table(table_name, meta, autoload=True)
     default_deleted_value = _get_default_deleted_value(table)
@@ -673,7 +676,9 @@ def _change_deleted_column_type_to_id_type_sqlite(engine, table_name,
                 column_copy = _get_not_supported_column(col_name_col_instance,
                                                         column.name)
             else:
-                column_copy = column.copy()
+                # FIXME(stephenfin): We shouldn't be using this private API;
+                # figure out how else to copy an arbitrary column schema
+                column_copy = column._copy()
         else:
             column_copy = Column('deleted', table.c.id.type,
                                  default=default_deleted_value)
@@ -682,7 +687,9 @@ def _change_deleted_column_type_to_id_type_sqlite(engine, table_name,
     constraints = []
     for constraint in table.constraints:
         if not _is_deleted_column_constraint(constraint):
-            constraints.append(constraint.copy())
+            # FIXME(stephenfin): We shouldn't be using this private API;
+            # figure out how else to copy an arbitrary constraint schema
+            constraints.append(constraint._copy())
 
     new_table = Table(table_name + "__tmp__", meta,
                       *(columns + constraints))
@@ -734,7 +741,7 @@ def get_indexes(engine, table_name):
     :param table_name: name of the table
     """
 
-    inspector = reflection.Inspector.from_engine(engine)
+    inspector = sqlalchemy.inspect(engine)
     indexes = inspector.get_indexes(table_name)
     return indexes
 

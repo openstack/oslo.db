@@ -24,7 +24,6 @@ from sqlalchemy import CheckConstraint
 from sqlalchemy import MetaData, Table, Column
 from sqlalchemy import ForeignKey, ForeignKeyConstraint
 from sqlalchemy.dialects.postgresql import psycopg2
-from sqlalchemy.engine import reflection
 from sqlalchemy.engine import url as sa_url
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
@@ -796,7 +795,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
         utils.change_deleted_column_type_to_id_type(self.engine, table_name)
         utils.change_deleted_column_type_to_boolean(self.engine, table_name)
 
-        insp = reflection.Inspector.from_engine(self.engine)
+        insp = sqlalchemy.inspect(self.engine)
         real_indexes = insp.get_indexes(table_name)
         self.assertEqual(3, len(real_indexes))
         for index in real_indexes:

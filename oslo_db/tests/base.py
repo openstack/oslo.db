@@ -12,6 +12,8 @@
 
 from oslotest import base
 
+from oslo_db.tests import fixtures
+
 
 class BaseTestCase(base.BaseTestCase):
     """Test case base class for all oslo.db unit tests."""
@@ -19,3 +21,5 @@ class BaseTestCase(base.BaseTestCase):
     def setUp(self):
         """Run before each test method to initialize test environment."""
         super().setUp()
+
+        self.warning_fixture = self.useFixture(fixtures.WarningsFixture())
