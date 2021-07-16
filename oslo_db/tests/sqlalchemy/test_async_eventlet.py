@@ -20,7 +20,7 @@ import unittest
 
 from oslo_utils import importutils
 import sqlalchemy as sa
-from sqlalchemy.ext import declarative as sa_decl
+from sqlalchemy import orm
 
 from oslo_db import exception as db_exc
 from oslo_db.sqlalchemy import models
@@ -32,7 +32,7 @@ class EventletTestMixin(object):
     def setUp(self):
         super(EventletTestMixin, self).setUp()
 
-        BASE = sa_decl.declarative_base()
+        BASE = orm.declarative_base()
 
         class TmpTable(BASE, models.ModelBase):
             __tablename__ = 'test_async_eventlet'

@@ -14,7 +14,7 @@
 
 from sqlalchemy import Column, Integer
 from sqlalchemy.dialects import mysql
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 
 from oslo_db import exception as db_exc
 from oslo_db.sqlalchemy import models

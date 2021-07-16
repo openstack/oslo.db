@@ -26,8 +26,8 @@ from sqlalchemy import ForeignKey, ForeignKeyConstraint
 from sqlalchemy.dialects.postgresql import psycopg2
 from sqlalchemy.engine import url as sa_url
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import mapper
 from sqlalchemy.orm import Session
 from sqlalchemy import PrimaryKeyConstraint

@@ -10,8 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
-from sqlalchemy.ext import declarative
+from sqlalchemy import orm
 from sqlalchemy import schema
 from sqlalchemy import sql
 from sqlalchemy import types as sqltypes
@@ -20,7 +19,7 @@ from oslo_db.sqlalchemy import update_match
 from oslo_db.tests import base as test_base
 from oslo_db.tests.sqlalchemy import base as db_test_base
 
-Base = declarative.declarative_base()
+Base = orm.declarative_base()
 
 
 class MyModel(Base):

@@ -28,7 +28,7 @@ from sqlalchemy import sql
 from sqlalchemy import Column, MetaData, Table
 from sqlalchemy.engine import url
 from sqlalchemy import Integer, String
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 
 from oslo_db import exception
 from oslo_db import options as db_options

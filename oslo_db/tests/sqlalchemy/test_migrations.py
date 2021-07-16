@@ -19,7 +19,7 @@ from unittest import mock
 import fixtures
 from migrate.versioning import api as versioning_api
 import sqlalchemy as sa
-import sqlalchemy.ext.declarative as sa_decl
+from sqlalchemy import orm
 
 from oslo_db import exception as exc
 from oslo_db.sqlalchemy import test_migrations as migrate
@@ -215,7 +215,7 @@ class ModelsMigrationSyncMixin(db_test_base._DbTestCase):
             sa.UniqueConstraint('spam', 'eggs', name='uniq_cons'),
         )
 
-        BASE = sa_decl.declarative_base(metadata=self.metadata)
+        BASE = orm.declarative_base(metadata=self.metadata)
 
         class TestModel(BASE):
             __tablename__ = 'testtbl'
