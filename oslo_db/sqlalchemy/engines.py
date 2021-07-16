@@ -70,7 +70,7 @@ def _connect_ping_listener(connection, branch):
     try:
         # run a SELECT 1.   use a core select() so that
         # any details like that needed by the backend are handled.
-        connection.scalar(select([1]))
+        connection.scalar(select(1))
     except exception.DBConnectionError:
         # catch DBConnectionError, which is raised by the filter
         # system.
@@ -80,7 +80,7 @@ def _connect_ping_listener(connection, branch):
         # run the select again to re-validate the Connection.
         LOG.exception(
             'Database connection was found disconnected; reconnecting')
-        connection.scalar(select([1]))
+        connection.scalar(select(1))
     finally:
         connection.should_close_with_result = save_should_close_with_result
 
@@ -362,7 +362,7 @@ def _init_events(engine, sqlite_synchronous=True, sqlite_fk=False, **kw):
         # emit our own BEGIN, checking for existing
         # transactional state
         if 'in_transaction' not in conn.info:
-            conn.execute("BEGIN")
+            conn.execute(sqlalchemy.text("BEGIN"))
             conn.info['in_transaction'] = True
 
     @sqlalchemy.event.listens_for(engine, "rollback")

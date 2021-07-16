@@ -84,7 +84,7 @@ is preferred:
 
     @enginefacade.reader.connection
     def _refresh_from_db(context, cache):
-        sel = sa.select([table.c.id, table.c.name])
+        sel = sa.select(table.c.id, table.c.name)
         res = context.connection.execute(sel).fetchall()
         cache.id_cache = {r[1]: r[0] for r in res}
         cache.str_cache = {r[0]: r[1] for r in res}

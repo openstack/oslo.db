@@ -485,8 +485,12 @@ def drop_old_duplicate_entries_from_table(engine, table_name,
     columns_for_select.extend(columns_for_group_by)
 
     duplicated_rows_select = sqlalchemy.sql.select(
-        columns_for_select, group_by=columns_for_group_by,
-        having=func.count(table.c.id) > 1)
+        *columns_for_select,
+    ).group_by(
+        *columns_for_group_by
+    ).having(
+        func.count(table.c.id) > 1
+    )
 
     for row in engine.execute(duplicated_rows_select).fetchall():
         # NOTE(boris-42): Do not remove row that has the biggest ID.
@@ -497,7 +501,8 @@ def drop_old_duplicate_entries_from_table(engine, table_name,
             delete_condition &= table.c[name] == row[name]
 
         rows_to_delete_select = sqlalchemy.sql.select(
-            [table.c.id]).where(delete_condition)
+            table.c.id,
+        ).where(delete_condition)
         for row in engine.execute(rows_to_delete_select).fetchall():
             LOG.info("Deleting duplicated row with id: %(id)s from table: "
                      "%(table)s", dict(id=row[0], table=table_name))

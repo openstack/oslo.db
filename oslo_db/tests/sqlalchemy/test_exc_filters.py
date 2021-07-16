@@ -1165,7 +1165,7 @@ class TestDBDisconnected(TestsExceptionFilter):
         with self._fixture(dialect_name, exc_obj, 1, is_disconnect):
             conn = self.engine.connect()
             with conn.begin():
-                self.assertEqual(1, conn.scalar(sqla.select([1])))
+                self.assertEqual(1, conn.scalar(sqla.select(1)))
                 self.assertFalse(conn.closed)
                 self.assertFalse(conn.invalidated)
                 self.assertTrue(conn.in_transaction())
@@ -1178,7 +1178,7 @@ class TestDBDisconnected(TestsExceptionFilter):
 
         # test implicit execution
         with self._fixture(dialect_name, exc_obj, 1):
-            self.assertEqual(1, self.engine.scalar(sqla.select([1])))
+            self.assertEqual(1, self.engine.scalar(sqla.select(1)))
 
     def test_mariadb_error_1927(self):
         for code in [1927]:
@@ -1286,7 +1286,7 @@ class TestDBConnectRetry(TestsExceptionFilter):
             2, -1
         )
         # conn is good
-        self.assertEqual(1, conn.scalar(sqla.select([1])))
+        self.assertEqual(1, conn.scalar(sqla.select(1)))
 
     def test_connect_retry_past_failure(self):
         conn = self._run_test(
@@ -1295,7 +1295,7 @@ class TestDBConnectRetry(TestsExceptionFilter):
             2, 3
         )
         # conn is good
-        self.assertEqual(1, conn.scalar(sqla.select([1])))
+        self.assertEqual(1, conn.scalar(sqla.select(1)))
 
     def test_connect_retry_not_candidate_exception(self):
         self.assertRaises(
@@ -1362,7 +1362,7 @@ class TestDBConnectPingWrapping(TestsExceptionFilter):
             self, dialect_name, exc_obj, is_disconnect=True):
         with self._fixture(dialect_name, exc_obj, 3, is_disconnect):
             conn = self.engine.connect()
-            self.assertEqual(1, conn.scalar(sqla.select([1])))
+            self.assertEqual(1, conn.scalar(sqla.select(1)))
             conn.close()
 
         with self._fixture(dialect_name, exc_obj, 1, is_disconnect):

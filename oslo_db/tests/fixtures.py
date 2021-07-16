@@ -39,11 +39,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'The legacy calling style of select\(\) is deprecated .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'The MetaData.bind argument is deprecated .*',
             category=sqla_exc.SADeprecationWarning)
 

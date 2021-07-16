@@ -629,7 +629,7 @@ class TestPaginateQueryActualSQL(test_base.BaseTestCase):
                                  marker=FakeTable(user_id='hello',
                                                   enabled=False))
         expected_core_sql = (
-            select([FakeTable]).
+            select(FakeTable).
             order_by(sqlalchemy.asc(FakeTable.enabled)).
             where(cast(FakeTable.enabled, Integer) > 0).
             limit(5)
@@ -648,7 +648,7 @@ class TestPaginateQueryActualSQL(test_base.BaseTestCase):
             ['user_id', 'some_hybrid'],
             sort_dirs=['asc', 'desc'])
         expected_core_sql = (
-            select([FakeTable]).
+            select(FakeTable).
             order_by(sqlalchemy.asc(FakeTable.user_id)).
             order_by(sqlalchemy.desc(FakeTable.some_hybrid)).
             limit(5)
@@ -716,8 +716,10 @@ class TestMigrationUtils(db_test_base._DbTestCase):
             uniq_values.add(uniq_value)
             expected_ids.append(value['id'])
 
-        real_ids = [row[0] for row in
-                    self.engine.execute(select([test_table.c.id])).fetchall()]
+        real_ids = [
+            row[0] for row in
+            self.engine.execute(select(test_table.c.id)).fetchall()
+        ]
 
         self.assertEqual(len(expected_ids), len(real_ids))
         for id_ in expected_ids:

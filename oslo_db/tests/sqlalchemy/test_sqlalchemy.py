@@ -121,7 +121,7 @@ class SQLiteSavepointTest(db_test_base._DbTestCase):
                 0,
                 conn.scalar(
                     sqlalchemy.select(
-                        [sqlalchemy.func.count(self.test_table.c.id)],
+                        sqlalchemy.func.count(self.test_table.c.id),
                     ).select_from(self.test_table)
                 )
             )

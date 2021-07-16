@@ -120,7 +120,7 @@ class UpdateMatchTest(db_test_base._DbTestCase):
 
     def _assert_row(self, pk, values):
         row = self.session.execute(
-            sql.select([MyModel.__table__]).where(MyModel.__table__.c.id == pk)
+            sql.select(MyModel.__table__).where(MyModel.__table__.c.id == pk)
         ).first()
         values['id'] = pk
         self.assertEqual(values, dict(row))

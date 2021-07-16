@@ -2004,7 +2004,7 @@ class LiveFacadeTest(db_test_base._DbTestCase):
     def test_external_writer_in_reader(self):
         context = oslo_context.RequestContext()
         with enginefacade.reader.using(context) as session:
-            ping = session.scalar(select([1]))
+            ping = session.scalar(select(1))
             self.assertEqual(1, ping)
 
             # we're definitely a reader
