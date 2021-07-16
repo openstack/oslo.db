@@ -59,11 +59,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'The insert.values parameter will be removed .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'The update.values parameter will be removed .*',
             category=sqla_exc.SADeprecationWarning)
 

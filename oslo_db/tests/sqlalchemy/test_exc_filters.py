@@ -493,7 +493,7 @@ class TestReferenceErrorSQLite(
         matched = self.assertRaises(
             exception.DBReferenceError,
             self.engine.execute,
-            self.table_2.insert({'id': 1, 'foo_id': 2})
+            self.table_2.insert().values(id=1, foo_id=2)
         )
 
         self.assertInnerException(
@@ -513,8 +513,8 @@ class TestReferenceErrorSQLite(
         self.engine.execute(sql.text("PRAGMA foreign_keys = ON"))
 
         with self.engine.connect() as conn:
-            conn.execute(self.table_1.insert({"id": 1234, "foo": 42}))
-            conn.execute(self.table_2.insert({"id": 4321, "foo_id": 1234}))
+            conn.execute(self.table_1.insert().values(id=1234, foo=42))
+            conn.execute(self.table_2.insert().values(id=4321, foo_id=1234))
         matched = self.assertRaises(
             exception.DBReferenceError,
             self.engine.execute,
@@ -543,7 +543,7 @@ class TestReferenceErrorPostgreSQL(
         matched = self.assertRaises(
             exception.DBReferenceError,
             self.engine.execute,
-            self.table_2.insert(params)
+            self.table_2.insert().values(**params)
         )
         self.assertInnerException(
             matched,
@@ -563,8 +563,8 @@ class TestReferenceErrorPostgreSQL(
 
     def test_raise_delete(self):
         with self.engine.connect() as conn:
-            conn.execute(self.table_1.insert({"id": 1234, "foo": 42}))
-            conn.execute(self.table_2.insert({"id": 4321, "foo_id": 1234}))
+            conn.execute(self.table_1.insert().values(id=1234, foo=42))
+            conn.execute(self.table_2.insert().values(id=4321, foo_id=1234))
         matched = self.assertRaises(
             exception.DBReferenceError,
             self.engine.execute,
@@ -595,7 +595,7 @@ class TestReferenceErrorMySQL(
         matched = self.assertRaises(
             exception.DBReferenceError,
             self.engine.execute,
-            self.table_2.insert({'id': 1, 'foo_id': 2})
+            self.table_2.insert().values(id=1, foo_id=2)
         )
 
         # NOTE(jd) Cannot check precisely with assertInnerException since MySQL
@@ -618,7 +618,7 @@ class TestReferenceErrorMySQL(
             matched = self.assertRaises(
                 exception.DBReferenceError,
                 conn.execute,
-                self.table_2.insert({'id': 1, 'foo_id': 2})
+                self.table_2.insert().values(id=1, foo_id=2)
             )
 
         # NOTE(jd) Cannot check precisely with assertInnerException since MySQL
@@ -633,8 +633,8 @@ class TestReferenceErrorMySQL(
 
     def test_raise_delete(self):
         with self.engine.connect() as conn:
-            conn.execute(self.table_1.insert({"id": 1234, "foo": 42}))
-            conn.execute(self.table_2.insert({"id": 4321, "foo_id": 1234}))
+            conn.execute(self.table_1.insert().values(id=1234, foo=42))
+            conn.execute(self.table_2.insert().values(id=4321, foo_id=1234))
         matched = self.assertRaises(
             exception.DBReferenceError,
             self.engine.execute,
