@@ -34,18 +34,8 @@ class ModelBase(object):
 
     def save(self, session):
         """Save this object."""
-
-        # NOTE(boris-42): This part of code should be look like:
-        #                       session.add(self)
-        #                       session.flush()
-        #                 But there is a bug in sqlalchemy and eventlet that
-        #                 raises NoneType exception if there is no running
-        #                 transaction and rollback is called. As long as
-        #                 sqlalchemy has this bug we have to create transaction
-        #                 explicitly.
-        with session.begin(subtransactions=True):
-            session.add(self)
-            session.flush()
+        session.add(self)
+        session.flush()
 
     def __setitem__(self, key, value):
         setattr(self, key, value)

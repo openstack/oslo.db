@@ -44,11 +44,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'The Session.begin.subtransactions flag is deprecated .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'Calling \.begin\(\) when a transaction is already .*',
             category=sqla_exc.SADeprecationWarning)
 
