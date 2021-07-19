@@ -490,32 +490,34 @@ def drop_old_duplicate_entries_from_table(engine, table_name,
         func.count(table.c.id) > 1
     )
 
-    for row in engine.execute(duplicated_rows_select).fetchall():
-        # NOTE(boris-42): Do not remove row that has the biggest ID.
-        delete_condition = table.c.id != row[0]
-        is_none = None  # workaround for pyflakes
-        delete_condition &= table.c.deleted_at == is_none
-        for name in uc_column_names:
-            delete_condition &= table.c[name] == row._mapping[name]
+    with engine.connect() as conn:
+        for row in conn.execute(duplicated_rows_select).fetchall():
+            # NOTE(boris-42): Do not remove row that has the biggest ID.
+            delete_condition = table.c.id != row[0]
+            is_none = None  # workaround for pyflakes
+            delete_condition &= table.c.deleted_at == is_none
+            for name in uc_column_names:
+                delete_condition &= table.c[name] == row._mapping[name]
 
-        rows_to_delete_select = sqlalchemy.sql.select(
-            table.c.id,
-        ).where(delete_condition)
-        for row in engine.execute(rows_to_delete_select).fetchall():
-            LOG.info("Deleting duplicated row with id: %(id)s from table: "
-                     "%(table)s", dict(id=row[0], table=table_name))
+            rows_to_delete_select = sqlalchemy.sql.select(
+                table.c.id,
+            ).where(delete_condition)
+            for row in conn.execute(rows_to_delete_select).fetchall():
+                LOG.info(
+                    "Deleting duplicated row with id: %(id)s from table: "
+                    "%(table)s", dict(id=row[0], table=table_name))
 
-        if use_soft_delete:
-            delete_statement = table.update().\
-                where(delete_condition).\
-                values({
-                    'deleted': literal_column('id'),
-                    'updated_at': literal_column('updated_at'),
-                    'deleted_at': timeutils.utcnow()
-                })
-        else:
-            delete_statement = table.delete().where(delete_condition)
-        engine.execute(delete_statement)
+            if use_soft_delete:
+                delete_statement = table.update().\
+                    where(delete_condition).\
+                    values({
+                        'deleted': literal_column('id'),
+                        'updated_at': literal_column('updated_at'),
+                        'deleted_at': timeutils.utcnow()
+                    })
+            else:
+                delete_statement = table.delete().where(delete_condition)
+            conn.execute(delete_statement)
 
 
 def _get_default_deleted_value(table):
@@ -1118,7 +1120,9 @@ def get_non_innodb_tables(connectable, skip_tables=('migrate_version',
 
     params['database'] = connectable.engine.url.database
     query = text(query_str)
-    noninnodb = connectable.execute(query, params)
+    # TODO(stephenfin): What about if this is already a Connection?
+    with connectable.connect() as conn:
+        noninnodb = conn.execute(query, params)
     return [i[0] for i in noninnodb]
 
 

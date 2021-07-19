@@ -49,11 +49,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'The Engine.execute\(\) method is considered legacy .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'The current statement is being autocommitted .*',
             category=sqla_exc.SADeprecationWarning)
 
@@ -70,6 +65,12 @@ class WarningsFixture(fixtures.Fixture):
         warnings.filterwarnings(
             'ignore',
             message=r'Passing a string to Connection.execute\(\) .*',
+            module='migrate',
+            category=sqla_exc.SADeprecationWarning)
+
+        warnings.filterwarnings(
+            'ignore',
+            message=r'The Engine.execute\(\) method is considered legacy .*',
             module='migrate',
             category=sqla_exc.SADeprecationWarning)
 
