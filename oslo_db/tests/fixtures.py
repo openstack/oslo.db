@@ -54,11 +54,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'The Executable.execute\(\) method is considered .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'The connection.execute\(\) method in SQLAlchemy 2.0 .*',
             category=sqla_exc.SADeprecationWarning)
 
