@@ -122,7 +122,7 @@ class UpdateMatchTest(db_test_base._DbTestCase):
             sql.select(MyModel.__table__).where(MyModel.__table__.c.id == pk)
         ).first()
         values['id'] = pk
-        self.assertEqual(values, dict(row))
+        self.assertEqual(values, dict(row._mapping))
 
     def test_update_specimen_successful(self):
         uuid = '136254d5-3869-408f-9da7-190e0072641a'
