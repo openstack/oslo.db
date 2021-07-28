@@ -17,23 +17,40 @@ import copy
 import logging
 import threading
 
+from debtcollector import removals
 from oslo_config import cfg
 
 from oslo_db import api
 
-
 LOG = logging.getLogger(__name__)
 
 tpool_opts = [
-    cfg.BoolOpt('use_tpool',
-                default=False,
-                deprecated_name='dbapi_use_tpool',
-                deprecated_group='DEFAULT',
-                help='Enable the experimental use of thread pooling for '
-                     'all DB API calls'),
+    cfg.BoolOpt(
+        'use_tpool',
+        default=False,
+        deprecated_name='dbapi_use_tpool',
+        deprecated_group='DEFAULT',
+        deprecated_for_removal=True,
+        deprecated_since='10.0.0',
+        deprecated_reason=(
+            'This feature has never graduated from experimental status and is '
+            'now being removed due to lack of maintenance and test coverage'
+        ),
+        help=(
+            'Enable the experimental use of thread pooling for '
+            'all DB API calls'
+        ),
+    ),
 ]
 
+_removed_msg = (
+    'Thread pool support in oslo_db is deprecated; you should use '
+    'oslo_db.api.DBAPI.from_config directly'
+)
 
+
+@removals.removed_class(
+    'TpoolDbapiWrapper', message=_removed_msg, version='10.0.0')
 class TpoolDbapiWrapper(object):
     """DB API wrapper class.
 

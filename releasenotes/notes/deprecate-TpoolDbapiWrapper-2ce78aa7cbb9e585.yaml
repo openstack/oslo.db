@@ -1,0 +1,9 @@
+---
+deprecations:
+  - |
+    The ``oslo_db.concurrency.TpoolDbapiWrapper`` class and supporting
+    ``[database] use_tpool`` config option are now deprecated.
+    This feature never graduated from experimental status and is slated for
+    removal due to lack of maintenance and test coverage. Users should switch
+    to ``oslo_db.api.DBAPI.from_config`` and remove references to the
+    deprecated config option from their documentation.
