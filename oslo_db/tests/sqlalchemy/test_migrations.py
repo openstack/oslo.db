@@ -13,6 +13,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from unittest import mock
 
 import fixtures
@@ -53,13 +54,16 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
     def test_migrate_up_fail(self):
         version = 141
         self.migration_api.db_version.return_value = version
-        expected_output = (u"Failed to migrate to version %(version)s on "
-                           "engine %(engine)s\n" %
-                           {'version': version, 'engine': self.engine})
+        expected_output = (
+            "Failed to migrate to version %(version)s on "
+            "engine %(engine)s\n" %
+            {'version': version, 'engine': self.engine})
 
-        with mock.patch.object(self.migration_api,
-                               'upgrade',
-                               side_effect=self._fake_upgrade_boom):
+        with mock.patch.object(
+            self.migration_api,
+            'upgrade',
+            side_effect=self._fake_upgrade_boom,
+        ):
             log = self.useFixture(fixtures.FakeLogger())
             self.assertRaises(exc.DBMigrationError, self.migrate_up, version)
             self.assertEqual(expected_output, log.output)
@@ -84,9 +88,11 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
             self.engine, self.REPOSITORY)
 
     def test_migrate_down_not_implemented(self):
-        with mock.patch.object(self.migration_api,
-                               'downgrade',
-                               side_effect=NotImplementedError):
+        with mock.patch.object(
+            self.migration_api,
+            'downgrade',
+            side_effect=NotImplementedError,
+        ):
             self.assertFalse(self.migrate_down(self.engine, 42))
 
     def test_migrate_down_with_data(self):
@@ -259,8 +265,7 @@ class ModelsMigrationSyncMixin(test_base._DbTestCase):
     def include_object(self, object_, name, type_, reflected, compare_to):
         if type_ == 'table':
             return name == 'testtbl'
-        else:
-            return True
+        return True
 
     def _test_models_not_sync_filtered(self):
         self.metadata_migrations.clear()
@@ -359,9 +364,11 @@ class ModelsMigrationSyncMixin(test_base._DbTestCase):
         self.assertIn('variant', msg)
 
 
-class ModelsMigrationsSyncMysql(ModelsMigrationSyncMixin,
-                                migrate.ModelsMigrationsSync,
-                                test_base._MySQLOpportunisticTestCase):
+class ModelsMigrationsSyncMySQL(
+    ModelsMigrationSyncMixin,
+    migrate.ModelsMigrationsSync,
+    test_base._MySQLOpportunisticTestCase,
+):
 
     def test_models_not_sync(self):
         self._test_models_not_sync()
@@ -370,199 +377,14 @@ class ModelsMigrationsSyncMysql(ModelsMigrationSyncMixin,
         self._test_models_not_sync_filtered()
 
 
-class ModelsMigrationsSyncPsql(ModelsMigrationSyncMixin,
-                               migrate.ModelsMigrationsSync,
-                               test_base._PostgreSQLOpportunisticTestCase):
+class ModelsMigrationsSyncPostgreSQL(
+    ModelsMigrationSyncMixin,
+    migrate.ModelsMigrationsSync,
+    test_base._PostgreSQLOpportunisticTestCase,
+):
 
     def test_models_not_sync(self):
         self._test_models_not_sync()
 
     def test_models_not_sync_filtered(self):
         self._test_models_not_sync_filtered()
-
-
-class TestOldCheckForeignKeys(test_base._DbTestCase):
-    def setUp(self):
-        super(TestOldCheckForeignKeys, self).setUp()
-
-        test = self
-
-        class MigrateSync(migrate.ModelsMigrationsSync):
-            def get_engine(self):
-                return test.engine
-
-            def get_metadata(self):
-                return test.metadata
-
-            def db_sync(self):
-                raise NotImplementedError()
-
-        self.migration_sync = MigrateSync()
-
-    def _fk_added_fixture(self):
-        self.metadata = sa.MetaData()
-        self.metadata_migrations = sa.MetaData()
-
-        sa.Table(
-            'testtbl_one', self.metadata,
-            sa.Column('id', sa.Integer, primary_key=True),
-            mysql_engine='InnoDB'
-        )
-
-        sa.Table(
-            'testtbl_two', self.metadata,
-            sa.Column('id', sa.Integer, primary_key=True),
-            sa.Column('tone_id', sa.Integer),
-            mysql_engine='InnoDB'
-        )
-
-        sa.Table(
-            'testtbl_one', self.metadata_migrations,
-            sa.Column('id', sa.Integer, primary_key=True),
-            mysql_engine='InnoDB'
-        )
-
-        sa.Table(
-            'testtbl_two', self.metadata_migrations,
-            sa.Column('id', sa.Integer, primary_key=True),
-            sa.Column(
-                'tone_id', sa.Integer,
-                sa.ForeignKey('testtbl_one.id', name="tone_id_fk")),
-            mysql_engine='InnoDB'
-        )
-
-    def _fk_removed_fixture(self):
-        self.metadata = sa.MetaData()
-        self.metadata_migrations = sa.MetaData()
-
-        sa.Table(
-            'testtbl_one', self.metadata,
-            sa.Column('id', sa.Integer, primary_key=True),
-            mysql_engine='InnoDB'
-        )
-
-        sa.Table(
-            'testtbl_two', self.metadata,
-            sa.Column('id', sa.Integer, primary_key=True),
-            sa.Column(
-                'tone_id', sa.Integer,
-                sa.ForeignKey('testtbl_one.id', name="tone_id_fk")),
-            mysql_engine='InnoDB'
-        )
-
-        sa.Table(
-            'testtbl_one', self.metadata_migrations,
-            sa.Column('id', sa.Integer, primary_key=True),
-            mysql_engine='InnoDB'
-        )
-
-        sa.Table(
-            'testtbl_two', self.metadata_migrations,
-            sa.Column('id', sa.Integer, primary_key=True),
-            sa.Column('tone_id', sa.Integer),
-            mysql_engine='InnoDB'
-        )
-
-    def _fk_no_change_fixture(self):
-        self.metadata = sa.MetaData()
-        self.metadata_migrations = sa.MetaData()
-
-        sa.Table(
-            'testtbl_one', self.metadata,
-            sa.Column('id', sa.Integer, primary_key=True),
-            mysql_engine='InnoDB'
-        )
-
-        sa.Table(
-            'testtbl_two', self.metadata,
-            sa.Column('id', sa.Integer, primary_key=True),
-            sa.Column(
-                'tone_id', sa.Integer,
-                sa.ForeignKey('testtbl_one.id', name="tone_id_fk")),
-            mysql_engine='InnoDB'
-        )
-
-        sa.Table(
-            'testtbl_one', self.metadata_migrations,
-            sa.Column('id', sa.Integer, primary_key=True),
-            mysql_engine='InnoDB'
-        )
-
-        sa.Table(
-            'testtbl_two', self.metadata_migrations,
-            sa.Column('id', sa.Integer, primary_key=True),
-            sa.Column(
-                'tone_id', sa.Integer,
-                sa.ForeignKey('testtbl_one.id', name="tone_id_fk")),
-            mysql_engine='InnoDB'
-        )
-
-    def _run_test(self):
-        self.metadata.create_all(bind=self.engine)
-        return self.migration_sync.check_foreign_keys(
-            self.metadata_migrations, self.engine)
-
-    def _compare_diffs(self, diffs, compare_to):
-        diffs = [
-            (
-                cmd,
-                fk._get_colspec() if isinstance(fk, sa.ForeignKey)
-                else "tone_id_fk" if fk is None  # sqlite workaround
-                else fk,
-                tname, fk_info
-            )
-            for cmd, fk, tname, fk_info in diffs
-        ]
-        self.assertEqual(compare_to, diffs)
-
-    def test_fk_added(self):
-        self._fk_added_fixture()
-        diffs = self._run_test()
-
-        self._compare_diffs(
-            diffs,
-            [(
-                'add_key',
-                'testtbl_one.id',
-                'testtbl_two',
-                self.migration_sync.FKInfo(
-                    constrained_columns=('tone_id',),
-                    referred_table='testtbl_one',
-                    referred_columns=('id',))
-            )]
-        )
-
-    def test_fk_removed(self):
-        self._fk_removed_fixture()
-        diffs = self._run_test()
-
-        self._compare_diffs(
-            diffs,
-            [(
-                'drop_key',
-                "tone_id_fk",
-                'testtbl_two',
-                self.migration_sync.FKInfo(
-                    constrained_columns=('tone_id',),
-                    referred_table='testtbl_one',
-                    referred_columns=('id',))
-            )]
-        )
-
-    def test_fk_no_change(self):
-        self._fk_no_change_fixture()
-        diffs = self._run_test()
-
-        self._compare_diffs(
-            diffs,
-            [])
-
-
-class PGTestOldCheckForeignKeys(
-        TestOldCheckForeignKeys, test_base._PostgreSQLOpportunisticTestCase):
-    pass
-
-
-class MySQLTestOldCheckForeignKeys(
-        TestOldCheckForeignKeys, test_base._MySQLOpportunisticTestCase):
-    pass
