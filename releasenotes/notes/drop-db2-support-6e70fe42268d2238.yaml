@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    Checks specific to the DB2 database have been removed. This database
+    has not been supported by any OpenStack project for many years.

@@ -263,7 +263,7 @@ class Backend(object):
             eng = sqlalchemy.create_engine(url)
         except ImportError as i_e:
             # SQLAlchemy performs an "import" of the DBAPI module
-            # within create_engine().  So if ibm_db_sa, cx_oracle etc.
+            # within create_engine().  So if mysql etc.
             # isn't installed, we get an ImportError here.
             LOG.info(
                 "The %(dbapi)s backend is unavailable: %(err)s",

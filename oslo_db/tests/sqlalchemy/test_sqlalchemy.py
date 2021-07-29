@@ -202,22 +202,6 @@ class ProgrammingError(Exception):
     pass
 
 
-class FakeDB2Engine(object):
-
-    class Dialect(object):
-
-        def is_disconnect(self, e, *args):
-            expected_error = ('SQL30081N: DB2 Server connection is no longer '
-                              'active')
-            return (str(e) == expected_error)
-
-    dialect = Dialect()
-    name = 'ibm_db_sa'
-
-    def dispose(self):
-        pass
-
-
 class QueryParamTest(test_base.DbTestCase):
     def _fixture(self):
         from sqlalchemy import create_engine
