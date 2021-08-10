@@ -498,9 +498,15 @@ class TestReferenceErrorSQLite(
         self.table_2.create(self.engine)
 
     def test_raise(self):
-        with self.engine.connect() as conn:
-            conn.execute(sql.text("PRAGMA foreign_keys = ON"))
+        connection = self.engine.raw_connection()
+        try:
+            cursor = connection.cursor()
+            cursor.execute('PRAGMA foreign_keys = ON')
+            cursor.close()
+        finally:
+            connection.close()
 
+        with self.engine.connect() as conn:
             matched = self.assertRaises(
                 exception.DBReferenceError,
                 conn.execute,
@@ -521,16 +527,24 @@ class TestReferenceErrorSQLite(
         self.assertIsNone(matched.key_table)
 
     def test_raise_delete(self):
-        with self.engine.connect() as conn:
-            conn.execute(sql.text("PRAGMA foreign_keys = ON"))
-            conn.execute(self.table_1.insert().values(id=1234, foo=42))
-            conn.execute(self.table_2.insert().values(id=4321, foo_id=1234))
+        connection = self.engine.raw_connection()
+        try:
+            cursor = connection.cursor()
+            cursor.execute('PRAGMA foreign_keys = ON')
+            cursor.close()
+        finally:
+            connection.close()
 
-            matched = self.assertRaises(
-                exception.DBReferenceError,
-                conn.execute,
-                self.table_1.delete()
-            )
+        with self.engine.connect() as conn:
+            with conn.begin():
+                conn.execute(self.table_1.insert().values(id=1234, foo=42))
+                conn.execute(
+                    self.table_2.insert().values(id=4321, foo_id=1234))
+                matched = self.assertRaises(
+                    exception.DBReferenceError,
+                    conn.execute,
+                    self.table_1.delete()
+                )
 
         self.assertInnerException(
             matched,
@@ -577,13 +591,17 @@ class TestReferenceErrorPostgreSQL(
 
     def test_raise_delete(self):
         with self.engine.connect() as conn:
-            conn.execute(self.table_1.insert().values(id=1234, foo=42))
-            conn.execute(self.table_2.insert().values(id=4321, foo_id=1234))
-            matched = self.assertRaises(
-                exception.DBReferenceError,
-                conn.execute,
-                self.table_1.delete()
-            )
+            with conn.begin():
+                conn.execute(self.table_1.insert().values(id=1234, foo=42))
+                conn.execute(
+                    self.table_2.insert().values(id=4321, foo_id=1234))
+
+            with conn.begin():
+                matched = self.assertRaises(
+                    exception.DBReferenceError,
+                    conn.execute,
+                    self.table_1.delete()
+                )
 
         self.assertInnerException(
             matched,
@@ -648,7 +666,7 @@ class TestReferenceErrorMySQL(
         self.assertEqual("resource_foo", matched.key_table)
 
     def test_raise_delete(self):
-        with self.engine.connect() as conn:
+        with self.engine.connect() as conn, conn.begin():
             conn.execute(self.table_1.insert().values(id=1234, foo=42))
             conn.execute(self.table_2.insert().values(id=4321, foo_id=1234))
             matched = self.assertRaises(
