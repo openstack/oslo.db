@@ -1162,7 +1162,9 @@ def get_non_ndbcluster_tables(connectable, skip_tables=None):
 
     params['database'] = connectable.engine.url.database
     query = text(query_str)
-    nonndbcluster = connectable.execute(query, **params)
+    # TODO(stephenfin): What about if this is already a Connection?
+    with connectable.connect() as conn, conn.begin():
+        nonndbcluster = connectable.execute(query, **params)
     return [i[0] for i in nonndbcluster]
 
 
