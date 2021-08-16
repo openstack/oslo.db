@@ -22,7 +22,6 @@ from oslo_db import exception
 from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import provision
 from oslo_db.sqlalchemy import test_fixtures
-from oslo_db.sqlalchemy import utils
 from oslo_db.tests import base as test_base
 from oslo_db.tests.sqlalchemy import base as db_test_base
 
@@ -147,81 +146,6 @@ class PostgreSQLDropAllObjectsTest(
     DropAllObjectsTest, db_test_base._PostgreSQLOpportunisticTestCase,
 ):
     pass
-
-
-class RetainSchemaTest(test_base.BaseTestCase):
-    DRIVER = "sqlite"
-
-    def setUp(self):
-        super(RetainSchemaTest, self).setUp()
-
-        metadata = schema.MetaData()
-        self.test_table = schema.Table(
-            'test_table', metadata,
-            schema.Column('x', types.Integer),
-            schema.Column('y', types.Integer),
-            mysql_engine='InnoDB'
-        )
-
-        def gen_schema(engine):
-            metadata.create_all(engine, checkfirst=False)
-        self._gen_schema = gen_schema
-
-    def test_once(self):
-        self._run_test()
-
-    def test_twice(self):
-        self._run_test()
-
-    def _run_test(self):
-        try:
-            database_resource = provision.DatabaseResource(
-                self.DRIVER, provision_new_database=True)
-        except exception.BackendNotAvailable:
-            self.skipTest("database not available")
-
-        schema_resource = provision.SchemaResource(
-            database_resource, self._gen_schema)
-
-        schema = schema_resource.getResource()
-
-        conn = schema.database.engine.connect()
-        engine = utils.NonCommittingEngine(conn)
-
-        with engine.connect() as conn:
-            rows = conn.execute(self.test_table.select())
-            self.assertEqual([], rows.fetchall())
-
-            trans = conn.begin()
-            conn.execute(
-                self.test_table.insert(),
-                {"x": 1, "y": 2}
-            )
-            trans.rollback()
-
-            rows = conn.execute(self.test_table.select())
-            self.assertEqual([], rows.fetchall())
-
-            trans = conn.begin()
-            conn.execute(
-                self.test_table.insert(),
-                {"x": 2, "y": 3}
-            )
-            trans.commit()
-
-            rows = conn.execute(self.test_table.select())
-            self.assertEqual([(2, 3)], rows.fetchall())
-
-        engine._dispose()
-        schema_resource.finishedWith(schema)
-
-
-class MySQLRetainSchemaTest(RetainSchemaTest):
-    DRIVER = "mysql"
-
-
-class PostgresqlRetainSchemaTest(RetainSchemaTest):
-    DRIVER = "postgresql"
 
 
 class AdHocURLTest(test_base.BaseTestCase):

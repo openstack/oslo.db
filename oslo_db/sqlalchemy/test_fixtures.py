@@ -254,22 +254,6 @@ class DeletesFromSchema(ResetsData):
         """
 
 
-class RollsBackTransaction(ResetsData):
-    """Fixture class that maintains a database transaction per test.
-
-    """
-
-    def setup_for_reset(self, engine, facade):
-        conn = engine.connect()
-        engine = utils.NonCommittingEngine(conn)
-        self._reset_engine = enginefacade._TestTransactionFactory.apply_engine(
-            engine, facade)
-
-    def reset_schema_data(self, engine, facade):
-        self._reset_engine()
-        engine._dispose()
-
-
 class SimpleDbFixture(BaseDbFixture):
     """Fixture which provides an engine from a fixed URL.
 

@@ -1,0 +1,15 @@
+---
+upgrade:
+  - |
+    The following helpers have been removed from the
+    ``oslo_db.sqlalchemy.utils`` module:
+
+    - ``NonCommittingConnectable``
+    - ``NonCommittingEngine``
+    - ``NonCommittingConnection``
+    - ``NonCommittingTransaction``
+
+    These were unused outside of oslo.db and were not compatible with
+    SQLAlchemy 2.0. In addition, the ``RollsBackTransaction`` fixture has
+    been removed from ``oslo_db.sqlalchemy.test_fixtures``. This was
+    similarly unused and presented similar compatibility issues.
