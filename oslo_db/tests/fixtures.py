@@ -37,15 +37,7 @@ class WarningsFixture(fixtures.Fixture):
             'error',
             category=sqla_exc.SADeprecationWarning)
 
-        # ...but filter everything out until we get around to fixing them
-        # FIXME(stephenfin): Remove all of these
-
-        warnings.filterwarnings(
-            'once',
-            message=r'The Session.autocommit parameter is deprecated .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        # ...plus things that aren't our fault
+        # ...but filter things that aren't our fault
 
         # FIXME(stephenfin): These are caused by sqlalchemy-migrate, not us,
         # and should be removed when we drop support for that library

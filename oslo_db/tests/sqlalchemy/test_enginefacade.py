@@ -357,11 +357,11 @@ class MockFacadeTest(test_base.BaseTestCase):
         maker_factories = mock.Mock(side_effect=get_maker)
 
         maker_factories(
-            autocommit=True, engine=engines.writer,
+            autocommit=False, engine=engines.writer,
             expire_on_commit=False)
         if self.slave_uri:
             maker_factories(
-                autocommit=True, engine=engines.async_reader,
+                autocommit=False, engine=engines.async_reader,
                 expire_on_commit=False)
 
         yield makers
@@ -1692,11 +1692,12 @@ class LiveFacadeTest(db_test_base._DbTestCase):
         with enginefacade.writer.using(context) as session:
             session.add(self.User(name="u1"))
 
-        session = self.sessionmaker(autocommit=True)
-        self.assertEqual(
-            "u1",
-            session.query(self.User.name).scalar()
-        )
+        session = self.sessionmaker(autocommit=False)
+        with session.begin():
+            self.assertEqual(
+                "u1",
+                session.query(self.User.name).scalar()
+            )
 
     def test_transaction_rollback(self):
         context = oslo_context.RequestContext()
@@ -1712,11 +1713,12 @@ class LiveFacadeTest(db_test_base._DbTestCase):
 
         self.assertRaises(MyException, go, context)
 
-        session = self.sessionmaker(autocommit=True)
-        self.assertEqual(
-            None,
-            session.query(self.User.name).scalar()
-        )
+        session = self.sessionmaker(autocommit=False)
+        with session.begin():
+            self.assertEqual(
+                None,
+                session.query(self.User.name).scalar()
+            )
 
     @mock.patch.object(Session, 'commit')
     @mock.patch.object(Session, 'rollback')
@@ -1783,11 +1785,12 @@ class LiveFacadeTest(db_test_base._DbTestCase):
                 s2.add(self.User(name="u1"))
                 s2.flush()
 
-        session = self.sessionmaker(autocommit=True)
-        self.assertEqual(
-            "u1",
-            session.query(self.User.name).scalar()
-        )
+        session = self.sessionmaker(autocommit=False)
+        with session.begin():
+            self.assertEqual(
+                "u1",
+                session.query(self.User.name).scalar()
+            )
 
     def test_context_deepcopy_on_connection(self):
         context = oslo_context.RequestContext()
@@ -1804,11 +1807,12 @@ class LiveFacadeTest(db_test_base._DbTestCase):
 
             self._assert_ctx_connection(ctx2, conn2)
 
-        session = self.sessionmaker(autocommit=True)
-        self.assertEqual(
-            "u1",
-            session.query(self.User.name).scalar()
-        )
+        session = self.sessionmaker(autocommit=False)
+        with session.begin():
+            self.assertEqual(
+                "u1",
+                session.query(self.User.name).scalar()
+            )
 
     @db_test_base.backend_specific("postgresql", "mysql")
     def test_external_session_transaction(self):
@@ -1840,14 +1844,14 @@ class LiveFacadeTest(db_test_base._DbTestCase):
             session.begin()
             session.add(self.User(name="u4"))
 
-        session = self.sessionmaker(autocommit=True)
-
+        session = self.sessionmaker(autocommit=False)
         # inner transaction + second part of "outer" transaction were committed
-        self.assertEqual(
-            [("u2",), ("u3",), ("u4", )],
-            session.query(
-                self.User.name).order_by(self.User.name).all()
-        )
+        with session.begin():
+            self.assertEqual(
+                [("u2",), ("u3",), ("u4", )],
+                session.query(
+                    self.User.name).order_by(self.User.name).all()
+            )
 
     def test_savepoint_transaction_decorator(self):
         context = oslo_context.RequestContext()
@@ -1880,14 +1884,14 @@ class LiveFacadeTest(db_test_base._DbTestCase):
 
         go1(context)
 
-        session = self.sessionmaker(autocommit=True)
-
+        session = self.sessionmaker(autocommit=False)
         # inner transaction + second part of "outer" transaction were committed
-        self.assertEqual(
-            [("u1",), ("u3",), ("u4", )],
-            session.query(
-                self.User.name).order_by(self.User.name).all()
-        )
+        with session.begin():
+            self.assertEqual(
+                [("u1",), ("u3",), ("u4", )],
+                session.query(
+                    self.User.name).order_by(self.User.name).all()
+            )
 
     def test_savepoint_transaction(self):
         context = oslo_context.RequestContext()
@@ -1908,14 +1912,14 @@ class LiveFacadeTest(db_test_base._DbTestCase):
 
             session.add(self.User(name="u4"))
 
-        session = self.sessionmaker(autocommit=True)
-
+        session = self.sessionmaker(autocommit=False)
         # inner transaction + second part of "outer" transaction were committed
-        self.assertEqual(
-            [("u1",), ("u3",), ("u4", )],
-            session.query(
-                self.User.name).order_by(self.User.name).all()
-        )
+        with session.begin():
+            self.assertEqual(
+                [("u1",), ("u3",), ("u4", )],
+                session.query(
+                    self.User.name).order_by(self.User.name).all()
+            )
 
     @db_test_base.backend_specific("postgresql", "mysql")
     def test_external_session_transaction_decorator(self):
@@ -1956,14 +1960,14 @@ class LiveFacadeTest(db_test_base._DbTestCase):
 
         go1(context)
 
-        session = self.sessionmaker(autocommit=True)
-
+        session = self.sessionmaker(autocommit=False)
         # inner transaction + second part of "outer" transaction were committed
-        self.assertEqual(
-            [("u2",), ("u3",), ("u4", )],
-            session.query(
-                self.User.name).order_by(self.User.name).all()
-        )
+        with session.begin():
+            self.assertEqual(
+                [("u2",), ("u3",), ("u4", )],
+                session.query(
+                    self.User.name).order_by(self.User.name).all()
+            )
 
     @db_test_base.backend_specific("postgresql", "mysql")
     def test_external_connection_transaction(self):
@@ -1995,12 +1999,13 @@ class LiveFacadeTest(db_test_base._DbTestCase):
             # add more state on the "outer" transaction
             connection.execute(self.user_table.insert().values(name="u4"))
 
-        session = self.sessionmaker(autocommit=True)
-        self.assertEqual(
-            [("u2",), ("u3",), ("u4", )],
-            session.query(
-                self.User.name).order_by(self.User.name).all()
-        )
+        session = self.sessionmaker(autocommit=False)
+        with session.begin():
+            self.assertEqual(
+                [("u2",), ("u3",), ("u4", )],
+                session.query(
+                    self.User.name).order_by(self.User.name).all()
+            )
 
     @db_test_base.backend_specific("postgresql", "mysql")
     def test_external_writer_in_reader(self):
@@ -2030,12 +2035,13 @@ class LiveFacadeTest(db_test_base._DbTestCase):
             user = session.query(self.User).first()
             self.assertEqual("u1_commit", user.name)
 
-        session = self.sessionmaker(autocommit=True)
-        self.assertEqual(
-            [("u1_commit",)],
-            session.query(
-                self.User.name).order_by(self.User.name).all()
-        )
+        session = self.sessionmaker(autocommit=False)
+        with session.begin():
+            self.assertEqual(
+                [("u1_commit",)],
+                session.query(
+                    self.User.name).order_by(self.User.name).all()
+            )
 
     def test_replace_scope(self):
         # "timeout" is an argument accepted by

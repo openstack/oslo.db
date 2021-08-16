@@ -57,7 +57,7 @@ class Session(sqlalchemy.orm.session.Session):
     """oslo.db-specific Session subclass."""
 
 
-def get_maker(engine, autocommit=True, expire_on_commit=False):
+def get_maker(engine, autocommit=False, expire_on_commit=False):
     """Return a SQLAlchemy sessionmaker using the given engine."""
     return sqlalchemy.orm.sessionmaker(bind=engine,
                                        class_=Session,

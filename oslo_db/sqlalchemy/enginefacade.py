@@ -163,7 +163,7 @@ class _TransactionFactory(object):
         }
         self._maker_cfg = {
             'expire_on_commit': _Default(False),
-            '__autocommit': True
+            '__autocommit': False,
         }
         self._transaction_ctx_cfg = {
             'rollback_reader_sessions': False,
@@ -1266,13 +1266,22 @@ class LegacyEngineFacade(object):
 
     """
     def __init__(self, sql_connection, slave_connection=None,
-                 sqlite_fk=False, autocommit=True,
+                 sqlite_fk=False, autocommit=False,
                  expire_on_commit=False, _conf=None, _factory=None, **kwargs):
         warnings.warn(
             "EngineFacade is deprecated; please use "
             "oslo_db.sqlalchemy.enginefacade",
             warning.OsloDBDeprecationWarning,
             stacklevel=2)
+
+        if autocommit is True:
+            warnings.warn(
+                'autocommit support will be removed in SQLAlchemy 2.0 and '
+                'should not be relied on; please rework your code to remove '
+                'reliance on this feature',
+                warning.OsloDBDeprecationWarning,
+                stacklevel=2)
+
         if _factory:
             self._factory = _factory
         else:
@@ -1346,7 +1355,7 @@ class LegacyEngineFacade(object):
 
     @classmethod
     def from_config(cls, conf,
-                    sqlite_fk=False, autocommit=True, expire_on_commit=False):
+                    sqlite_fk=False, autocommit=False, expire_on_commit=False):
         """Initialize EngineFacade using oslo.config config instance options.
 
         :param conf: oslo.config config instance
