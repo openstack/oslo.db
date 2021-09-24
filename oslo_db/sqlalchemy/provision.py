@@ -577,8 +577,7 @@ class SQLiteBackendImpl(BackendImpl):
 @BackendImpl.impl.dispatch_for("postgresql")
 class PostgresqlBackendImpl(BackendImpl):
     def create_opportunistic_driver_url(self):
-        return "postgresql://openstack_citest:openstack_citest"\
-            "@localhost/postgres"
+        return "postgresql+psycopg2://openstack_citest:openstack_citest@localhost/postgres"  # noqa: E501
 
     def create_named_database(self, engine, ident, conditional=False):
         with engine.connect().execution_options(
