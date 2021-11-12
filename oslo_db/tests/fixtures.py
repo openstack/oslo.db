@@ -59,11 +59,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'Retrieving row members using strings or other .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'The connection.execute\(\) method in SQLAlchemy 2.0 .*',
             category=sqla_exc.SADeprecationWarning)
 
