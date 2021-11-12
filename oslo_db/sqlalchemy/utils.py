@@ -496,7 +496,7 @@ def drop_old_duplicate_entries_from_table(engine, table_name,
         is_none = None  # workaround for pyflakes
         delete_condition &= table.c.deleted_at == is_none
         for name in uc_column_names:
-            delete_condition &= table.c[name] == row[name]
+            delete_condition &= table.c[name] == row._mapping[name]
 
         rows_to_delete_select = sqlalchemy.sql.select(
             table.c.id,
