@@ -82,11 +82,6 @@ class WarningsFixture(fixtures.Fixture):
             message=r'Calling \.begin\(\) when a transaction is already .*',
             category=sqla_exc.SADeprecationWarning)
 
-        warnings.filterwarnings(
-            'once',
-            message=r'The Engine.scalar\(\) method is considered legacy .*',
-            category=sqla_exc.SADeprecationWarning)
-
         # ...plus things that aren't our fault
 
         # FIXME(stephenfin): These are caused by sqlalchemy-migrate, not us,

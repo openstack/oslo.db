@@ -1162,11 +1162,14 @@ class TestDBDisconnected(TestsExceptionFilter):
                 yield
 
     def _test_ping_listener_disconnected(
-            self, dialect_name, exc_obj, is_disconnect=True):
+        self, dialect_name, exc_obj, is_disconnect=True,
+    ):
         with self._fixture(dialect_name, exc_obj, 1, is_disconnect):
             conn = self.engine.connect()
             with conn.begin():
-                self.assertEqual(1, conn.scalar(sqla.select(1)))
+                self.assertEqual(
+                    1, conn.execute(sqla.select(1)).scalars().first(),
+                )
                 self.assertFalse(conn.closed)
                 self.assertFalse(conn.invalidated)
                 self.assertTrue(conn.in_transaction())
@@ -1179,7 +1182,9 @@ class TestDBDisconnected(TestsExceptionFilter):
 
         # test implicit execution
         with self._fixture(dialect_name, exc_obj, 1):
-            self.assertEqual(1, self.engine.scalar(sqla.select(1)))
+            self.assertEqual(
+                1, self.engine.execute(sqla.select(1)).scalars().first(),
+            )
 
     def test_mariadb_error_1927(self):
         for code in [1927]:

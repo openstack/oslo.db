@@ -479,14 +479,14 @@ class SQLiteConnectTest(test_base.BaseTestCase):
         engine = self._fixture(sqlite_fk=True)
         self.assertEqual(
             1,
-            engine.scalar(sql.text('pragma foreign_keys'))
+            engine.execute(sql.text('pragma foreign_keys')).scalars().first(),
         )
 
         engine = self._fixture(sqlite_fk=False)
 
         self.assertEqual(
             0,
-            engine.scalar(sql.text("pragma foreign_keys"))
+            engine.execute(sql.text('pragma foreign_keys')).scalars().first(),
         )
 
     def test_sqlite_synchronous_listener(self):
@@ -496,14 +496,14 @@ class SQLiteConnectTest(test_base.BaseTestCase):
         # http://www.sqlite.org/pragma.html#pragma_synchronous
         self.assertEqual(
             2,
-            engine.scalar(sql.text('pragma synchronous'))
+            engine.execute(sql.text('pragma synchronous')).scalars().first(),
         )
 
         engine = self._fixture(sqlite_synchronous=False)
 
         self.assertEqual(
             0,
-            engine.scalar(sql.text('pragma synchronous'))
+            engine.execute(sql.text('pragma synchronous')).scalars().first(),
         )
 
 
