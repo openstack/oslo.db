@@ -604,9 +604,11 @@ class PostgresqlBackendImpl(BackendImpl):
         return bool(
             engine.scalar(
                 sqlalchemy.text(
-                    "SELECT datname FROM pg_database "
-                    "WHERE datname=:name"), name=ident)
+                    "SELECT datname FROM pg_database WHERE datname=:name"
+                ),
+                {'name': ident},
             )
+        )
 
     def _close_out_database_users(self, conn, ident):
         """Attempt to guarantee a database can be dropped.
@@ -630,7 +632,9 @@ class PostgresqlBackendImpl(BackendImpl):
                     "WHERE usename=current_user AND "
                     "pid != pg_backend_pid() AND "
                     "datname=:dname"
-                ), dname=ident)
+                ),
+                {'dname': ident},
+            )
 
 
 def _random_ident():

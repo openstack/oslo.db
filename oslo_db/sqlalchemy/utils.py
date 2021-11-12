@@ -1118,7 +1118,7 @@ def get_non_innodb_tables(connectable, skip_tables=('migrate_version',
 
     params['database'] = connectable.engine.url.database
     query = text(query_str)
-    noninnodb = connectable.execute(query, **params)
+    noninnodb = connectable.execute(query, params)
     return [i[0] for i in noninnodb]
 
 

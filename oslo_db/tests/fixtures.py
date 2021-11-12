@@ -54,11 +54,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'The connection.execute\(\) method in SQLAlchemy 2.0 .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'Calling the mapper\(\) function directly outside .*',
             category=sqla_exc.SADeprecationWarning)
 
