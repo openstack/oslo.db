@@ -569,11 +569,12 @@ def change_deleted_column_type_to_boolean(engine, table_name,
     finally:
         table.metadata.bind = None
 
-    engine.execute(
-        table.update().
-        where(table.c.deleted == table.c.id).
-        values(old_deleted=True)
-    )
+    with engine.connect() as conn:
+        conn.execute(
+            table.update().where(
+                table.c.deleted == table.c.id
+            ).values(old_deleted=True)
+        )
 
     table.metadata.bind = engine
     try:
@@ -607,39 +608,42 @@ def _change_deleted_column_type_to_boolean_sqlite(engine, table_name,
     # figure out how else to copy an arbitrary column schema
     constraints = [constraint._copy() for constraint in table.constraints]
 
-    meta = table.metadata
-    new_table = Table(table_name + "__tmp__", meta,
-                      *(columns + constraints))
-    new_table.create(engine)
+    with engine.connect() as conn:
+        meta = table.metadata
+        new_table = Table(
+            table_name + "__tmp__", meta,
+            *(columns + constraints))
+        new_table.create(conn)
 
-    indexes = []
-    for index in get_indexes(engine, table_name):
-        column_names = [new_table.c[c] for c in index['column_names']]
-        indexes.append(Index(index["name"], *column_names,
-                             unique=index["unique"]))
+        indexes = []
+        for index in get_indexes(engine, table_name):
+            column_names = [new_table.c[c] for c in index['column_names']]
+            indexes.append(
+                Index(index["name"], *column_names, unique=index["unique"])
+            )
 
-    c_select = []
-    for c in table.c:
-        if c.name != "deleted":
-            c_select.append(c)
-        else:
-            c_select.append(table.c.deleted == table.c.id)
+        c_select = []
+        for c in table.c:
+            if c.name != "deleted":
+                c_select.append(c)
+            else:
+                c_select.append(table.c.deleted == table.c.id)
 
-    table.drop(engine)
-    for index in indexes:
-        index.create(engine)
+        table.drop(conn)
+        for index in indexes:
+            index.create(conn)
 
-    table.metadata.bind = engine
-    try:
-        new_table.rename(table_name)
-    finally:
-        table.metadata.bind = None
+        table.metadata.bind = engine
+        try:
+            new_table.rename(table_name)
+        finally:
+            table.metadata.bind = None
 
-    engine.execute(
-        new_table.update().
-        where(new_table.c.deleted == new_table.c.id).
-        values(deleted=True)
-    )
+        conn.execute(
+            new_table.update().where(
+                new_table.c.deleted == new_table.c.id
+            ).values(deleted=True)
+        )
 
 
 @debtcollector.removals.remove(
@@ -664,20 +668,21 @@ def change_deleted_column_type_to_id_type(engine, table_name,
     finally:
         table.metadata.bind = None
 
-    deleted = True  # workaround for pyflakes
-    engine.execute(
-        table.update().
-        where(table.c.deleted == deleted).
-        values(new_deleted=table.c.id)
-    )
     table.metadata.bind = engine
     try:
-        table.c.deleted.drop()
-        table.c.new_deleted.alter(name="deleted")
+        with engine.connect() as conn:
+            deleted = True  # workaround for pyflakes
+            conn.execute(
+                table.update().where(
+                    table.c.deleted == deleted
+                ).values(new_deleted=table.c.id)
+            )
+            table.c.deleted.drop()
+            table.c.new_deleted.alter(name="deleted")
+
+            _restore_indexes_on_deleted_columns(conn, table_name, indexes)
     finally:
         table.metadata.bind = None
-
-    _restore_indexes_on_deleted_columns(engine, table_name, indexes)
 
 
 def _is_deleted_column_constraint(constraint):
@@ -731,40 +736,43 @@ def _change_deleted_column_type_to_id_type_sqlite(engine, table_name,
             # figure out how else to copy an arbitrary constraint schema
             constraints.append(constraint._copy())
 
-    new_table = Table(table_name + "__tmp__", meta,
-                      *(columns + constraints))
-    new_table.create(engine)
+    with engine.connect() as conn:
+        new_table = Table(
+            table_name + "__tmp__", meta,
+            *(columns + constraints))
+        new_table.create(conn)
 
-    indexes = []
-    for index in get_indexes(engine, table_name):
-        column_names = [new_table.c[c] for c in index['column_names']]
-        indexes.append(Index(index["name"], *column_names,
-                             unique=index["unique"]))
+        indexes = []
+        for index in get_indexes(engine, table_name):
+            column_names = [new_table.c[c] for c in index['column_names']]
+            indexes.append(
+                Index(index["name"], *column_names, unique=index["unique"])
+            )
 
-    table.drop(engine)
-    for index in indexes:
-        index.create(engine)
+        table.drop(conn)
+        for index in indexes:
+            index.create(conn)
 
-    new_table.metadata.bind = engine
-    try:
-        new_table.rename(table_name)
-    finally:
-        new_table.metadata.bind = None
+        new_table.metadata.bind = engine
+        try:
+            new_table.rename(table_name)
+        finally:
+            new_table.metadata.bind = None
 
-    deleted = True  # workaround for pyflakes
-    engine.execute(
-        new_table.update().
-        where(new_table.c.deleted == deleted).
-        values(deleted=new_table.c.id)
-    )
+        deleted = True  # workaround for pyflakes
+        conn.execute(
+            new_table.update().where(
+                new_table.c.deleted == deleted
+            ).values(deleted=new_table.c.id)
+        )
 
-    # NOTE(boris-42): Fix value of deleted column: False -> "" or 0.
-    deleted = False  # workaround for pyflakes
-    engine.execute(
-        new_table.update().
-        where(new_table.c.deleted == deleted).
-        values(deleted=default_deleted_value)
-    )
+        # NOTE(boris-42): Fix value of deleted column: False -> "" or 0.
+        deleted = False  # workaround for pyflakes
+        conn.execute(
+            new_table.update().where(
+                new_table.c.deleted == deleted
+            ).values(deleted=default_deleted_value)
+        )
 
 
 def get_db_connection_info(conn_pieces):
