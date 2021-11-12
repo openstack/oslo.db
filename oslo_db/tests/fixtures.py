@@ -59,11 +59,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'The Row.keys\(\) method is considered legacy .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'Retrieving row members using strings or other .*',
             category=sqla_exc.SADeprecationWarning)
 
