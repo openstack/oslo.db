@@ -109,7 +109,7 @@ class SQLiteSavepointTest(db_test_base._DbTestCase):
         )
         self.assertEqual(
             [(1, 'data 1')],
-            self.engine.execute(
+            conn.execute(
                 self.test_table.select().
                 order_by(self.test_table.c.id)
             ).fetchall()
@@ -145,13 +145,13 @@ class SQLiteSavepointTest(db_test_base._DbTestCase):
                 {'data': 'data 3'}
             )
 
-        self.assertEqual(
-            [(1, 'data 1'), (2, 'data 3')],
-            self.engine.execute(
-                self.test_table.select().
-                order_by(self.test_table.c.id)
-            ).fetchall()
-        )
+            self.assertEqual(
+                [(1, 'data 1'), (2, 'data 3')],
+                conn.execute(
+                    self.test_table.select().
+                    order_by(self.test_table.c.id)
+                ).fetchall()
+            )
 
     def test_savepoint_beginning(self):
         with self.engine.begin() as conn:
@@ -167,13 +167,13 @@ class SQLiteSavepointTest(db_test_base._DbTestCase):
                 {'data': 'data 2'}
             )
 
-        self.assertEqual(
-            [(1, 'data 2')],
-            self.engine.execute(
-                self.test_table.select().
-                order_by(self.test_table.c.id)
-            ).fetchall()
-        )
+            self.assertEqual(
+                [(1, 'data 2')],
+                conn.execute(
+                    self.test_table.select().
+                    order_by(self.test_table.c.id)
+                ).fetchall()
+            )
 
 
 class FakeDBAPIConnection(object):
@@ -476,34 +476,42 @@ class SQLiteConnectTest(test_base.BaseTestCase):
 
     def test_sqlite_fk_listener(self):
         engine = self._fixture(sqlite_fk=True)
-        self.assertEqual(
-            1,
-            engine.execute(sql.text('pragma foreign_keys')).scalars().first(),
-        )
+        with engine.connect() as conn:
+            self.assertEqual(
+                1,
+                conn.execute(
+                    sql.text('pragma foreign_keys')
+                ).scalars().first(),
+            )
 
         engine = self._fixture(sqlite_fk=False)
 
-        self.assertEqual(
-            0,
-            engine.execute(sql.text('pragma foreign_keys')).scalars().first(),
-        )
+        with engine.connect() as conn:
+            self.assertEqual(
+                0,
+                conn.execute(
+                    sql.text('pragma foreign_keys')
+                ).scalars().first(),
+            )
 
     def test_sqlite_synchronous_listener(self):
         engine = self._fixture()
 
         # "The default setting is synchronous=FULL." (e.g. 2)
         # http://www.sqlite.org/pragma.html#pragma_synchronous
-        self.assertEqual(
-            2,
-            engine.execute(sql.text('pragma synchronous')).scalars().first(),
-        )
+        with engine.connect() as conn:
+            self.assertEqual(
+                2,
+                conn.execute(sql.text('pragma synchronous')).scalars().first(),
+            )
 
         engine = self._fixture(sqlite_synchronous=False)
 
-        self.assertEqual(
-            0,
-            engine.execute(sql.text('pragma synchronous')).scalars().first(),
-        )
+        with engine.connect() as conn:
+            self.assertEqual(
+                0,
+                conn.execute(sql.text('pragma synchronous')).scalars().first(),
+            )
 
 
 class MysqlConnectTest(db_test_base._MySQLOpportunisticTestCase):
@@ -512,9 +520,10 @@ class MysqlConnectTest(db_test_base._MySQLOpportunisticTestCase):
         return session.create_engine(self.engine.url, mysql_sql_mode=sql_mode)
 
     def _assert_sql_mode(self, engine, sql_mode_present, sql_mode_non_present):
-        mode = engine.execute(
-            sql.text("SHOW VARIABLES LIKE 'sql_mode'")
-        ).fetchone()[1]
+        with engine.connect() as conn:
+            mode = conn.execute(
+                sql.text("SHOW VARIABLES LIKE 'sql_mode'")
+            ).fetchone()[1]
         self.assertIn(
             sql_mode_present, mode
         )
@@ -538,9 +547,10 @@ class MysqlConnectTest(db_test_base._MySQLOpportunisticTestCase):
         # get the GLOBAL sql_mode, not the @@SESSION, so that
         # we get what is configured for the MySQL database, as opposed
         # to what our own session.create_engine() has set it to.
-        expected = self.engine.execute(
-            sql.text("SELECT @@GLOBAL.sql_mode")
-        ).scalar()
+        with self.engine.connect() as conn:
+            expected = conn.execute(
+                sql.text("SELECT @@GLOBAL.sql_mode")
+            ).scalar()
 
         engine = self._fixture(sql_mode=None)
         self._assert_sql_mode(engine, expected, None)
@@ -592,9 +602,10 @@ class MysqlConnectTest(db_test_base._MySQLOpportunisticTestCase):
 
         engine = self._fixture(sql_mode='TRADITIONAL')
 
-        actual_mode = engine.execute(
-            sql.text("SHOW VARIABLES LIKE 'sql_mode'")
-        ).fetchone()[1]
+        with engine.connect() as conn:
+            actual_mode = conn.execute(
+                sql.text("SHOW VARIABLES LIKE 'sql_mode'")
+            ).fetchone()[1]
 
         self.assertIn('MySQL server mode set to %s' % actual_mode,
                       log.output)

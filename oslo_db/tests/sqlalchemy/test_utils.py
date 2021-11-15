@@ -699,7 +699,8 @@ class TestMigrationUtils(db_test_base._DbTestCase):
                            Column('updated_at', DateTime))
 
         test_table.create(engine)
-        engine.execute(test_table.insert(), values)
+        with engine.connect() as conn:
+            conn.execute(test_table.insert(), values)
         return test_table, values
 
     def test_drop_old_duplicate_entries_from_table(self):
@@ -719,10 +720,11 @@ class TestMigrationUtils(db_test_base._DbTestCase):
             uniq_values.add(uniq_value)
             expected_ids.append(value['id'])
 
-        real_ids = [
-            row[0] for row in
-            self.engine.execute(select(test_table.c.id)).fetchall()
-        ]
+        with self.engine.connect() as conn:
+            real_ids = [
+                row[0] for row in
+                conn.execute(select(test_table.c.id)).fetchall()
+            ]
 
         self.assertEqual(len(expected_ids), len(real_ids))
         for id_ in expected_ids:
@@ -760,20 +762,21 @@ class TestMigrationUtils(db_test_base._DbTestCase):
 
         base_select = table.select()
 
-        rows_select = base_select.where(table.c.deleted != table.c.id)
-        row_ids = [
-            row.id for row in self.engine.execute(rows_select).fetchall()
-        ]
-        self.assertEqual(len(expected_values), len(row_ids))
-        for value in expected_values:
-            self.assertIn(value['id'], row_ids)
+        with self.engine.connect() as conn:
+            rows_select = base_select.where(table.c.deleted != table.c.id)
+            row_ids = [
+                row.id for row in conn.execute(rows_select).fetchall()
+            ]
+            self.assertEqual(len(expected_values), len(row_ids))
+            for value in expected_values:
+                self.assertIn(value['id'], row_ids)
 
-        deleted_rows_select = base_select.where(
-            table.c.deleted == table.c.id)
-        deleted_rows_ids = [
-            row.id for row in
-            self.engine.execute(deleted_rows_select).fetchall()
-        ]
+            deleted_rows_select = base_select.where(
+                table.c.deleted == table.c.id)
+            deleted_rows_ids = [
+                row.id for row in
+                conn.execute(deleted_rows_select).fetchall()
+            ]
         self.assertEqual(len(values) - len(row_ids),
                          len(deleted_rows_ids))
         for value in soft_deleted_values:
@@ -1649,43 +1652,49 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
 class TestGetInnoDBTables(db_test_base._MySQLOpportunisticTestCase):
 
     def test_all_tables_use_innodb(self):
-        self.engine.execute(
-            sql.text(
-                "CREATE TABLE customers "
-                "(a INT, b CHAR (20), INDEX (a)) ENGINE=InnoDB"))
+        with self.engine.connect() as conn:
+            conn.execute(
+                sql.text(
+                    "CREATE TABLE customers "
+                    "(a INT, b CHAR (20), INDEX (a)) ENGINE=InnoDB"))
         self.assertEqual([], utils.get_non_innodb_tables(self.engine))
 
     def test_all_tables_use_innodb_false(self):
-        self.engine.execute(
-            sql.text("CREATE TABLE employee (i INT) ENGINE=MEMORY"))
+        with self.engine.connect() as conn:
+            conn.execute(
+                sql.text("CREATE TABLE employee (i INT) ENGINE=MEMORY"))
         self.assertEqual(['employee'],
                          utils.get_non_innodb_tables(self.engine))
 
     def test_skip_tables_use_default_value(self):
-        self.engine.execute(
-            sql.text("CREATE TABLE migrate_version (i INT) ENGINE=MEMORY"))
+        with self.engine.connect() as conn:
+            conn.execute(
+                sql.text("CREATE TABLE migrate_version (i INT) ENGINE=MEMORY"))
         self.assertEqual([],
                          utils.get_non_innodb_tables(self.engine))
 
     def test_skip_tables_use_passed_value(self):
-        self.engine.execute(
-            sql.text("CREATE TABLE some_table (i INT) ENGINE=MEMORY"))
+        with self.engine.connect() as conn:
+            conn.execute(
+                sql.text("CREATE TABLE some_table (i INT) ENGINE=MEMORY"))
         self.assertEqual([],
                          utils.get_non_innodb_tables(
                              self.engine, skip_tables=('some_table',)))
 
     def test_skip_tables_use_empty_list(self):
-        self.engine.execute(
-            sql.text("CREATE TABLE some_table_3 (i INT) ENGINE=MEMORY"))
+        with self.engine.connect() as conn:
+            conn.execute(
+                sql.text("CREATE TABLE some_table_3 (i INT) ENGINE=MEMORY"))
         self.assertEqual(['some_table_3'],
                          utils.get_non_innodb_tables(
                          self.engine, skip_tables=()))
 
     def test_skip_tables_use_several_values(self):
-        self.engine.execute(
-            sql.text("CREATE TABLE some_table_1 (i INT) ENGINE=MEMORY"))
-        self.engine.execute(
-            sql.text("CREATE TABLE some_table_2 (i INT) ENGINE=MEMORY"))
+        with self.engine.connect() as conn:
+            conn.execute(
+                sql.text("CREATE TABLE some_table_1 (i INT) ENGINE=MEMORY"))
+            conn.execute(
+                sql.text("CREATE TABLE some_table_2 (i INT) ENGINE=MEMORY"))
         self.assertEqual([],
                          utils.get_non_innodb_tables(
                              self.engine,

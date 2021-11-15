@@ -270,14 +270,16 @@ class TestNonExistentConstraintPostgreSQL(
 ):
 
     def test_raise(self):
-        matched = self.assertRaises(
-            exception.DBNonExistentConstraint,
-            self.engine.execute,
-            sqla.schema.DropConstraint(
-                sqla.ForeignKeyConstraint(["id"], ["baz.id"],
-                                          name="bar_fkey",
-                                          table=self.table_1)),
-        )
+        with self.engine.connect() as conn:
+            matched = self.assertRaises(
+                exception.DBNonExistentConstraint,
+                conn.execute,
+                sqla.schema.DropConstraint(
+                    sqla.ForeignKeyConstraint(["id"], ["baz.id"],
+                                              name="bar_fkey",
+                                              table=self.table_1)),
+            )
+
         self.assertInnerException(
             matched,
             "ProgrammingError",
@@ -295,14 +297,16 @@ class TestNonExistentConstraintMySQL(
 ):
 
     def test_raise(self):
-        matched = self.assertRaises(
-            exception.DBNonExistentConstraint,
-            self.engine.execute,
-            sqla.schema.DropConstraint(
-                sqla.ForeignKeyConstraint(["id"], ["baz.id"],
-                                          name="bar_fkey",
-                                          table=self.table_1)),
-        )
+        with self.engine.connect() as conn:
+            matched = self.assertRaises(
+                exception.DBNonExistentConstraint,
+                conn.execute,
+                sqla.schema.DropConstraint(
+                    sqla.ForeignKeyConstraint(["id"], ["baz.id"],
+                                              name="bar_fkey",
+                                              table=self.table_1)),
+            )
+
         # NOTE(jd) Cannot check precisely with assertInnerException since MySQL
         # error are not the same depending on its version…
         self.assertIsInstance(matched.inner_exception,
@@ -332,11 +336,13 @@ class TestNonExistentTable(
         )
 
     def test_raise(self):
-        matched = self.assertRaises(
-            exception.DBNonExistentTable,
-            self.engine.execute,
-            sqla.schema.DropTable(self.table_1),
-        )
+        with self.engine.connect() as conn:
+            matched = self.assertRaises(
+                exception.DBNonExistentTable,
+                conn.execute,
+                sqla.schema.DropTable(self.table_1),
+            )
+
         self.assertInnerException(
             matched,
             "OperationalError",
@@ -352,11 +358,13 @@ class TestNonExistentTablePostgreSQL(
 ):
 
     def test_raise(self):
-        matched = self.assertRaises(
-            exception.DBNonExistentTable,
-            self.engine.execute,
-            sqla.schema.DropTable(self.table_1),
-        )
+        with self.engine.connect() as conn:
+            matched = self.assertRaises(
+                exception.DBNonExistentTable,
+                conn.execute,
+                sqla.schema.DropTable(self.table_1),
+            )
+
         self.assertInnerException(
             matched,
             "ProgrammingError",
@@ -372,11 +380,13 @@ class TestNonExistentTableMySQL(
 ):
 
     def test_raise(self):
-        matched = self.assertRaises(
-            exception.DBNonExistentTable,
-            self.engine.execute,
-            sqla.schema.DropTable(self.table_1),
-        )
+        with self.engine.connect() as conn:
+            matched = self.assertRaises(
+                exception.DBNonExistentTable,
+                conn.execute,
+                sqla.schema.DropTable(self.table_1),
+            )
+
         # NOTE(jd) Cannot check precisely with assertInnerException since MySQL
         # error are not the same depending on its version…
         self.assertIsInstance(matched.inner_exception,
@@ -488,13 +498,14 @@ class TestReferenceErrorSQLite(
         self.table_2.create(self.engine)
 
     def test_raise(self):
-        self.engine.execute(sql.text("PRAGMA foreign_keys = ON"))
+        with self.engine.connect() as conn:
+            conn.execute(sql.text("PRAGMA foreign_keys = ON"))
 
-        matched = self.assertRaises(
-            exception.DBReferenceError,
-            self.engine.execute,
-            self.table_2.insert().values(id=1, foo_id=2)
-        )
+            matched = self.assertRaises(
+                exception.DBReferenceError,
+                conn.execute,
+                self.table_2.insert().values(id=1, foo_id=2)
+            )
 
         self.assertInnerException(
             matched,
@@ -510,16 +521,17 @@ class TestReferenceErrorSQLite(
         self.assertIsNone(matched.key_table)
 
     def test_raise_delete(self):
-        self.engine.execute(sql.text("PRAGMA foreign_keys = ON"))
-
         with self.engine.connect() as conn:
+            conn.execute(sql.text("PRAGMA foreign_keys = ON"))
             conn.execute(self.table_1.insert().values(id=1234, foo=42))
             conn.execute(self.table_2.insert().values(id=4321, foo_id=1234))
-        matched = self.assertRaises(
-            exception.DBReferenceError,
-            self.engine.execute,
-            self.table_1.delete()
-        )
+
+            matched = self.assertRaises(
+                exception.DBReferenceError,
+                conn.execute,
+                self.table_1.delete()
+            )
+
         self.assertInnerException(
             matched,
             "IntegrityError",
@@ -539,12 +551,14 @@ class TestReferenceErrorPostgreSQL(
     db_test_base._PostgreSQLOpportunisticTestCase,
 ):
     def test_raise(self):
-        params = {'id': 1, 'foo_id': 2}
-        matched = self.assertRaises(
-            exception.DBReferenceError,
-            self.engine.execute,
-            self.table_2.insert().values(**params)
-        )
+        with self.engine.connect() as conn:
+            params = {'id': 1, 'foo_id': 2}
+            matched = self.assertRaises(
+                exception.DBReferenceError,
+                conn.execute,
+                self.table_2.insert().values(**params)
+            )
+
         self.assertInnerException(
             matched,
             "IntegrityError",
@@ -565,11 +579,12 @@ class TestReferenceErrorPostgreSQL(
         with self.engine.connect() as conn:
             conn.execute(self.table_1.insert().values(id=1234, foo=42))
             conn.execute(self.table_2.insert().values(id=4321, foo_id=1234))
-        matched = self.assertRaises(
-            exception.DBReferenceError,
-            self.engine.execute,
-            self.table_1.delete()
-        )
+            matched = self.assertRaises(
+                exception.DBReferenceError,
+                conn.execute,
+                self.table_1.delete()
+            )
+
         self.assertInnerException(
             matched,
             "IntegrityError",
@@ -592,11 +607,12 @@ class TestReferenceErrorMySQL(
     db_test_base._MySQLOpportunisticTestCase,
 ):
     def test_raise(self):
-        matched = self.assertRaises(
-            exception.DBReferenceError,
-            self.engine.execute,
-            self.table_2.insert().values(id=1, foo_id=2)
-        )
+        with self.engine.connect() as conn:
+            matched = self.assertRaises(
+                exception.DBReferenceError,
+                conn.execute,
+                self.table_2.insert().values(id=1, foo_id=2)
+            )
 
         # NOTE(jd) Cannot check precisely with assertInnerException since MySQL
         # error are not the same depending on its version…
@@ -635,11 +651,11 @@ class TestReferenceErrorMySQL(
         with self.engine.connect() as conn:
             conn.execute(self.table_1.insert().values(id=1234, foo=42))
             conn.execute(self.table_2.insert().values(id=4321, foo_id=1234))
-        matched = self.assertRaises(
-            exception.DBReferenceError,
-            self.engine.execute,
-            self.table_1.delete()
-        )
+            matched = self.assertRaises(
+                exception.DBReferenceError,
+                conn.execute,
+                self.table_1.delete()
+            )
         # NOTE(jd) Cannot check precisely with assertInnerException since MySQL
         # error are not the same depending on its version…
         self.assertIsInstance(matched.inner_exception,
@@ -1185,9 +1201,10 @@ class TestDBDisconnected(TestsExceptionFilter):
 
         # test implicit execution
         with self._fixture(dialect_name, exc_obj, 1):
-            self.assertEqual(
-                1, self.engine.execute(sqla.select(1)).scalars().first(),
-            )
+            with self.engine.connect() as conn:
+                self.assertEqual(
+                    1, conn.execute(sqla.select(1)).scalars().first(),
+                )
 
     def test_mariadb_error_1927(self):
         for code in [1927]:
