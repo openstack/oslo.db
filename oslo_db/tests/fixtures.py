@@ -54,11 +54,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'Calling the mapper\(\) function directly outside .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'The current statement is being autocommitted .*',
             category=sqla_exc.SADeprecationWarning)
 

@@ -24,7 +24,7 @@ from oslo_context import context as oslo_context
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import MetaData
-from sqlalchemy.orm import mapper
+from sqlalchemy.orm import registry
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from sqlalchemy import String
@@ -1671,11 +1671,13 @@ class LiveFacadeTest(db_test_base._DbTestCase):
         metadata.create_all(self.engine)
         self.addCleanup(metadata.drop_all, self.engine)
 
+        reg = registry()
+
         class User(object):
             def __init__(self, name):
                 self.name = name
 
-        mapper(User, user_table)
+        reg.map_imperatively(User, user_table)
         self.User = User
 
     def _assert_ctx_connection(self, context, connection):

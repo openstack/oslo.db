@@ -23,7 +23,7 @@ from sqlalchemy.engine import url as sqla_url
 from sqlalchemy import event
 import sqlalchemy.exc
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import mapper
+from sqlalchemy.orm import registry
 from sqlalchemy import sql
 
 from oslo_db import exception
@@ -1046,10 +1046,13 @@ class IntegrationTest(db_test_base._DbTestCase):
         self.test_table.create(self.engine)
         self.addCleanup(self.test_table.drop, self.engine)
 
+        reg = registry()
+
         class Foo(object):
             def __init__(self, counter):
                 self.counter = counter
-        mapper(Foo, self.test_table)
+
+        reg.map_imperatively(Foo, self.test_table)
         self.Foo = Foo
 
     def test_flush_wrapper_duplicate_entry(self):
