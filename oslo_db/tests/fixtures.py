@@ -21,6 +21,9 @@ class WarningsFixture(fixtures.Fixture):
 
     def setUp(self):
         super().setUp()
+
+        self._original_warning_filters = warnings.filters[:]
+
         # Make deprecation warnings only happen once to avoid spamming
         warnings.simplefilter('once', DeprecationWarning)
 
@@ -74,4 +77,7 @@ class WarningsFixture(fixtures.Fixture):
             module='migrate',
             category=sqla_exc.SADeprecationWarning)
 
-        self.addCleanup(warnings.resetwarnings)
+        self.addCleanup(self._reset_warning_filters)
+
+    def _reset_warning_filters(self):
+        warnings.filters[:] = self._original_warning_filters
