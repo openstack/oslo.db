@@ -699,8 +699,9 @@ class TestMigrationUtils(db_test_base._DbTestCase):
                            Column('updated_at', DateTime))
 
         test_table.create(engine)
-        with engine.connect() as conn:
-            conn.execute(test_table.insert(), values)
+        with engine.connect() as conn, conn.begin():
+            with conn.begin():
+                conn.execute(test_table.insert(), values)
         return test_table, values
 
     def test_drop_old_duplicate_entries_from_table(self):
@@ -720,7 +721,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
             uniq_values.add(uniq_value)
             expected_ids.append(value['id'])
 
-        with self.engine.connect() as conn:
+        with self.engine.connect() as conn, conn.begin():
             real_ids = [
                 row[0] for row in
                 conn.execute(select(test_table.c.id)).fetchall()
@@ -762,7 +763,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
 
         base_select = table.select()
 
-        with self.engine.connect() as conn:
+        with self.engine.connect() as conn, conn.begin():
             rows_select = base_select.where(table.c.deleted != table.c.id)
             row_ids = [
                 row.id for row in conn.execute(rows_select).fetchall()
@@ -938,7 +939,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
         # NOTE(zzzeek): SQLAlchemy 1.2 Boolean type will disallow non 1/0
         # value here, 1.1 also coerces to "1/0" so use raw SQL to test the
         # constraint
-        with self.engine.connect() as conn:
+        with self.engine.connect() as conn, conn.begin():
             conn.exec_driver_sql(
                 "INSERT INTO abc (deleted) VALUES (?)",
                 (10, ),
@@ -1652,7 +1653,7 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
 class TestGetInnoDBTables(db_test_base._MySQLOpportunisticTestCase):
 
     def test_all_tables_use_innodb(self):
-        with self.engine.connect() as conn:
+        with self.engine.connect() as conn, conn.begin():
             conn.execute(
                 sql.text(
                     "CREATE TABLE customers "
@@ -1660,21 +1661,23 @@ class TestGetInnoDBTables(db_test_base._MySQLOpportunisticTestCase):
         self.assertEqual([], utils.get_non_innodb_tables(self.engine))
 
     def test_all_tables_use_innodb_false(self):
-        with self.engine.connect() as conn:
+        with self.engine.connect() as conn, conn.begin():
             conn.execute(
-                sql.text("CREATE TABLE employee (i INT) ENGINE=MEMORY"))
+                sql.text("CREATE TABLE employee (i INT) ENGINE=MEMORY")
+            )
         self.assertEqual(['employee'],
                          utils.get_non_innodb_tables(self.engine))
 
     def test_skip_tables_use_default_value(self):
-        with self.engine.connect() as conn:
+        with self.engine.connect() as conn, conn.begin():
             conn.execute(
-                sql.text("CREATE TABLE migrate_version (i INT) ENGINE=MEMORY"))
+                sql.text("CREATE TABLE migrate_version (i INT) ENGINE=MEMORY")
+            )
         self.assertEqual([],
                          utils.get_non_innodb_tables(self.engine))
 
     def test_skip_tables_use_passed_value(self):
-        with self.engine.connect() as conn:
+        with self.engine.connect() as conn, conn.begin():
             conn.execute(
                 sql.text("CREATE TABLE some_table (i INT) ENGINE=MEMORY"))
         self.assertEqual([],
@@ -1682,7 +1685,7 @@ class TestGetInnoDBTables(db_test_base._MySQLOpportunisticTestCase):
                              self.engine, skip_tables=('some_table',)))
 
     def test_skip_tables_use_empty_list(self):
-        with self.engine.connect() as conn:
+        with self.engine.connect() as conn, conn.begin():
             conn.execute(
                 sql.text("CREATE TABLE some_table_3 (i INT) ENGINE=MEMORY"))
         self.assertEqual(['some_table_3'],
@@ -1690,7 +1693,7 @@ class TestGetInnoDBTables(db_test_base._MySQLOpportunisticTestCase):
                          self.engine, skip_tables=()))
 
     def test_skip_tables_use_several_values(self):
-        with self.engine.connect() as conn:
+        with self.engine.connect() as conn, conn.begin():
             conn.execute(
                 sql.text("CREATE TABLE some_table_1 (i INT) ENGINE=MEMORY"))
             conn.execute(

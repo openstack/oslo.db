@@ -52,11 +52,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'once',
-            message=r'The current statement is being autocommitted .*',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
             message=r'Calling \.begin\(\) when a transaction is already .*',
             category=sqla_exc.SADeprecationWarning)
 
@@ -68,6 +63,12 @@ class WarningsFixture(fixtures.Fixture):
         warnings.filterwarnings(
             'ignore',
             message=r'Passing a string to Connection.execute\(\) .*',
+            module='migrate',
+            category=sqla_exc.SADeprecationWarning)
+
+        warnings.filterwarnings(
+            'once',
+            message=r'The current statement is being autocommitted .*',
             module='migrate',
             category=sqla_exc.SADeprecationWarning)
 

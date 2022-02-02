@@ -314,12 +314,15 @@ class MySQLModeTestCase(db_test_base._MySQLOpportunisticTestCase):
         self.test_table = Table(_TABLE_NAME + "mode", meta,
                                 Column('id', Integer, primary_key=True),
                                 Column('bar', String(255)))
-        self.test_table.create(self.connection)
+        with self.connection.begin():
+            self.test_table.create(self.connection)
 
         def cleanup():
-            self.test_table.drop(self.connection)
+            with self.connection.begin():
+                self.test_table.drop(self.connection)
             self.connection.close()
             mode_engine.dispose()
+
         self.addCleanup(cleanup)
 
     def _test_string_too_long(self, value):

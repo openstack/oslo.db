@@ -490,7 +490,7 @@ def drop_old_duplicate_entries_from_table(engine, table_name,
         func.count(table.c.id) > 1
     )
 
-    with engine.connect() as conn:
+    with engine.connect() as conn, conn.begin():
         for row in conn.execute(duplicated_rows_select).fetchall():
             # NOTE(boris-42): Do not remove row that has the biggest ID.
             delete_condition = table.c.id != row[0]
@@ -571,7 +571,7 @@ def change_deleted_column_type_to_boolean(engine, table_name,
     finally:
         table.metadata.bind = None
 
-    with engine.connect() as conn:
+    with engine.connect() as conn, conn.begin():
         conn.execute(
             table.update().where(
                 table.c.deleted == table.c.id
@@ -615,7 +615,9 @@ def _change_deleted_column_type_to_boolean_sqlite(engine, table_name,
         new_table = Table(
             table_name + "__tmp__", meta,
             *(columns + constraints))
-        new_table.create(conn)
+
+        with conn.begin():
+            new_table.create(conn)
 
         indexes = []
         for index in get_indexes(engine, table_name):
@@ -631,9 +633,10 @@ def _change_deleted_column_type_to_boolean_sqlite(engine, table_name,
             else:
                 c_select.append(table.c.deleted == table.c.id)
 
-        table.drop(conn)
-        for index in indexes:
-            index.create(conn)
+        with conn.begin():
+            table.drop(conn)
+            for index in indexes:
+                index.create(conn)
 
         table.metadata.bind = engine
         try:
@@ -641,11 +644,12 @@ def _change_deleted_column_type_to_boolean_sqlite(engine, table_name,
         finally:
             table.metadata.bind = None
 
-        conn.execute(
-            new_table.update().where(
-                new_table.c.deleted == new_table.c.id
-            ).values(deleted=True)
-        )
+        with conn.begin():
+            conn.execute(
+                new_table.update().where(
+                    new_table.c.deleted == new_table.c.id
+                ).values(deleted=True)
+            )
 
 
 @debtcollector.removals.remove(
@@ -672,17 +676,18 @@ def change_deleted_column_type_to_id_type(engine, table_name,
 
     table.metadata.bind = engine
     try:
-        with engine.connect() as conn:
+        with engine.connect() as conn, conn.begin():
             deleted = True  # workaround for pyflakes
             conn.execute(
                 table.update().where(
                     table.c.deleted == deleted
                 ).values(new_deleted=table.c.id)
             )
-            table.c.deleted.drop()
-            table.c.new_deleted.alter(name="deleted")
 
-            _restore_indexes_on_deleted_columns(conn, table_name, indexes)
+        table.c.deleted.drop()
+        table.c.new_deleted.alter(name="deleted")
+
+        _restore_indexes_on_deleted_columns(engine, table_name, indexes)
     finally:
         table.metadata.bind = None
 
@@ -739,10 +744,13 @@ def _change_deleted_column_type_to_id_type_sqlite(engine, table_name,
             constraints.append(constraint._copy())
 
     with engine.connect() as conn:
-        new_table = Table(
-            table_name + "__tmp__", meta,
-            *(columns + constraints))
-        new_table.create(conn)
+        # we need separate transactions, since we must create the table before
+        # we can copy entries into it (later)
+        with conn.begin():
+            new_table = Table(
+                table_name + "__tmp__", meta,
+                *(columns + constraints))
+            new_table.create(conn)
 
         indexes = []
         for index in get_indexes(engine, table_name):
@@ -751,30 +759,32 @@ def _change_deleted_column_type_to_id_type_sqlite(engine, table_name,
                 Index(index["name"], *column_names, unique=index["unique"])
             )
 
-        table.drop(conn)
-        for index in indexes:
-            index.create(conn)
+        with conn.begin():
+            table.drop(conn)
+            for index in indexes:
+                index.create(conn)
 
-        new_table.metadata.bind = engine
-        try:
-            new_table.rename(table_name)
-        finally:
-            new_table.metadata.bind = None
+        with conn.begin():
+            new_table.metadata.bind = engine
+            try:
+                new_table.rename(table_name)
+            finally:
+                new_table.metadata.bind = None
 
-        deleted = True  # workaround for pyflakes
-        conn.execute(
-            new_table.update().where(
-                new_table.c.deleted == deleted
-            ).values(deleted=new_table.c.id)
-        )
+            deleted = True  # workaround for pyflakes
+            conn.execute(
+                new_table.update().where(
+                    new_table.c.deleted == deleted
+                ).values(deleted=new_table.c.id)
+            )
 
-        # NOTE(boris-42): Fix value of deleted column: False -> "" or 0.
-        deleted = False  # workaround for pyflakes
-        conn.execute(
-            new_table.update().where(
-                new_table.c.deleted == deleted
-            ).values(deleted=default_deleted_value)
-        )
+            # NOTE(boris-42): Fix value of deleted column: False -> "" or 0.
+            deleted = False  # workaround for pyflakes
+            conn.execute(
+                new_table.update().where(
+                    new_table.c.deleted == deleted
+                ).values(deleted=default_deleted_value)
+            )
 
 
 def get_db_connection_info(conn_pieces):
@@ -1121,7 +1131,7 @@ def get_non_innodb_tables(connectable, skip_tables=('migrate_version',
     params['database'] = connectable.engine.url.database
     query = text(query_str)
     # TODO(stephenfin): What about if this is already a Connection?
-    with connectable.connect() as conn:
+    with connectable.connect() as conn, conn.begin():
         noninnodb = conn.execute(query, params)
     return [i[0] for i in noninnodb]
 
@@ -1232,21 +1242,25 @@ def suspend_fk_constraints_for_col_alter(
             ctx = MigrationContext.configure(conn)
             op = Operations(ctx)
 
-            for fk in fks:
-                op.drop_constraint(
-                    fk['name'], fk['source_table'], type_="foreignkey")
+            with conn.begin():
+                for fk in fks:
+                    op.drop_constraint(
+                        fk['name'], fk['source_table'], type_="foreignkey")
+
             yield
-            for fk in fks:
-                op.create_foreign_key(
-                    fk['name'], fk['source_table'],
-                    fk['referred_table'],
-                    fk['constrained_columns'],
-                    fk['referred_columns'],
-                    onupdate=fk['options'].get('onupdate'),
-                    ondelete=fk['options'].get('ondelete'),
-                    deferrable=fk['options'].get('deferrable'),
-                    initially=fk['options'].get('initially'),
-                )
+
+            with conn.begin():
+                for fk in fks:
+                    op.create_foreign_key(
+                        fk['name'], fk['source_table'],
+                        fk['referred_table'],
+                        fk['constrained_columns'],
+                        fk['referred_columns'],
+                        onupdate=fk['options'].get('onupdate'),
+                        ondelete=fk['options'].get('ondelete'),
+                        deferrable=fk['options'].get('deferrable'),
+                        initially=fk['options'].get('initially'),
+                    )
 
 
 class NonCommittingConnectable(object):
