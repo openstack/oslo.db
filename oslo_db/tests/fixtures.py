@@ -45,11 +45,6 @@ class WarningsFixture(fixtures.Fixture):
             message=r'The Session.autocommit parameter is deprecated .*',
             category=sqla_exc.SADeprecationWarning)
 
-        warnings.filterwarnings(
-            'once',
-            message=r'Calling \.begin\(\) when a transaction is already .*',
-            category=sqla_exc.SADeprecationWarning)
-
         # ...plus things that aren't our fault
 
         # FIXME(stephenfin): These are caused by sqlalchemy-migrate, not us,

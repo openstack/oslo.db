@@ -700,8 +700,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
 
         test_table.create(engine)
         with engine.connect() as conn, conn.begin():
-            with conn.begin():
-                conn.execute(test_table.insert(), values)
+            conn.execute(test_table.insert(), values)
         return test_table, values
 
     def test_drop_old_duplicate_entries_from_table(self):
