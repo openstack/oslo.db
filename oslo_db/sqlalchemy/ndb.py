@@ -15,18 +15,26 @@
 
 import re
 
-from oslo_db.sqlalchemy.types import String
-
+import debtcollector.removals
 from sqlalchemy import event, schema
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.types import String as _String
 from sqlalchemy.types import to_instance
+
+from oslo_db.sqlalchemy.types import String
 
 
 engine_regex = re.compile("engine=innodb", re.IGNORECASE)
 trans_regex = re.compile("savepoint|rollback|release savepoint", re.IGNORECASE)
 
 
+@debtcollector.removals.remove(
+    message=(
+        'Support for the MySQL NDB Cluster storage engine has been deprecated '
+        'and will be removed in a future release.'
+    ),
+    version='12.1.0',
+)
 def enable_ndb_support(engine):
     """Enable NDB Support.
 
@@ -36,16 +44,45 @@ def enable_ndb_support(engine):
     engine.dialect._oslodb_enable_ndb_support = True
 
 
+def _ndb_status(engine_or_compiler):
+    """Test if NDB Support is enabled.
+
+    Function to test if NDB support is enabled or not.
+
+    .. note::
+
+        This is for internal use only while we deprecate and remove ndb
+        support. **Do not use this outside of oslo.db!**
+    """
+    return getattr(
+        engine_or_compiler.dialect,
+        '_oslodb_enable_ndb_support',
+        False,
+    )
+
+
+@debtcollector.removals.remove(
+    message=(
+        'Support for the MySQL NDB Cluster storage engine has been deprecated '
+        'and will be removed in a future release.'
+    ),
+    version='12.1.0',
+)
 def ndb_status(engine_or_compiler):
     """Test if NDB Support is enabled.
 
     Function to test if NDB support is enabled or not.
     """
-    return getattr(engine_or_compiler.dialect,
-                   '_oslodb_enable_ndb_support',
-                   False)
+    return _ndb_status(engine_or_compiler)
 
 
+@debtcollector.removals.remove(
+    message=(
+        'Support for the MySQL NDB Cluster storage engine has been deprecated '
+        'and will be removed in a future release.'
+    ),
+    version='12.1.0',
+)
 def init_ndb_events(engine):
     """Initialize NDB Events.
 
@@ -60,7 +97,7 @@ def init_ndb_events(engine):
         convert InnoDB to NDBCLUSTER, drop SAVEPOINT requests, drop
         ROLLBACK requests, and drop RELEASE SAVEPOINT requests.
         """
-        if ndb_status(engine):
+        if _ndb_status(engine):
             statement = engine_regex.sub("ENGINE=NDBCLUSTER", statement)
             if re.match(trans_regex, statement):
                 statement = "SET @oslo_db_ndb_savepoint_rollback_disabled = 0;"
@@ -68,6 +105,8 @@ def init_ndb_events(engine):
         return statement, parameters
 
 
+# TODO(stephenfin): This is effectively deprecated and should be removed when
+# we remove the rest of this module since it'll be a no-op then.
 @compiles(schema.CreateTable, "mysql")
 def prefix_inserts(create_table, compiler, **kw):
     """Replace InnoDB with NDBCLUSTER automatically.
@@ -76,12 +115,14 @@ def prefix_inserts(create_table, compiler, **kw):
     convert InnoDB to NDBCLUSTER. Targets compiler events.
     """
     existing = compiler.visit_create_table(create_table, **kw)
-    if ndb_status(compiler):
+    if _ndb_status(compiler):
         existing = engine_regex.sub("ENGINE=NDBCLUSTER", existing)
 
     return existing
 
 
+# TODO(stephenfin): This is effectively deprecated and should be removed when
+# we remove the rest of this module since it'll be a no-op then.
 @compiles(String, "mysql")
 def _compile_ndb_string(element, compiler, **kw):
     """Process ndb specific overrides for String.
@@ -95,7 +136,7 @@ def _compile_ndb_string(element, compiler, **kw):
     mysql_ndb_type will change the column type to the requested
     data type.
     """
-    if not ndb_status(compiler):
+    if not _ndb_status(compiler):
         return compiler.visit_string(element, **kw)
 
     if element.mysql_ndb_length:

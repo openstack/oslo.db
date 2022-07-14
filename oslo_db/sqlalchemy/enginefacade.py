@@ -316,6 +316,14 @@ class _TransactionFactory(object):
         self._configure(False, kw)
 
     def _configure(self, as_defaults, kw):
+        if 'mysql_enable_ndb' in kw:
+            debtcollector.deprecate(
+                (
+                    'Support for the MySQL NDB Cluster storage engine has '
+                    'been deprecated and will be removed in a future release.'
+                ),
+                version='12.1.0',
+            )
 
         if self._started:
             raise AlreadyStartedError(
@@ -1239,6 +1247,7 @@ class LegacyEngineFacade(object):
     :keyword mysql_enable_ndb: If True, transparently enables support for
                                handling MySQL Cluster (NDB).
                                (defaults to False)
+                               **DEPRECATED**
     :keyword connection_recycle_time: Time period for connections to be
                             recycled upon checkout (defaults to 3600)
     :keyword connection_debug: verbosity of SQL debugging information.
