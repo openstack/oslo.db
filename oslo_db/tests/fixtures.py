@@ -26,6 +26,13 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.simplefilter('once', DeprecationWarning)
 
+        # Except things we've deprecated but are still testing until removal
+
+        warnings.filterwarnings(
+            'ignore',
+            category=DeprecationWarning,
+            module='oslo_db')
+
         # Enable generic warnings to ensure we're not doing anything odd
 
         warnings.filterwarnings(
