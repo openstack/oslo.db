@@ -39,6 +39,7 @@ from sqlalchemy import Index
 from sqlalchemy import inspect
 from sqlalchemy import Integer
 from sqlalchemy import MetaData
+from sqlalchemy import PrimaryKeyConstraint
 from sqlalchemy.sql.expression import cast
 from sqlalchemy.sql.expression import literal_column
 from sqlalchemy.sql import text
@@ -608,7 +609,14 @@ def _change_deleted_column_type_to_boolean_sqlite(engine, table_name,
 
     # FIXME(stephenfin): We shouldn't be using this private API;
     # figure out how else to copy an arbitrary column schema
-    constraints = [constraint._copy() for constraint in table.constraints]
+    # NOTE(stephenfin): We drop PrimaryKeyConstraint-type constraints since
+    # these duplicate the 'primary_key=True' attribute on the speicified
+    # column(s). This technically breaks things when the primary key covers
+    # multiple columns but that's okay: these are deprecated APIs
+    constraints = [
+        constraint._copy() for constraint in table.constraints
+        if not isinstance(constraint, PrimaryKeyConstraint)
+    ]
 
     with engine.connect() as conn:
         meta = table.metadata
@@ -738,7 +746,10 @@ def _change_deleted_column_type_to_id_type_sqlite(engine, table_name,
 
     constraints = []
     for constraint in table.constraints:
-        if not _is_deleted_column_constraint(constraint):
+        if not (
+            _is_deleted_column_constraint(constraint) or
+            isinstance(constraint, PrimaryKeyConstraint)
+        ):
             # FIXME(stephenfin): We shouldn't be using this private API;
             # figure out how else to copy an arbitrary constraint schema
             constraints.append(constraint._copy())
@@ -749,7 +760,8 @@ def _change_deleted_column_type_to_id_type_sqlite(engine, table_name,
         with conn.begin():
             new_table = Table(
                 table_name + "__tmp__", meta,
-                *(columns + constraints))
+                *(columns + constraints),
+            )
             new_table.create(conn)
 
         indexes = []
