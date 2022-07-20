@@ -81,8 +81,7 @@ class JsonTypesTestCase(test_base._DbTestCase):
             {'a': 'b'}
         ]
         for i, test in enumerate(tested):
-            with self.session.begin():
-                JsonTable(id=i, json=test).save(self.session)
+            JsonTable(id=i, json=test).save(self.session)
             obj = self.session.query(JsonTable).filter_by(id=i).one()
             self.assertEqual(test, obj.json)
 
