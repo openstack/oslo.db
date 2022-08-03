@@ -77,7 +77,8 @@ class WalkVersionsMixin(object, metaclass=abc.ABCMeta):
 
     """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def INIT_VERSION(self):
         """Initial version of a migration repository.
 
@@ -87,7 +88,8 @@ class WalkVersionsMixin(object, metaclass=abc.ABCMeta):
         """
         pass
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def REPOSITORY(self):
         """Allows basic manipulation with migration repository.
 
@@ -95,7 +97,8 @@ class WalkVersionsMixin(object, metaclass=abc.ABCMeta):
         """
         pass
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def migration_api(self):
         """Provides API for upgrading, downgrading and version manipulations.
 
@@ -103,7 +106,8 @@ class WalkVersionsMixin(object, metaclass=abc.ABCMeta):
         """
         pass
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def migrate_engine(self):
         """Provides engine instance.
 
