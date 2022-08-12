@@ -1,0 +1,8 @@
+---
+upgrade:
+  - |
+    The ``oslo_db.sqlalchemy.migration`` module and ``migrate`` backend for the
+    ``oslo_db.sqalchemy.migration_cli`` module, both of which were first
+    deprecated in the 8.5.0 release, have now been removed.
+    ``sqlalchemy-migrate`` is no longer under active development, does not
+    support SQLAlchemy 2.0, and has been effectively replaced by ``alembic``.

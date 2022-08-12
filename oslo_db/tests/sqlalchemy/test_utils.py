@@ -18,7 +18,6 @@ from urllib import parse
 
 import fixtures
 import sqlalchemy
-from sqlalchemy.dialects import mysql
 from sqlalchemy import Boolean, Index, Integer, DateTime, String
 from sqlalchemy import CheckConstraint
 from sqlalchemy import MetaData, Table, Column
@@ -782,129 +781,6 @@ class TestMigrationUtils(db_test_base._DbTestCase):
         for value in soft_deleted_values:
             self.assertIn(value['id'], deleted_rows_ids)
 
-    def test_change_deleted_column_type_does_not_drop_index(self):
-        table_name = 'abc'
-
-        indexes = {
-            'idx_a_deleted': ['a', 'deleted'],
-            'idx_b_deleted': ['b', 'deleted'],
-            'idx_a': ['a']
-        }
-
-        index_instances = [Index(name, *columns)
-                           for name, columns in indexes.items()]
-
-        table = Table(table_name, self.meta,
-                      Column('id', Integer, primary_key=True),
-                      Column('a', String(255)),
-                      Column('b', String(255)),
-                      Column('deleted', Boolean),
-                      *index_instances)
-        table.create(self.engine)
-        utils.change_deleted_column_type_to_id_type(self.engine, table_name)
-        utils.change_deleted_column_type_to_boolean(self.engine, table_name)
-
-        insp = sqlalchemy.inspect(self.engine)
-        real_indexes = insp.get_indexes(table_name)
-        self.assertEqual(3, len(real_indexes))
-        for index in real_indexes:
-            name = index['name']
-            self.assertIn(name, indexes)
-            self.assertEqual(set(indexes[name]),
-                             set(index['column_names']))
-
-    def test_change_deleted_column_type_to_id_type_integer(self):
-        table_name = 'abc'
-        table = Table(table_name, self.meta,
-                      Column('id', Integer, primary_key=True),
-                      Column('deleted', Boolean))
-        table.create(self.engine)
-        utils.change_deleted_column_type_to_id_type(self.engine, table_name)
-
-        table = utils.get_table(self.engine, table_name)
-        self.assertIsInstance(table.c.deleted.type, Integer)
-
-    def test_change_deleted_column_type_to_id_type_string(self):
-        table_name = 'abc'
-        table = Table(table_name, self.meta,
-                      Column('id', String(255), primary_key=True),
-                      Column('deleted', Boolean))
-        table.create(self.engine)
-        utils.change_deleted_column_type_to_id_type(self.engine, table_name)
-
-        table = utils.get_table(self.engine, table_name)
-        self.assertIsInstance(table.c.deleted.type, String)
-
-    @db_test_base.backend_specific('sqlite')
-    def test_change_deleted_column_type_to_id_type_custom(self):
-        table_name = 'abc'
-        table = Table(table_name, self.meta,
-                      Column('id', Integer, primary_key=True),
-                      Column('foo', CustomType),
-                      Column('deleted', Boolean))
-        table.create(self.engine)
-
-        fooColumn = Column('foo', CustomType())
-        utils.change_deleted_column_type_to_id_type(self.engine, table_name,
-                                                    foo=fooColumn)
-
-        table = utils.get_table(self.engine, table_name)
-
-        self.assertIsInstance(table.c.deleted.type, Integer)
-
-    def test_change_deleted_column_type_to_boolean(self):
-        expected_types = {'mysql': mysql.TINYINT}
-        table_name = 'abc'
-        table = Table(table_name, self.meta,
-                      Column('id', Integer, primary_key=True),
-                      Column('deleted', Integer))
-        table.create(self.engine)
-
-        utils.change_deleted_column_type_to_boolean(self.engine, table_name)
-
-        table = utils.get_table(self.engine, table_name)
-        self.assertIsInstance(table.c.deleted.type,
-                              expected_types.get(self.engine.name, Boolean))
-
-    def test_change_deleted_column_type_to_boolean_with_fc(self):
-        expected_types = {'mysql': mysql.TINYINT}
-        table_name_1 = 'abc'
-        table_name_2 = 'bcd'
-
-        table_1 = Table(table_name_1, self.meta,
-                        Column('id', Integer, primary_key=True),
-                        Column('deleted', Integer))
-        table_1.create(self.engine)
-
-        table_2 = Table(table_name_2, self.meta,
-                        Column('id', Integer, primary_key=True),
-                        Column('foreign_id', Integer,
-                               ForeignKey('%s.id' % table_name_1)),
-                        Column('deleted', Integer))
-        table_2.create(self.engine)
-
-        utils.change_deleted_column_type_to_boolean(self.engine, table_name_2)
-
-        table = utils.get_table(self.engine, table_name_2)
-        self.assertIsInstance(table.c.deleted.type,
-                              expected_types.get(self.engine.name, Boolean))
-
-    @db_test_base.backend_specific('sqlite')
-    def test_change_deleted_column_type_to_boolean_type_custom(self):
-        table_name = 'abc'
-        table = Table(table_name, self.meta,
-                      Column('id', Integer, primary_key=True),
-                      Column('foo', CustomType),
-                      Column('deleted', Integer))
-        table.create(self.engine)
-
-        fooColumn = Column('foo', CustomType())
-        utils.change_deleted_column_type_to_boolean(self.engine, table_name,
-                                                    foo=fooColumn)
-
-        table = utils.get_table(self.engine, table_name)
-        self.assertIsInstance(table.c.deleted.type, Boolean)
-
     def test_detect_boolean_deleted_constraint_detection(self):
         table_name = 'abc'
         table = Table(table_name, self.meta,
@@ -921,33 +797,6 @@ class TestMigrationUtils(db_test_base._DbTestCase):
                 CheckConstraint("deleted > 5")
             )
         )
-
-    @db_test_base.backend_specific('sqlite')
-    def test_change_deleted_column_type_sqlite_drops_check_constraint(self):
-        table_name = 'abc'
-        table = Table(table_name, self.meta,
-                      Column('id', Integer, primary_key=True),
-                      Column('deleted', Boolean))
-        table.create(self.engine)
-
-        utils._change_deleted_column_type_to_id_type_sqlite(self.engine,
-                                                            table_name)
-        table = Table(table_name, self.meta, autoload_with=self.engine)
-        # NOTE(I159): if the CHECK constraint has been dropped (expected
-        # behavior), any integer value can be inserted, otherwise only 1 or 0.
-        # NOTE(zzzeek): SQLAlchemy 1.2 Boolean type will disallow non 1/0
-        # value here, 1.1 also coerces to "1/0" so use raw SQL to test the
-        # constraint
-        with self.engine.connect() as conn, conn.begin():
-            conn.exec_driver_sql(
-                "INSERT INTO abc (deleted) VALUES (?)",
-                (10, ),
-            )
-
-            self.assertEqual(
-                10,
-                conn.scalar(sql.text("SELECT deleted FROM abc")),
-            )
 
     def test_get_foreign_key_constraint_name(self):
         table_1 = Table('table_name_1', self.meta,

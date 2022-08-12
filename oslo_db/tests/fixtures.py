@@ -24,49 +24,32 @@ class WarningsFixture(fixtures.Fixture):
 
         self._original_warning_filters = warnings.filters[:]
 
+        # Enable deprecation warnings
+
         warnings.simplefilter('once', DeprecationWarning)
 
-        # Except things we've deprecated but are still testing until removal
+        # Except for things we've deprecated but are still testing until
+        # removal
 
         warnings.filterwarnings(
             'ignore',
             category=DeprecationWarning,
-            module='oslo_db')
+            module='oslo_db',
+        )
 
         # Enable generic warnings to ensure we're not doing anything odd
 
         warnings.filterwarnings(
             'error',
-            category=sqla_exc.SAWarning)
+            category=sqla_exc.SAWarning,
+        )
 
         # Enable deprecation warnings to capture upcoming SQLAlchemy changes
 
         warnings.filterwarnings(
             'error',
-            category=sqla_exc.SADeprecationWarning)
-
-        # ...but filter things that aren't our fault
-
-        # FIXME(stephenfin): These are caused by sqlalchemy-migrate, not us,
-        # and should be removed when we drop support for that library
-
-        warnings.filterwarnings(
-            'ignore',
-            message=r'Passing a string to Connection.execute\(\) .*',
-            module='migrate',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'once',
-            message=r'The current statement is being autocommitted .*',
-            module='migrate',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'ignore',
-            message=r'The Engine.execute\(\) method is considered legacy .*',
-            module='migrate',
-            category=sqla_exc.SADeprecationWarning)
+            category=sqla_exc.SADeprecationWarning,
+        )
 
         self.addCleanup(self._reset_warning_filters)
 

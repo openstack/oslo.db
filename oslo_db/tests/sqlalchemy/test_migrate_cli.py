@@ -17,7 +17,6 @@ import sqlalchemy
 
 from oslo_db import exception
 from oslo_db.sqlalchemy.migration_cli import ext_alembic
-from oslo_db.sqlalchemy.migration_cli import ext_migrate
 from oslo_db.sqlalchemy.migration_cli import manager
 from oslo_db.tests import base as test_base
 
@@ -125,88 +124,6 @@ class TestAlembicExtension(test_base.BaseTestCase):
                 'script_location')
             mocked.ScriptDirectory().get_revision.assert_called_once_with(
                 'test')
-
-
-@mock.patch(('oslo_db.sqlalchemy.migration_cli.'
-             'ext_migrate.migration'))
-class TestMigrateExtension(test_base.BaseTestCase):
-
-    def setUp(self):
-        self.migration_config = {'migration_repo_path': '.',
-                                 'db_url': 'sqlite://'}
-        self.engine = sqlalchemy.create_engine(self.migration_config['db_url'])
-        self.migrate = ext_migrate.MigrateExtension(
-            self.engine, self.migration_config)
-        super(TestMigrateExtension, self).setUp()
-
-    def test_check_enabled_true(self, migration):
-        self.assertTrue(self.migrate.enabled)
-
-    def test_check_enabled_false(self, migration):
-        self.migration_config['migration_repo_path'] = ''
-        migrate = ext_migrate.MigrateExtension(
-            self.engine, self.migration_config)
-        self.assertFalse(migrate.enabled)
-
-    def test_upgrade_head(self, migration):
-        self.migrate.upgrade('head')
-        migration.db_sync.assert_called_once_with(
-            self.migrate.engine, self.migrate.repository, None, init_version=0)
-
-    def test_upgrade_normal(self, migration):
-        self.migrate.upgrade(111)
-        migration.db_sync.assert_called_once_with(
-            mock.ANY, self.migrate.repository, 111, init_version=0)
-
-    def test_downgrade_init_version_from_base(self, migration):
-        self.migrate.downgrade('base')
-        migration.db_sync.assert_called_once_with(
-            self.migrate.engine, self.migrate.repository, mock.ANY,
-            init_version=mock.ANY)
-
-    def test_downgrade_init_version_from_none(self, migration):
-        self.migrate.downgrade(None)
-        migration.db_sync.assert_called_once_with(
-            self.migrate.engine, self.migrate.repository, mock.ANY,
-            init_version=mock.ANY)
-
-    def test_downgrade_normal(self, migration):
-        self.migrate.downgrade(101)
-        migration.db_sync.assert_called_once_with(
-            self.migrate.engine, self.migrate.repository, 101, init_version=0)
-
-    def test_version(self, migration):
-        self.migrate.version()
-        migration.db_version.assert_called_once_with(
-            self.migrate.engine, self.migrate.repository, init_version=0)
-
-    def test_change_init_version(self, migration):
-        self.migration_config['init_version'] = 101
-        migrate = ext_migrate.MigrateExtension(
-            self.engine, self.migration_config)
-        migrate.downgrade(None)
-        migration.db_sync.assert_called_once_with(
-            migrate.engine,
-            self.migrate.repository,
-            self.migration_config['init_version'],
-            init_version=self.migration_config['init_version'])
-
-    def test_has_revision(self, command):
-        with mock.patch(('oslo_db.sqlalchemy.migration_cli.'
-                         'ext_migrate.migrate_version')) as mocked:
-            self.migrate.has_revision('test')
-            mocked.Collection().version.assert_called_once_with('test')
-            # tip of the branch should always be True
-            self.assertIs(True, self.migrate.has_revision(None))
-
-    def test_has_revision_negative(self, command):
-        with mock.patch(('oslo_db.sqlalchemy.migration_cli.'
-                         'ext_migrate.migrate_version')) as mocked:
-            mocked.Collection().version.side_effect = ValueError
-            self.assertIs(False, self.migrate.has_revision('test'))
-            mocked.Collection().version.assert_called_once_with('test')
-            # relative revision, should be False for migrate
-            self.assertIs(False, self.migrate.has_revision('+1'))
 
 
 class TestMigrationManager(test_base.BaseTestCase):
