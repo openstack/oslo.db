@@ -69,6 +69,8 @@ class JsonEncodedDict(JsonEncodedType):
     """
 
     type = dict
+    cache_ok = True
+    """This type is safe to cache."""
 
 
 class JsonEncodedList(JsonEncodedType):
@@ -81,6 +83,8 @@ class JsonEncodedList(JsonEncodedType):
     """
 
     type = list
+    cache_ok = True
+    """This type is safe to cache."""
 
 
 class SoftDeleteInteger(TypeDecorator):
@@ -120,8 +124,10 @@ class String(_String):
 
     mysql_ndb_type is used to override the String with another data type.
     mysql_ndb_size is used to adjust the length of the String.
-
     """
+
+    cache_ok = True
+    """This type is safe to cache."""
 
     def __init__(
             self, length, mysql_ndb_length=None, mysql_ndb_type=None, **kw):
