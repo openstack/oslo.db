@@ -93,7 +93,7 @@ class FakeTable(Base):
 class FakeTableJoinedInh(FakeTable):
     __tablename__ = 'fake_table_inh'
 
-    id = Column(String(50), ForeignKey('fake_table.user_id'))
+    id = Column(String(50), ForeignKey('fake_table.user_id'), primary_key=True)
 
 
 class FakeTableSingleInh(FakeTable):
