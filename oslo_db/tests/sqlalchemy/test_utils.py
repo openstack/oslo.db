@@ -1020,7 +1020,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
             normalize_fk_entries(existing_foreign_keys)
         )
 
-        with mock.patch("oslo_db.sqlalchemy.ndb.ndb_status",
+        with mock.patch("oslo_db.sqlalchemy.ndb._ndb_status",
                         mock.Mock(return_value=True)):
             with utils.suspend_fk_constraints_for_col_alter(
                     self.engine, 'a', 'id', referents=['b', 'c']):
@@ -1034,7 +1034,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
 
         self.assertEqual(existing_foreign_keys, get_fk_entries())
 
-        with mock.patch("oslo_db.sqlalchemy.ndb.ndb_status",
+        with mock.patch("oslo_db.sqlalchemy.ndb._ndb_status",
                         mock.Mock(return_value=True)):
             with utils.suspend_fk_constraints_for_col_alter(
                     self.engine, 'b', 'archive_id', referents=['c']):

@@ -15,6 +15,7 @@
 
 import logging
 from unittest import mock
+import warnings
 
 from oslo_db import exception
 from oslo_db.sqlalchemy import enginefacade
@@ -38,12 +39,16 @@ from sqlalchemy import Text
 LOG = logging.getLogger(__name__)
 
 _MOCK_CONNECTION = 'mysql+pymysql://'
-_TEST_TABLE = Table("test_ndb", MetaData(),
-                    Column('id', Integer, primary_key=True),
-                    Column('test1', String(255, mysql_ndb_type=TEXT)),
-                    Column('test2', String(4096, mysql_ndb_type=TEXT)),
-                    Column('test3', String(255, mysql_ndb_length=64)),
-                    mysql_engine='InnoDB')
+with warnings.catch_warnings():  # hide deprecation warning
+    _TEST_TABLE = Table(
+        "test_ndb",
+        MetaData(),
+        Column('id', Integer, primary_key=True),
+        Column('test1', String(255, mysql_ndb_type=TEXT)),
+        Column('test2', String(4096, mysql_ndb_type=TEXT)),
+        Column('test3', String(255, mysql_ndb_length=64)),
+        mysql_engine='InnoDB',
+    )
 
 
 class NDBMockTestBase(test_base.BaseTestCase):
@@ -57,7 +62,9 @@ class NDBMockTestBase(test_base.BaseTestCase):
         self.addCleanup(
             setattr, test_engine.dialect, "_oslodb_enable_ndb_support", False
         )
-        ndb.init_ndb_events(test_engine)
+        # hide deprecation warnings
+        with warnings.catch_warnings():
+            ndb.init_ndb_events(test_engine)
 
 
 class NDBEventTestCase(NDBMockTestBase):
@@ -164,9 +171,10 @@ class NDBOpportunisticTestCase(
             # if we want NDB, make a new local engine that uses the
             # URL / database / schema etc. of the provisioned engine,
             # since NDB-ness is a per-table thing
-            self.engine = engines.create_engine(
-                self.engine.url, mysql_enable_ndb=True
-            )
+            with warnings.catch_warnings():  # hide deprecation warnings
+                self.engine = engines.create_engine(
+                    self.engine.url, mysql_enable_ndb=True
+                )
             self.addCleanup(self.engine.dispose)
         self.test_table = _TEST_TABLE
         try:
@@ -176,7 +184,8 @@ class NDBOpportunisticTestCase(
 
     def test_ndb_enabled(self):
         self.init_db(True)
-        self.assertTrue(ndb.ndb_status(self.engine))
+        with warnings.catch_warnings():  # hide deprecation warnings
+            self.assertTrue(ndb.ndb_status(self.engine))
         self.assertIsInstance(self.test_table.c.test1.type, TINYTEXT)
         self.assertIsInstance(self.test_table.c.test2.type, Text)
         self.assertIsInstance(self.test_table.c.test3.type, String)
@@ -185,7 +194,8 @@ class NDBOpportunisticTestCase(
 
     def test_ndb_disabled(self):
         self.init_db(False)
-        self.assertFalse(ndb.ndb_status(self.engine))
+        with warnings.catch_warnings():  # hide deprecation warnings
+            self.assertFalse(ndb.ndb_status(self.engine))
         self.assertIsInstance(self.test_table.c.test1.type, String)
         self.assertEqual(255, self.test_table.c.test1.type.length)
         self.assertIsInstance(self.test_table.c.test2.type, String)

@@ -12,6 +12,7 @@
 
 import json
 
+import debtcollector.removals
 from sqlalchemy.dialects import mysql
 from sqlalchemy.types import Integer, Text, TypeDecorator, String as _String
 
@@ -117,6 +118,18 @@ class SoftDeleteInteger(TypeDecorator):
         return int(value)
 
 
+# NOTE(stephenfin): We deprecate the whole class rather than just the
+# ndb-related arguments, since without these arguments this is identical to the
+# upstream SQLAlchemy type
+@debtcollector.removals.removed_class(
+    'String',
+    message=(
+        'Support for the MySQL NDB Cluster storage engine has been '
+        'deprecated and will be removed in a future release. Use the '
+        'standard String type from sqlalchemy.types'
+    ),
+    version='12.1.0',
+)
 class String(_String):
     """String subclass that implements oslo_db specific options.
 
@@ -130,7 +143,12 @@ class String(_String):
     """This type is safe to cache."""
 
     def __init__(
-            self, length, mysql_ndb_length=None, mysql_ndb_type=None, **kw):
+        self,
+        length,
+        mysql_ndb_length=None,
+        mysql_ndb_type=None,
+        **kw,
+    ):
         """Initialize options."""
         super(String, self).__init__(length, **kw)
         self.mysql_ndb_type = mysql_ndb_type

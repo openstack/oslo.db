@@ -1,0 +1,5 @@
+---
+deprecations:
+  - |
+    MySQL NDB Cluster support has been deprecated for removal. It appears no
+    one is using this functionality and it's poorly understood.

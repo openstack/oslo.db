@@ -23,6 +23,7 @@ import re
 import time
 from urllib import parse
 
+import debtcollector.removals
 import debtcollector.renames
 import sqlalchemy
 from sqlalchemy import event
@@ -147,8 +148,19 @@ def _vet_url(url):
             )
 
 
+@debtcollector.removals.removed_kwarg(
+    'mysql_enable_ndb',
+    message=(
+        'Support for the MySQL NDB Cluster storage engine has been deprecated '
+        'and will be removed in a future release.'
+    ),
+    version='12.1.0',
+)
 @debtcollector.renames.renamed_kwarg(
-    "idle_timeout", "connection_recycle_time", replace=True)
+    'idle_timeout',
+    'connection_recycle_time',
+    replace=True,
+)
 def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                   mysql_enable_ndb=False,
                   connection_recycle_time=3600,

@@ -1148,6 +1148,13 @@ def get_non_innodb_tables(connectable, skip_tables=('migrate_version',
     return [i[0] for i in noninnodb]
 
 
+@debtcollector.removals.remove(
+    message=(
+        'Support for the MySQL NDB Cluster storage engine has been deprecated '
+        'and will be removed in a future release.'
+    ),
+    version='12.1.0',
+)
 def get_non_ndbcluster_tables(connectable, skip_tables=None):
     """Get a list of tables which don't use MySQL Cluster (NDB) storage engine.
 
@@ -1201,7 +1208,8 @@ def get_foreign_key_constraint_name(engine, table_name, column_name):
 
 @contextlib.contextmanager
 def suspend_fk_constraints_for_col_alter(
-        engine, table_name, column_name, referents=[]):
+    engine, table_name, column_name, referents=[],
+):
     """Detect foreign key constraints, drop, and recreate.
 
     This is used to guard against a column ALTER that on some backends
@@ -1232,11 +1240,16 @@ def suspend_fk_constraints_for_col_alter(
     :param referents: sequence of string table names to search for foreign
      key constraints.   A future version of this function may no longer
      require this argument, however for the moment it is required.
-
     """
-    if (
-        not ndb.ndb_status(engine)
-    ):
+    debtcollector.deprecate(
+        (
+            'Support for the MySQL NDB Cluster storage engine has been '
+            'deprecated and will be removed in a future release.'
+        ),
+        version='12.1.0',
+    )
+
+    if not ndb._ndb_status(engine):
         yield
     else:
         with engine.connect() as conn:

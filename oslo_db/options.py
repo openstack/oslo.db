@@ -62,6 +62,12 @@ database_opts = [
     cfg.BoolOpt(
         'mysql_enable_ndb',
         default=False,
+        deprecated_for_removal=True,
+        deprecated_since='12.1.0',
+        deprecated_reason=(
+            'Support for the MySQL NDB Cluster storage engine has been '
+            'deprecated and will be removed in a future release.'
+        ),
         help=(
             'If True, transparently enables support for handling '
             'MySQL Cluster (NDB).'
