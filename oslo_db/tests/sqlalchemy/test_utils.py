@@ -476,14 +476,14 @@ class TestPaginateQuery(test_base.BaseTestCase):
             mock.call('desc_null_3'),
             mock.call(self.model.project_id),
         ])
-        self.query.order_by.assert_has_calls = [
+        self.query.order_by.assert_has_calls([
             mock.call('asc_null_2'),
             mock.call('asc_1'),
             mock.call('desc_null_2'),
             mock.call('desc_1'),
             mock.call('desc_null_4'),
             mock.call('desc_4'),
-        ]
+        ])
         mock_or.assert_has_calls([
             mock.call(mock.ANY, 'asc_null_filter_2'),
             mock.call(mock.ANY, 'desc_null_filter_3'),
