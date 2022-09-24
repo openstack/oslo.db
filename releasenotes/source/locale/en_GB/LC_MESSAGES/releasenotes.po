@@ -8,11 +8,11 @@ msgid ""
 msgstr ""
 "Project-Id-Version: oslo.db\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-05-11 16:16+0000\n"
+"POT-Creation-Date: 2022-09-20 04:19+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"PO-Revision-Date: 2022-06-13 07:42+0000\n"
+"PO-Revision-Date: 2022-09-24 01:17+0000\n"
 "Last-Translator: Andi Chandler <andi@gowling.com>\n"
 "Language-Team: English (United Kingdom)\n"
 "Language: en_GB\n"
@@ -27,6 +27,9 @@ msgstr "11.0.0"
 
 msgid "11.2.0"
 msgstr "11.2.0"
+
+msgid "12.1.0-5"
+msgstr "12.1.0-5"
 
 msgid "2.6.0-9"
 msgstr "2.6.0-9"
@@ -180,6 +183,13 @@ msgstr "Liberty Series Release Notes"
 
 msgid "Mitaka Series Release Notes"
 msgstr "Mitaka Series Release Notes"
+
+msgid ""
+"MySQL NDB Cluster support has been deprecated for removal. It appears no one "
+"is using this functionality and it's poorly understood."
+msgstr ""
+"MySQL NDB Cluster support has been deprecated for removal. It appears no one "
+"is using this functionality and it's poorly understood."
 
 msgid "New Features"
 msgstr "New Features"
@@ -444,6 +454,9 @@ msgstr "Xena Series Release Notes"
 
 msgid "Yoga Series Release Notes"
 msgstr "Yoga Series Release Notes"
+
+msgid "Zed Series Release Notes"
+msgstr "Zed Series Release Notes"
 
 msgid "``NonCommittingConnectable``"
 msgstr "``NonCommittingConnectable``"
