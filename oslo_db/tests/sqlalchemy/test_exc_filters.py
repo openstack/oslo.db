@@ -462,10 +462,20 @@ class TestNonExistentDatabasePostgreSQL(
             self.url
         )
         self.assertEqual('non_existent_database', matched.database)
-        self.assertInnerException(
-            matched,
+        # NOTE(stephenfin): As above, we cannot use assertInnerException since
+        # the error messages vary depending on the version of PostgreSQL
+        self.assertIsInstance(
+            matched.inner_exception,
             sqlalchemy.exc.OperationalError,
-            'fatal:  database "non_existent_database" does not exist\n',
+        )
+        # On Postgres 13:
+        #   fatal:  database "non_existent_database" does not exist
+        # On Postgres 14 or later:
+        #   connection to server at "localhost" (::1), port 5432 failed: fatal:
+        #   database "non_existent_database" does not exist
+        self.assertIn(
+            'fatal:  database "non_existent_database" does not exist',
+            str(matched.inner_exception).lower(),
         )
 
 
