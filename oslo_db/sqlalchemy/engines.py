@@ -162,6 +162,7 @@ def _vet_url(url):
     replace=True,
 )
 def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
+                  mysql_wsrep_sync_wait=None,
                   mysql_enable_ndb=False,
                   connection_recycle_time=3600,
                   connection_debug=0, max_pool_size=None, max_overflow=None,
@@ -204,6 +205,7 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     _init_events(
         engine,
         mysql_sql_mode=mysql_sql_mode,
+        mysql_wsrep_sync_wait=mysql_wsrep_sync_wait,
         sqlite_synchronous=sqlite_synchronous,
         sqlite_fk=sqlite_fk,
         thread_checkin=thread_checkin,
@@ -301,19 +303,26 @@ def _init_events(engine, thread_checkin=True, connection_trace=False, **kw):
 
 
 @_init_events.dispatch_for("mysql")
-def _init_events(engine, mysql_sql_mode=None, **kw):
+def _init_events(
+        engine, mysql_sql_mode=None, mysql_wsrep_sync_wait=None, **kw):
     """Set up event listeners for MySQL."""
 
-    if mysql_sql_mode is not None:
+    if mysql_sql_mode is not None or mysql_wsrep_sync_wait is not None:
         @sqlalchemy.event.listens_for(engine, "connect")
-        def _set_session_sql_mode(dbapi_con, connection_rec):
+        def _set_session_variables(dbapi_con, connection_rec):
             cursor = dbapi_con.cursor()
-            cursor.execute("SET SESSION sql_mode = %s", [mysql_sql_mode])
+            if mysql_sql_mode is not None:
+                cursor.execute("SET SESSION sql_mode = %s", [mysql_sql_mode])
+            if mysql_wsrep_sync_wait is not None:
+                cursor.execute(
+                    "SET SESSION wsrep_sync_wait = %s",
+                    [mysql_wsrep_sync_wait]
+                )
 
     @sqlalchemy.event.listens_for(engine, "first_connect")
     def _check_effective_sql_mode(dbapi_con, connection_rec):
-        if mysql_sql_mode is not None:
-            _set_session_sql_mode(dbapi_con, connection_rec)
+        if mysql_sql_mode is not None or mysql_wsrep_sync_wait is not None:
+            _set_session_variables(dbapi_con, connection_rec)
 
         cursor = dbapi_con.cursor()
         cursor.execute("SHOW VARIABLES LIKE 'sql_mode'")

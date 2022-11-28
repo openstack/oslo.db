@@ -24,6 +24,7 @@ from unittest import mock
 import fixtures
 from oslo_config import cfg
 import sqlalchemy
+from sqlalchemy import exc
 from sqlalchemy import sql
 from sqlalchemy import Column, MetaData, Table
 from sqlalchemy.engine import url
@@ -415,6 +416,7 @@ class EngineFacadeTestCase(test_base.BaseTestCase):
             connection_debug=100,
             max_pool_size=10,
             mysql_sql_mode='TRADITIONAL',
+            mysql_wsrep_sync_wait=None,
             mysql_enable_ndb=False,
             sqlite_fk=False,
             connection_recycle_time=mock.ANY,
@@ -519,8 +521,15 @@ class SQLiteConnectTest(test_base.BaseTestCase):
 
 class MysqlConnectTest(db_test_base._MySQLOpportunisticTestCase):
 
-    def _fixture(self, sql_mode):
-        return session.create_engine(self.engine.url, mysql_sql_mode=sql_mode)
+    def _fixture(self, sql_mode=None, mysql_wsrep_sync_wait=None):
+
+        kw = {}
+        if sql_mode is not None:
+            kw["mysql_sql_mode"] = sql_mode
+        if mysql_wsrep_sync_wait is not None:
+            kw["mysql_wsrep_sync_wait"] = mysql_wsrep_sync_wait
+
+        return session.create_engine(self.engine.url, **kw)
 
     def _assert_sql_mode(self, engine, sql_mode_present, sql_mode_non_present):
         with engine.connect() as conn:
@@ -534,6 +543,36 @@ class MysqlConnectTest(db_test_base._MySQLOpportunisticTestCase):
             self.assertNotIn(
                 sql_mode_non_present, mode
             )
+
+    def test_mysql_wsrep_sync_wait_listener(self):
+        with self.engine.connect() as conn:
+            try:
+                conn.execute(
+                    sql.text("show variables like '%wsrep_sync_wait%'")
+                ).scalars(1).one()
+            except exc.NoResultFound:
+                self.skipTest("wsrep_sync_wait option is not available")
+
+        engine = self._fixture()
+
+        with engine.connect() as conn:
+            self.assertEqual(
+                "0",
+                conn.execute(
+                    sql.text("show variables like '%wsrep_sync_wait%'")
+                ).scalars(1).one(),
+            )
+
+        for wsrep_val in (2, 1, 5):
+            engine = self._fixture(mysql_wsrep_sync_wait=wsrep_val)
+
+            with engine.connect() as conn:
+                self.assertEqual(
+                    str(wsrep_val),
+                    conn.execute(
+                        sql.text("show variables like '%wsrep_sync_wait%'")
+                    ).scalars(1).one(),
+                )
 
     def test_set_mode_traditional(self):
         engine = self._fixture(sql_mode='TRADITIONAL')

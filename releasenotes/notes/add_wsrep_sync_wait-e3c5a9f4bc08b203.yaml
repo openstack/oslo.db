@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Added new option mysql_wsrep_sync_wait which sets the Galera
+    "wsrep_sync_wait" variable on server login. This session-level variable
+    allows Galera to ensure that writesets are fully up to date before running
+    new queries, and may be used to tune application behavior when multiple
+    Galera masters are targeted for SQL operations simultaneously.

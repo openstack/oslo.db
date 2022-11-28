@@ -59,6 +59,14 @@ database_opts = [
             'set this to no value. Example: mysql_sql_mode='
         ),
     ),
+    cfg.IntOpt(
+        'mysql_wsrep_sync_wait',
+        default=None,
+        help=(
+            'For Galera only, configure wsrep_sync_wait causality '
+            'checks on new connections'
+        ),
+    ),
     cfg.BoolOpt(
         'mysql_enable_ndb',
         default=False,
