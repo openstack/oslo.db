@@ -145,7 +145,7 @@ class _TransactionFactory(object):
         self._engine_cfg = {
             'sqlite_fk': _Default(False),
             'mysql_sql_mode': _Default('TRADITIONAL'),
-            'mysql_wsrep_sync_wait': _Default(0),
+            'mysql_wsrep_sync_wait': _Default(),
             'mysql_enable_ndb': _Default(False),
             'connection_recycle_time': _Default(3600),
             'connection_debug': _Default(0),
@@ -219,8 +219,8 @@ class _TransactionFactory(object):
 
         :param mysql_sql_mode: MySQL SQL mode, defaults to TRADITIONAL
 
-        :param mysql_wsrep_sync_wait: MySQL wsrep_sync_wait, defaults to False
-         (i.e. '0')
+        :param mysql_wsrep_sync_wait: MySQL wsrep_sync_wait, defaults to None,
+         which indicates no setting will be passed
 
         :param mysql_enable_ndb: enable MySQL Cluster (NDB) support
 
@@ -1249,7 +1249,8 @@ class LegacyEngineFacade(object):
     :keyword mysql_sql_mode: the SQL mode to be used for MySQL sessions.
                              (defaults to TRADITIONAL)
     :keyword mysql_wsrep_sync_wait: value of wsrep_sync_wait for Galera
-                             (defaults to '0')
+                             (defaults to None, which indicates no setting
+                             will be passed)
     :keyword mysql_enable_ndb: If True, transparently enables support for
                                handling MySQL Cluster (NDB).
                                (defaults to False)

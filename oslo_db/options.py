@@ -64,7 +64,8 @@ database_opts = [
         default=None,
         help=(
             'For Galera only, configure wsrep_sync_wait causality '
-            'checks on new connections'
+            'checks on new connections.  Default is None, meaning don\'t '
+            'configure any setting.'
         ),
     ),
     cfg.BoolOpt(

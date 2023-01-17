@@ -1379,6 +1379,19 @@ class PatchFactoryTest(test_base.BaseTestCase):
         self.assertTrue(engine_args['sqlite_fk'])
         self.assertEqual("FOOBAR", engine_args["mysql_sql_mode"])
         self.assertEqual(38, engine_args["max_overflow"])
+        self.assertNotIn("mysql_wsrep_sync_wait", engine_args)
+
+    def test_new_manager_from_options(self):
+        """test enginefacade's defaults given a default structure from opts"""
+
+        factory = enginefacade._TransactionFactory()
+        cfg.CONF.register_opts(options.database_opts, 'database')
+        factory.configure(**dict(cfg.CONF.database.items()))
+        engine_args = factory._engine_args_for_conf(None)
+
+        self.assertEqual(None, engine_args["mysql_wsrep_sync_wait"])
+        self.assertEqual(True, engine_args["sqlite_synchronous"])
+        self.assertEqual("TRADITIONAL", engine_args["mysql_sql_mode"])
 
 
 class SynchronousReaderWSlaveMockFacadeTest(MockFacadeTest):

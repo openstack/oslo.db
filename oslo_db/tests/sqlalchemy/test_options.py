@@ -110,3 +110,4 @@ pool_timeout=7
 
         self.assertTrue(len(conf.database.items()) > 1)
         self.assertEqual('sqlite:///:memory:', conf.database.connection)
+        self.assertEqual(None, self.conf.database.mysql_wsrep_sync_wait)

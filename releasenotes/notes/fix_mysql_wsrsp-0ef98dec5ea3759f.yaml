@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    The newly added mysql_wsrep_sync_wait parameter now defaults to non-present
+    in the enginefacade's default configuration options, so that it is not
+    configured in a MySQL / MariaDB database by default, unless passed in the
+    options explicitly. Previously, the default value was "0", meaning the
+    wsrep_sync_wait parameter would be set unconditionally on new connections,
+    which would fail for MySQL backends that don't provide for this setting.
