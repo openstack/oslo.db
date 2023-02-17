@@ -43,11 +43,9 @@ with `try/except` statement. This is required for consistent handling of
 database errors.
 """
 
-from debtcollector import moves
 from oslo_utils.excutils import CausedByException
 
 from oslo_db._i18n import _
-from oslo_db import warning
 
 
 class DBError(CausedByException):
@@ -287,12 +285,3 @@ class ContextNotRequestedError(AttributeError):
 
 class CantStartEngineError(Exception):
     """Error raised when the enginefacade cannot start up correctly."""
-
-
-moves.moved_class(warning.NotSupportedWarning,
-                  'NotSupportedWarning',
-                  __name__, version='Stein')
-
-moves.moved_class(warning.OsloDBDeprecationWarning,
-                  'OsloDBDeprecationWarning',
-                  __name__, version='Stein')

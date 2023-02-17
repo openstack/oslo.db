@@ -16,10 +16,8 @@ import testscenarios
 import unittest
 from unittest import mock
 
-from oslo_db import exception
 from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import provision
-from oslo_db.sqlalchemy import test_base as legacy_test_base
 from oslo_db.sqlalchemy import test_fixtures
 from oslo_db.tests import base as test_base
 
@@ -96,74 +94,6 @@ class BackendSkipTest(test_base.BaseTestCase):
             str(ex)
         )
 
-    def test_skip_no_dbapi_legacy(self):
-
-        class FakeDatabaseOpportunisticFixture(
-            legacy_test_base.DbFixture,
-        ):
-            DRIVER = 'postgresql'
-
-        class SomeTest(legacy_test_base.DbTestCase):
-            FIXTURE = FakeDatabaseOpportunisticFixture
-
-            def runTest(self):
-                pass
-
-        st = SomeTest()
-
-        # patch in replacement lookup dictionaries to avoid
-        # leaking from/to other tests
-        with mock.patch(
-                "oslo_db.sqlalchemy.provision."
-                "Backend.backends_by_database_type", {
-                    "postgresql":
-                    provision.Backend("postgresql", "postgresql://")}):
-            st._database_resources = {}
-            st._db_not_available = {}
-            st._schema_resources = {}
-
-            with mock.patch(
-                    "sqlalchemy.create_engine",
-                    mock.Mock(side_effect=ImportError())):
-
-                self.assertEqual([], st.resources)
-
-                ex = self.assertRaises(
-                    self.skipException,
-                    st.setUp
-                )
-
-        self.assertEqual(
-            "Backend 'postgresql' is unavailable: No DBAPI installed",
-            str(ex)
-        )
-
-    def test_skip_no_such_backend_legacy(self):
-
-        class FakeDatabaseOpportunisticFixture(
-            legacy_test_base.DbFixture,
-        ):
-            DRIVER = 'postgresql+nosuchdbapi'
-
-        class SomeTest(legacy_test_base.DbTestCase):
-
-            FIXTURE = FakeDatabaseOpportunisticFixture
-
-            def runTest(self):
-                pass
-
-        st = SomeTest()
-
-        ex = self.assertRaises(
-            self.skipException,
-            st.setUp
-        )
-
-        self.assertEqual(
-            "Backend 'postgresql+nosuchdbapi' is unavailable: No such backend",
-            str(ex)
-        )
-
 
 class EnginefacadeIntegrationTest(test_base.BaseTestCase):
     def test_db_fixture(self):
@@ -204,33 +134,6 @@ class EnginefacadeIntegrationTest(test_base.BaseTestCase):
         fixture.cleanUp()
         fixture._clear_cleanups()  # so the real cleanUp works
         self.assertFalse(normal_mgr._factory._started)
-
-
-class LegacyBaseClassTest(test_base.BaseTestCase):
-    def test_new_db_is_provisioned_by_default_pg(self):
-        self._test_new_db_is_provisioned_by_default(
-            legacy_test_base.PostgreSQLOpportunisticTestCase
-        )
-
-    def test_new_db_is_provisioned_by_default_mysql(self):
-        self._test_new_db_is_provisioned_by_default(
-            legacy_test_base.MySQLOpportunisticTestCase
-        )
-
-    def _test_new_db_is_provisioned_by_default(self, base_cls):
-        try:
-            provision.DatabaseResource(base_cls.FIXTURE.DRIVER)
-        except exception.BackendNotAvailable:
-            self.skipTest("Backend %s is not available" %
-                          base_cls.FIXTURE.DRIVER)
-
-        class SomeTest(base_cls):
-            def runTest(self):
-                pass
-        st = SomeTest()
-
-        db_resource = dict(st.resources)['db']
-        self.assertTrue(db_resource.provision_new_database)
 
 
 class TestLoadHook(unittest.TestCase):
