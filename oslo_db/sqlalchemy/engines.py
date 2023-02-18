@@ -81,9 +81,17 @@ def _connect_ping_listener(connection, branch):
         # run the select again to re-validate the Connection.
         LOG.exception(
             'Database connection was found disconnected; reconnecting')
+        # TODO(ralonsoh): drop this attr check once SQLAlchemy minimum version
+        # is 2.0.
+        if hasattr(connection, 'rollback'):
+            connection.rollback()
         connection.scalar(select(1))
     finally:
         connection.should_close_with_result = save_should_close_with_result
+        # TODO(ralonsoh): drop this attr check once SQLAlchemy minimum version
+        # is 2.0.
+        if hasattr(connection, 'rollback'):
+            connection.rollback()
 
 
 def _setup_logging(connection_debug=0):

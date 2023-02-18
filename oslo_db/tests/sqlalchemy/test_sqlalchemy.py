@@ -23,7 +23,9 @@ from unittest import mock
 
 import fixtures
 from oslo_config import cfg
+from oslo_utils import versionutils
 import sqlalchemy
+from sqlalchemy.engine import base as base_engine
 from sqlalchemy import exc
 from sqlalchemy import sql
 from sqlalchemy import Column, MetaData, Table
@@ -895,3 +897,22 @@ class PatchStacktraceTest(db_test_base._DbTestCase):
             # we're the caller, see that we're in there
             caller = os.path.join("tests", "sqlalchemy", "test_sqlalchemy.py")
             self.assertIn(caller, call[1][1])
+
+
+class MySQLConnectPingListenerTest(db_test_base._MySQLOpportunisticTestCase):
+
+    def test__connect_ping_listener(self):
+        for idx in range(2):
+            with self.engine.begin() as conn:
+                self.assertTrue(isinstance(conn._transaction,
+                                           base_engine.RootTransaction))
+                engines._connect_ping_listener(conn, False)
+                # TODO(ralonsoh): drop this check once SQLAlchemy minimum
+                #  version is 2.0.
+                sqla_version = versionutils.convert_version_to_tuple(
+                    sqlalchemy.__version__)
+                if sqla_version[0] >= 2:
+                    self.assertIsNone(conn._transaction)
+                else:
+                    self.assertTrue(isinstance(conn._transaction,
+                                               base_engine.RootTransaction))
