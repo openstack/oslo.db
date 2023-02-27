@@ -69,7 +69,7 @@ should be directed at the master database.
 """
 
 
-class _Default(object):
+class _Default:
     """Mark a value as a default value.
 
     A value in the local configuration dictionary wrapped with
@@ -98,9 +98,9 @@ class _Default(object):
             return value
 
     @classmethod
-    def resolve_w_conf(cls, value, conf_namespace, key):
+    def resolve_w_conf(cls, value, conf, key):
         if isinstance(value, _Default):
-            v = getattr(conf_namespace, key, value.value)
+            v = getattr(conf.database, key, value.value)
             if v is cls._notset:
                 return None
             else:
@@ -110,14 +110,33 @@ class _Default(object):
 
     @classmethod
     def is_set(cls, value):
-        return not isinstance(value, _Default) or \
-            value.value is not cls._notset
+        if not isinstance(value, _Default):
+            return True
+
+        return value.value is not cls._notset
 
     @classmethod
-    def is_set_w_conf(cls, value, conf_namespace, key):
-        return not isinstance(value, _Default) or \
-            value.value is not cls._notset or \
-            hasattr(conf_namespace, key)
+    def is_set_w_conf(cls, value, conf, key):
+        if hasattr(conf.database, key):
+            # If the option is set via configuration then we should always
+            # respect it...unless that option is deprecated and hasn't been set
+            # by user, in which case we should ignore it.
+
+            # oslo.config doesn't provide a public API to retrieve the opt
+            # itself, as opposed to the value of the opt :(
+            opt = conf.database._group._opts[key]['opt']
+            # ditto for the group
+            group = conf.database._group
+            if (
+                opt.deprecated_for_removal and
+                conf.get_location(key, group=group.name).location ==
+                cfg.Locations.opt_default
+            ):
+                return False
+
+            return True
+
+        return cls.is_set(value)
 
 
 class AlreadyStartedError(TypeError):
@@ -128,7 +147,7 @@ class AlreadyStartedError(TypeError):
     """
 
 
-class _TransactionFactory(object):
+class _TransactionFactory:
     """A factory for :class:`._TransactionContext` objects.
 
     By default, there is just one of these, set up
@@ -146,7 +165,7 @@ class _TransactionFactory(object):
             'sqlite_fk': _Default(False),
             'mysql_sql_mode': _Default('TRADITIONAL'),
             'mysql_wsrep_sync_wait': _Default(),
-            'mysql_enable_ndb': _Default(False),
+            'mysql_enable_ndb': _Default(),
             'connection_recycle_time': _Default(3600),
             'connection_debug': _Default(0),
             'max_pool_size': _Default(),
@@ -183,7 +202,9 @@ class _TransactionFactory(object):
                 'db_max_retries', 'db_inc_retry_interval',
                 'use_db_reconnect',
                 'db_retry_interval',
-                'db_max_retry_interval', 'backend', 'use_tpool'])
+                'db_max_retry_interval', 'backend', 'use_tpool'
+            ]
+        )
 
         self._started = False
         self._legacy_facade = None
@@ -337,7 +358,8 @@ class _TransactionFactory(object):
             for dict_ in (
                     self._url_cfg, self._engine_cfg,
                     self._maker_cfg, self._ignored_cfg,
-                    self._facade_cfg, self._transaction_ctx_cfg):
+                    self._facade_cfg, self._transaction_ctx_cfg,
+            ):
                 if k in dict_:
                     dict_[k] = _Default(v) if as_defaults else v
                     break
@@ -448,17 +470,17 @@ class _TransactionFactory(object):
 
     def _args_for_conf(self, default_cfg, conf):
         if conf is None:
-            return dict(
-                (key, _Default.resolve(value))
+            return {
+                key: _Default.resolve(value)
                 for key, value in default_cfg.items()
                 if _Default.is_set(value)
-            )
+            }
         else:
-            return dict(
-                (key, _Default.resolve_w_conf(value, conf.database, key))
+            return {
+                key: _Default.resolve_w_conf(value, conf, key)
                 for key, value in default_cfg.items()
-                if _Default.is_set_w_conf(value, conf.database, key)
-            )
+                if _Default.is_set_w_conf(value, conf, key)
+            }
 
     def _url_args_for_conf(self, conf):
         return self._args_for_conf(self._url_cfg, conf)

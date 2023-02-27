@@ -255,12 +255,18 @@ class MockFacadeTest(test_base.BaseTestCase):
         engine_factory = mock.Mock(side_effect=create_engine)
         engine_factory(
             sql_connection=self.engine_uri,
-            **dict((k, mock.ANY) for k in self.factory._engine_cfg.keys())
+            **{
+                k: mock.ANY for k in self.factory._engine_cfg.keys()
+                if k not in ('mysql_enable_ndb',)
+            },
         )
         if self.slave_uri:
             engine_factory(
                 sql_connection=self.slave_uri,
-                **dict((k, mock.ANY) for k in self.factory._engine_cfg.keys())
+                **{
+                    k: mock.ANY for k in self.factory._engine_cfg.keys()
+                    if k not in ('mysql_enable_ndb',)
+                },
             )
 
         yield AssertDataSource(

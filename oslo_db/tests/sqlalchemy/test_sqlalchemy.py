@@ -407,9 +407,9 @@ class EngineFacadeTestCase(test_base.BaseTestCase):
         for optname, optvalue in overrides.items():
             conf.set_override(optname, optvalue, group='database')
 
-        session.EngineFacade.from_config(conf,
-                                         autocommit=False,
-                                         expire_on_commit=True)
+        session.EngineFacade.from_config(
+            conf, autocommit=False, expire_on_commit=True,
+        )
 
         create_engine.assert_called_once_with(
             sql_connection='sqlite:///:memory:',
@@ -417,7 +417,9 @@ class EngineFacadeTestCase(test_base.BaseTestCase):
             max_pool_size=10,
             mysql_sql_mode='TRADITIONAL',
             mysql_wsrep_sync_wait=None,
-            mysql_enable_ndb=False,
+            # NOTE: mysql_enable_ndb should *not* be passed through since it's
+            # deprecated and not set in the configopts
+            # mysql_enable_ndb=False,
             sqlite_fk=False,
             connection_recycle_time=mock.ANY,
             retry_interval=mock.ANY,
@@ -432,9 +434,59 @@ class EngineFacadeTestCase(test_base.BaseTestCase):
             connection_parameters='',
             logging_name=mock.ANY,
         )
-        get_maker.assert_called_once_with(engine=create_engine(),
-                                          autocommit=False,
-                                          expire_on_commit=True)
+        get_maker.assert_called_once_with(
+            engine=create_engine(), autocommit=False, expire_on_commit=True,
+        )
+
+    @mock.patch('oslo_db.sqlalchemy.orm.get_maker')
+    @mock.patch('oslo_db.sqlalchemy.engines.create_engine')
+    def test_creation_from_config_with_deprecated_opts(
+        self, create_engine, get_maker,
+    ):
+        conf = cfg.ConfigOpts()
+        conf.register_opts(db_options.database_opts, group='database')
+
+        overrides = {
+            'connection': 'sqlite:///:memory:',
+            'slave_connection': None,
+            'connection_debug': 100,
+            'max_pool_size': 10,
+            'mysql_sql_mode': 'TRADITIONAL',
+            'mysql_enable_ndb': True,
+        }
+        for optname, optvalue in overrides.items():
+            conf.set_override(optname, optvalue, group='database')
+
+        session.EngineFacade.from_config(
+            conf, autocommit=False, expire_on_commit=True,
+        )
+
+        create_engine.assert_called_once_with(
+            sql_connection='sqlite:///:memory:',
+            connection_debug=100,
+            max_pool_size=10,
+            mysql_sql_mode='TRADITIONAL',
+            mysql_wsrep_sync_wait=None,
+            # NOTE: mysql_enable_ndb *should* be passed through since it's set
+            # in the configopts
+            mysql_enable_ndb=True,
+            sqlite_fk=False,
+            connection_recycle_time=mock.ANY,
+            retry_interval=mock.ANY,
+            max_retries=mock.ANY,
+            max_overflow=mock.ANY,
+            connection_trace=mock.ANY,
+            sqlite_synchronous=mock.ANY,
+            pool_timeout=mock.ANY,
+            thread_checkin=mock.ANY,
+            json_serializer=None,
+            json_deserializer=None,
+            connection_parameters='',
+            logging_name=mock.ANY,
+        )
+        get_maker.assert_called_once_with(
+            engine=create_engine(), autocommit=False, expire_on_commit=True,
+        )
 
     def test_slave_connection(self):
         paths = self.create_tempfiles([('db.master', ''), ('db.slave', '')],
