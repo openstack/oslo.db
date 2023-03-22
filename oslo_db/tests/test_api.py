@@ -210,7 +210,8 @@ class DBRetryRequestCase(DBAPITestCase):
 
         some_method()
 
-    def test_retry_wrapper_reaches_limit(self):
+    @mock.patch('oslo_db.api.time.sleep', return_value=None)
+    def test_retry_wrapper_reaches_limit(self, mock_sleep):
         max_retries = 2
 
         @api.wrap_db_retry(max_retries=max_retries)
@@ -222,7 +223,8 @@ class DBRetryRequestCase(DBAPITestCase):
         self.assertRaises(ValueError, some_method, res)
         self.assertEqual(max_retries + 1, res['result'])
 
-    def test_retry_wrapper_exception_checker(self):
+    @mock.patch('oslo_db.api.time.sleep', return_value=None)
+    def test_retry_wrapper_exception_checker(self, mock_sleep):
 
         def exception_checker(exc):
             return isinstance(exc, ValueError) and exc.args[0] < 5
