@@ -29,8 +29,6 @@ import debtcollector.removals
 from oslo_utils import timeutils
 import sqlalchemy
 from sqlalchemy import Boolean
-from sqlalchemy import CheckConstraint
-from sqlalchemy import Column
 from sqlalchemy.engine import Connectable
 from sqlalchemy.engine import url as sa_url
 from sqlalchemy import exc
@@ -42,7 +40,6 @@ from sqlalchemy import MetaData
 from sqlalchemy.sql.expression import cast
 from sqlalchemy.sql.expression import literal_column
 from sqlalchemy.sql import text
-from sqlalchemy import String
 from sqlalchemy import Table
 
 from oslo_db._i18n import _
@@ -443,23 +440,6 @@ def get_table(engine, name):
     return Table(name, metadata, autoload_with=engine)
 
 
-def _get_not_supported_column(col_name_col_instance, column_name):
-    try:
-        column = col_name_col_instance[column_name]
-    except KeyError:
-        msg = _("Please specify column %s in col_name_col_instance "
-                "param. It is required because column has unsupported "
-                "type by SQLite.")
-        raise exception.ColumnError(msg % column_name)
-
-    if not isinstance(column, Column):
-        msg = _("col_name_col_instance param has wrong type of "
-                "column instance for column %s It should be instance "
-                "of sqlalchemy.Column.")
-        raise exception.ColumnError(msg % column_name)
-    return column
-
-
 def drop_old_duplicate_entries_from_table(engine, table_name,
                                           use_soft_delete, *uc_column_names):
     """Drop all old rows having the same values for columns in uc_columns.
@@ -517,49 +497,6 @@ def drop_old_duplicate_entries_from_table(engine, table_name,
             else:
                 delete_statement = table.delete().where(delete_condition)
             conn.execute(delete_statement)
-
-
-def _get_default_deleted_value(table):
-    if isinstance(table.c.id.type, Integer):
-        return 0
-    if isinstance(table.c.id.type, String):
-        return ""
-    raise exception.ColumnError(_("Unsupported id columns type"))
-
-
-def _restore_indexes_on_deleted_columns(engine, table_name, indexes):
-    table = get_table(engine, table_name)
-
-    real_indexes = get_indexes(engine, table_name)
-    existing_index_names = dict(
-        [(index['name'], index['column_names']) for index in real_indexes])
-
-    # NOTE(boris-42): Restore indexes on `deleted` column
-    for index in indexes:
-        if 'deleted' not in index['column_names']:
-            continue
-        name = index['name']
-        if name in existing_index_names:
-            column_names = [table.c[c] for c in existing_index_names[name]]
-            old_index = Index(name, *column_names, unique=index["unique"])
-            old_index.drop(engine)
-
-        column_names = [table.c[c] for c in index['column_names']]
-        new_index = Index(index["name"], *column_names, unique=index["unique"])
-        new_index.create(engine)
-
-
-def _is_deleted_column_constraint(constraint):
-    # NOTE(boris-42): There is no other way to check is CheckConstraint
-    #                 associated with deleted column.
-    if not isinstance(constraint, CheckConstraint):
-        return False
-    sqltext = str(constraint.sqltext)
-    # NOTE(zzzeek): SQLite never reflected CHECK contraints here
-    # in any case until version 1.1.   Safe to assume that any CHECK
-    # that's talking about the value of "deleted in (something)" is
-    # the boolean constraint we're looking to get rid of.
-    return bool(re.match(r".*deleted in \(.*\)", sqltext, re.I))
 
 
 def get_db_connection_info(conn_pieces):
