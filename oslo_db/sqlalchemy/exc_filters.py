@@ -20,7 +20,7 @@ from sqlalchemy import event
 from sqlalchemy import exc as sqla_exc
 
 from oslo_db import exception
-
+from oslo_db.sqlalchemy import compat
 
 LOG = logging.getLogger(__name__)
 
@@ -377,6 +377,7 @@ def _raise_operational_errors_directly_filter(operational_error,
 def _is_db_connection_error(operational_error, match, engine_name,
                             is_disconnect):
     """Detect the exception as indicating a recoverable error on connect."""
+
     raise exception.DBConnectionError(operational_error)
 
 
@@ -423,13 +424,14 @@ def handler(context):
     more specific exception class are attempted first.
 
     """
-    def _dialect_registries(engine):
-        if engine.dialect.name in _registry:
-            yield _registry[engine.dialect.name]
+    def _dialect_registries(dialect):
+        if dialect.name in _registry:
+            yield _registry[dialect.name]
         if '*' in _registry:
             yield _registry['*']
 
-    for per_dialect in _dialect_registries(context.engine):
+    dialect = compat.dialect_from_exception_context(context)
+    for per_dialect in _dialect_registries(dialect):
         for exc in (
                 context.sqlalchemy_exception,
                 context.original_exception):
@@ -443,7 +445,7 @@ def handler(context):
                                 fn(
                                     exc,
                                     match,
-                                    context.engine.dialect.name,
+                                    dialect.name,
                                     context.is_disconnect)
                             except exception.DBError as dbe:
                                 if (
@@ -460,6 +462,19 @@ def handler(context):
                                 if isinstance(
                                         dbe, exception.DBConnectionError):
                                     context.is_disconnect = True
+
+                                    # new in 2.0.5
+                                    if (
+                                        hasattr(context, "is_pre_ping") and
+                                        context.is_pre_ping
+                                    ):
+                                        # if this is a pre-ping, need to
+                                        # integrate with the built
+                                        # in pre-ping handler that doesnt know
+                                        # about DBConnectionError, just needs
+                                        # the updated status
+                                        return None
+
                                 return dbe
 
 

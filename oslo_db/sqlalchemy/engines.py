@@ -60,6 +60,12 @@ def _connect_ping_listener(connection, branch):
     Ping the server at transaction begin and transparently reconnect
     if a disconnect exception occurs.
 
+    This listener is used up until SQLAlchemy 2.0.5.  At 2.0.5, we use the
+    ``pool_pre_ping`` parameter instead of this event handler.
+
+    Note the current test suite in test_exc_filters still **tests** this
+    handler using all SQLAlchemy versions including 2.0.5 and greater.
+
     """
     if branch:
         return
@@ -199,8 +205,11 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
 
     _vet_url(url)
 
+    _native_pre_ping = compat.native_pre_ping_event_support
+
     engine_args = {
         'pool_recycle': connection_recycle_time,
+        'pool_pre_ping': _native_pre_ping,
         'connect_args': {},
         'logging_name': logging_name
     }
@@ -236,9 +245,10 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     # register alternate exception handler
     exc_filters.register_engine(engine)
 
-    # register engine connect handler
+    if not _native_pre_ping:
+        # register engine connect handler.
 
-    event.listen(engine, "engine_connect", _connect_ping_listener)
+        event.listen(engine, "engine_connect", _connect_ping_listener)
 
     # initial connect + test
     # NOTE(viktors): the current implementation of _test_connection()

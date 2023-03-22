@@ -18,6 +18,8 @@ from sqlalchemy import __version__
 _vers = versionutils.convert_version_to_tuple(__version__)
 sqla_2 = _vers >= (2, )
 
+native_pre_ping_event_support = _vers >= (2, 0, 5)
+
 
 def dialect_from_exception_context(ctx):
     if sqla_2:
