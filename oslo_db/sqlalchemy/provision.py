@@ -24,7 +24,6 @@ import re
 import string
 
 import sqlalchemy
-from sqlalchemy.engine import url as sa_url
 from sqlalchemy import schema
 from sqlalchemy import sql
 import testresources
@@ -259,7 +258,7 @@ class Backend(object):
 
     @classmethod
     def _ensure_backend_available(cls, url):
-        url = sa_url.make_url(str(url))
+        url = utils.make_url(url)
         try:
             eng = sqlalchemy.create_engine(url)
         except ImportError as i_e:
@@ -362,7 +361,7 @@ class Backend(object):
             ]
 
         for url_str in configured_urls:
-            url = sa_url.make_url(url_str)
+            url = utils.make_url(url_str)
             m = re.match(r'([^+]+?)(?:\+(.+))?$', url.drivername)
             database_type = m.group(1)
             Backend.backends_by_database_type[database_type] = \
@@ -495,7 +494,7 @@ class BackendImpl(object, metaclass=abc.ABCMeta):
 
         """
 
-        url = sa_url.make_url(str(base_url))
+        url = utils.make_url(base_url)
 
         # TODO(zzzeek): remove hasattr() conditional in favor of "url.set()"
         # when SQLAlchemy 1.4 is the minimum version in requirements
@@ -571,7 +570,7 @@ class SQLiteBackendImpl(BackendImpl):
 
     def provisioned_database_url(self, base_url, ident):
         if base_url.database:
-            return sa_url.make_url("sqlite:////tmp/%s.db" % ident)
+            return utils.make_url("sqlite:////tmp/%s.db" % ident)
         else:
             return base_url
 

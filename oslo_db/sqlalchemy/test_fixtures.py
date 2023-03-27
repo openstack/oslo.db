@@ -360,7 +360,7 @@ class AdHocDbFixture(SimpleDbFixture):
     """
     def __init__(self, url=None):
         if url:
-            self.url = provision.sa_url.make_url(str(url))
+            self.url = utils.make_url(url)
             driver = self.url.get_backend_name()
         else:
             driver = None

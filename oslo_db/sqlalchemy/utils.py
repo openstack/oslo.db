@@ -1051,3 +1051,11 @@ def suspend_fk_constraints_for_col_alter(
                         deferrable=fk['options'].get('deferrable'),
                         initially=fk['options'].get('initially'),
                     )
+
+
+def make_url(target):
+    """Return a ``url.URL`` object"""
+    if isinstance(target, (str, sa_url.URL)):
+        return sa_url.make_url(target)
+    else:
+        return sa_url.make_url(str(target))

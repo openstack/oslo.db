@@ -181,7 +181,7 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                   json_deserializer=None, connection_parameters=None):
     """Return a new SQLAlchemy engine."""
 
-    url = sqlalchemy.engine.url.make_url(sql_connection)
+    url = utils.make_url(sql_connection)
 
     if connection_parameters:
         url = _extend_url_parameters(url, connection_parameters)

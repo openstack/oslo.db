@@ -19,7 +19,6 @@ import itertools
 from unittest import mock
 
 import sqlalchemy as sqla
-from sqlalchemy.engine import url as sqla_url
 from sqlalchemy import event
 import sqlalchemy.exc
 from sqlalchemy.orm import declarative_base
@@ -29,6 +28,7 @@ from sqlalchemy import sql
 from oslo_db import exception
 from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import exc_filters
+from oslo_db.sqlalchemy import utils
 from oslo_db.tests import base as test_base
 from oslo_db.tests.sqlalchemy import base as db_test_base
 from oslo_db.tests import utils as test_utils
@@ -403,7 +403,7 @@ class TestNonExistentDatabase(
     def setUp(self):
         super(TestNonExistentDatabase, self).setUp()
 
-        url = sqla_url.make_url(str(self.engine.url))
+        url = utils.make_url(self.engine.url)
 
         # TODO(zzzeek): remove hasattr() conditional in favor of "url.set()"
         # when SQLAlchemy 1.4 is the minimum version in requirements
@@ -419,7 +419,7 @@ class TestNonExistentDatabase(
         matched = self.assertRaises(
             exception.DBNonExistentDatabase,
             engines.create_engine,
-            sqla_url.make_url(
+            utils.make_url(
                 'sqlite:////non_existent_dir/non_existent_database')
         )
         self.assertIsNone(matched.database)

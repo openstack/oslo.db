@@ -23,7 +23,6 @@ from sqlalchemy import CheckConstraint
 from sqlalchemy import MetaData, Table, Column
 from sqlalchemy import ForeignKey, ForeignKeyConstraint
 from sqlalchemy.dialects.postgresql import psycopg2
-from sqlalchemy.engine import url as sa_url
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base
@@ -1001,7 +1000,7 @@ class TestConnectionUtils(test_base.BaseTestCase):
                 self.connect_string)
 
             mock_create.assert_called_once_with(
-                sa_url.make_url(self.connect_string))
+                utils.make_url(self.connect_string))
 
             self.assertEqual(
                 "Backend 'postgresql' is unavailable: "
@@ -1356,10 +1355,9 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
             )
         )
 
-        mysqldb_url = sqlalchemy.engine.url.make_url("mysql+mysqldb://")
-        mysqlconnector_url = sqlalchemy.engine.url.make_url(
-            "mysql+mysqlconnector://")
-        sqlite_url = sqlalchemy.engine.url.make_url("sqlite://")
+        mysqldb_url = utils.make_url("mysql+mysqldb://")
+        mysqlconnector_url = utils.make_url("mysql+mysqlconnector://")
+        sqlite_url = utils.make_url("sqlite://")
 
         dispatcher(mysqldb_url, 1)
         dispatcher(mysqlconnector_url, 2)
@@ -1395,8 +1393,7 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
         )
 
     def test_url_pymysql(self):
-        url = sqlalchemy.engine.url.make_url(
-            "mysql+pymysql://scott:tiger@localhost/test")
+        url = utils.make_url("mysql+pymysql://scott:tiger@localhost/test")
         dispatcher, callable_fn = self._single_fixture()
 
         dispatcher(url, 15)
@@ -1406,8 +1403,7 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
         )
 
     def test_url_mysql_generic(self):
-        url = sqlalchemy.engine.url.make_url(
-            "mysql://scott:tiger@localhost/test")
+        url = utils.make_url("mysql://scott:tiger@localhost/test")
         dispatcher, callable_fn = self._single_fixture()
 
         dispatcher(url, 15)

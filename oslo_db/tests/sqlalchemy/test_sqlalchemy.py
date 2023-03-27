@@ -29,7 +29,6 @@ from sqlalchemy.engine import base as base_engine
 from sqlalchemy import exc
 from sqlalchemy import sql
 from sqlalchemy import Column, MetaData, Table
-from sqlalchemy.engine import url
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import declarative_base
 
@@ -39,6 +38,7 @@ from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import models
 from oslo_db.sqlalchemy import session
+from oslo_db.sqlalchemy import utils
 from oslo_db.tests import base as test_base
 from oslo_db.tests.sqlalchemy import base as db_test_base
 
@@ -696,7 +696,7 @@ class CreateEngineTest(test_base.BaseTestCase):
 
     def test_queuepool_args(self):
         engines._init_connection_args(
-            url.make_url("mysql+pymysql://u:p@host/test"), self.args,
+            utils.make_url("mysql+pymysql://u:p@host/test"), self.args,
             max_pool_size=10, max_overflow=10)
         self.assertEqual(10, self.args['pool_size'])
         self.assertEqual(10, self.args['max_overflow'])
@@ -704,7 +704,7 @@ class CreateEngineTest(test_base.BaseTestCase):
     def test_sqlite_memory_pool_args(self):
         for _url in ("sqlite://", "sqlite:///:memory:"):
             engines._init_connection_args(
-                url.make_url(_url), self.args,
+                utils.make_url(_url), self.args,
                 max_pool_size=10, max_overflow=10)
 
             # queuepool arguments are not peresnet
@@ -721,7 +721,7 @@ class CreateEngineTest(test_base.BaseTestCase):
 
     def test_sqlite_file_pool_args(self):
         engines._init_connection_args(
-            url.make_url("sqlite:///somefile.db"), self.args,
+            utils.make_url("sqlite:///somefile.db"), self.args,
             max_pool_size=10, max_overflow=10)
 
         # queuepool arguments are not peresnet
@@ -741,39 +741,39 @@ class CreateEngineTest(test_base.BaseTestCase):
 
     def test_mysql_connect_args_default(self):
         engines._init_connection_args(
-            url.make_url("mysql://u:p@host/test"), self.args)
+            utils.make_url("mysql://u:p@host/test"), self.args)
         self._test_mysql_connect_args_default(self.args['connect_args'])
 
     def test_mysql_oursql_connect_args_default(self):
         engines._init_connection_args(
-            url.make_url("mysql+oursql://u:p@host/test"), self.args)
+            utils.make_url("mysql+oursql://u:p@host/test"), self.args)
         self._test_mysql_connect_args_default(self.args['connect_args'])
 
     def test_mysql_pymysql_connect_args_default(self):
         engines._init_connection_args(
-            url.make_url("mysql+pymysql://u:p@host/test"), self.args)
+            utils.make_url("mysql+pymysql://u:p@host/test"), self.args)
         self.assertEqual({'charset': 'utf8'}, self.args['connect_args'])
 
     def test_mysql_mysqldb_connect_args_default(self):
         engines._init_connection_args(
-            url.make_url("mysql+mysqldb://u:p@host/test"), self.args)
+            utils.make_url("mysql+mysqldb://u:p@host/test"), self.args)
         self._test_mysql_connect_args_default(self.args['connect_args'])
 
     def test_postgresql_connect_args_default(self):
         engines._init_connection_args(
-            url.make_url("postgresql://u:p@host/test"), self.args)
+            utils.make_url("postgresql://u:p@host/test"), self.args)
         self.assertEqual('utf8', self.args['client_encoding'])
         self.assertFalse(self.args['connect_args'])
 
     def test_mysqlconnector_raise_on_warnings_default(self):
         engines._init_connection_args(
-            url.make_url("mysql+mysqlconnector://u:p@host/test"),
+            utils.make_url("mysql+mysqlconnector://u:p@host/test"),
             self.args)
         self.assertEqual(False, self.args['connect_args']['raise_on_warnings'])
 
     def test_mysqlconnector_raise_on_warnings_override(self):
         engines._init_connection_args(
-            url.make_url(
+            utils.make_url(
                 "mysql+mysqlconnector://u:p@host/test"
                 "?raise_on_warnings=true"),
             self.args
@@ -806,14 +806,14 @@ class CreateEngineTest(test_base.BaseTestCase):
                 warn_interpolate):
 
             engines._vet_url(
-                url.make_url("mysql://scott:tiger@some_host/some_db"))
-            engines._vet_url(url.make_url(
+                utils.make_url("mysql://scott:tiger@some_host/some_db"))
+            engines._vet_url(utils.make_url(
                 "mysql+mysqldb://scott:tiger@some_host/some_db"))
-            engines._vet_url(url.make_url(
+            engines._vet_url(utils.make_url(
                 "mysql+pymysql://scott:tiger@some_host/some_db"))
-            engines._vet_url(url.make_url(
+            engines._vet_url(utils.make_url(
                 "postgresql+psycopg2://scott:tiger@some_host/some_db"))
-            engines._vet_url(url.make_url(
+            engines._vet_url(utils.make_url(
                 "postgresql://scott:tiger@some_host/some_db"))
 
         self.assertEqual(
