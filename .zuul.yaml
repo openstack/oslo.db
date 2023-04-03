@@ -1,6 +1,6 @@
 - job:
-    name: oslodb-tox-py38-tips
-    parent: openstack-tox-py38
+    name: oslodb-tox-py39-tips
+    parent: openstack-tox-py39
     description: |
       Run unit tests for oslo.db with main branch of important libs.
       Takes advantage of the base tox job's install-siblings feature.
@@ -38,11 +38,11 @@
     name: oslodb-tox-unit-tips
     check:
       jobs:
-        - oslodb-tox-py38-tips
+        - oslodb-tox-py39-tips
         - oslodb-tox-py310-tips
     gate:
       jobs:
-        - oslodb-tox-py38-tips
+        - oslodb-tox-py39-tips
         - oslodb-tox-py310-tips
 
 - project:
@@ -50,7 +50,7 @@
       - oslodb-tox-unit-tips
       - check-requirements
       - lib-forward-testing-python3
-      - openstack-python3-antelope-jobs
+      - openstack-python3-jobs
       - periodic-stable-jobs
       - publish-openstack-docs-pti
       - release-notes-jobs-python3
