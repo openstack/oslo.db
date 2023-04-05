@@ -164,7 +164,6 @@ class _TransactionFactory(object):
         }
         self._maker_cfg = {
             'expire_on_commit': _Default(False),
-            '__autocommit': False,
         }
         self._transaction_ctx_cfg = {
             'rollback_reader_sessions': False,
@@ -468,7 +467,6 @@ class _TransactionFactory(object):
 
     def _maker_args_for_conf(self, conf):
         maker_args = self._args_for_conf(self._maker_cfg, conf)
-        maker_args['autocommit'] = maker_args.pop('__autocommit')
         return maker_args
 
     def dispose_pool(self):
@@ -1238,9 +1236,6 @@ class LegacyEngineFacade(object):
     :param sqlite_fk: enable foreign keys in SQLite
     :type sqlite_fk: bool
 
-    :param autocommit: use autocommit mode for created Session instances
-    :type autocommit: bool
-
     :param expire_on_commit: expire session objects on commit
     :type expire_on_commit: bool
 
@@ -1282,21 +1277,13 @@ class LegacyEngineFacade(object):
 
     """
     def __init__(self, sql_connection, slave_connection=None,
-                 sqlite_fk=False, autocommit=False,
-                 expire_on_commit=False, _conf=None, _factory=None, **kwargs):
+                 sqlite_fk=False, expire_on_commit=False, _conf=None,
+                 _factory=None, **kwargs):
         warnings.warn(
             "EngineFacade is deprecated; please use "
             "oslo_db.sqlalchemy.enginefacade",
             warning.OsloDBDeprecationWarning,
             stacklevel=2)
-
-        if autocommit is True:
-            warnings.warn(
-                'autocommit support will be removed in SQLAlchemy 2.0 and '
-                'should not be relied on; please rework your code to remove '
-                'reliance on this feature',
-                warning.OsloDBDeprecationWarning,
-                stacklevel=2)
 
         if _factory:
             self._factory = _factory
@@ -1305,7 +1292,6 @@ class LegacyEngineFacade(object):
 
             self._factory.configure(
                 sqlite_fk=sqlite_fk,
-                __autocommit=autocommit,
                 expire_on_commit=expire_on_commit,
                 **kwargs
             )
@@ -1371,7 +1357,7 @@ class LegacyEngineFacade(object):
 
     @classmethod
     def from_config(cls, conf,
-                    sqlite_fk=False, autocommit=False, expire_on_commit=False):
+                    sqlite_fk=False, expire_on_commit=False):
         """Initialize EngineFacade using oslo.config config instance options.
 
         :param conf: oslo.config config instance
@@ -1379,9 +1365,6 @@ class LegacyEngineFacade(object):
 
         :param sqlite_fk: enable foreign keys in SQLite
         :type sqlite_fk: bool
-
-        :param autocommit: use autocommit mode for created Session instances
-        :type autocommit: bool
 
         :param expire_on_commit: expire session objects on commit
         :type expire_on_commit: bool
@@ -1391,5 +1374,4 @@ class LegacyEngineFacade(object):
         return cls(
             None,
             sqlite_fk=sqlite_fk,
-            autocommit=autocommit,
             expire_on_commit=expire_on_commit, _conf=conf)

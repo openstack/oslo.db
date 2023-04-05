@@ -23,10 +23,10 @@ from unittest import mock
 
 import fixtures
 from oslo_config import cfg
-from oslo_utils import versionutils
 import sqlalchemy
 from sqlalchemy.engine import base as base_engine
 from sqlalchemy import exc
+from sqlalchemy.pool import NullPool
 from sqlalchemy import sql
 from sqlalchemy import Column, MetaData, Table
 from sqlalchemy import Integer, String
@@ -34,6 +34,7 @@ from sqlalchemy.orm import declarative_base
 
 from oslo_db import exception
 from oslo_db import options as db_options
+from oslo_db.sqlalchemy import compat
 from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import models
@@ -388,9 +389,8 @@ class EngineFacadeTestCase(test_base.BaseTestCase):
         self.assertIsNot(ses1, ses2)
 
     def test_get_session_arguments_override_default_settings(self):
-        ses = self.facade.get_session(autocommit=False, expire_on_commit=True)
+        ses = self.facade.get_session(expire_on_commit=True)
 
-        self.assertFalse(ses.autocommit)
         self.assertTrue(ses.expire_on_commit)
 
     @mock.patch('oslo_db.sqlalchemy.orm.get_maker')
@@ -410,7 +410,6 @@ class EngineFacadeTestCase(test_base.BaseTestCase):
             conf.set_override(optname, optvalue, group='database')
 
         session.EngineFacade.from_config(conf,
-                                         autocommit=False,
                                          expire_on_commit=True)
 
         create_engine.assert_called_once_with(
@@ -435,7 +434,6 @@ class EngineFacadeTestCase(test_base.BaseTestCase):
             logging_name=mock.ANY,
         )
         get_maker.assert_called_once_with(engine=create_engine(),
-                                          autocommit=False,
                                           expire_on_commit=True)
 
     def test_slave_connection(self):
@@ -696,22 +694,24 @@ class CreateEngineTest(test_base.BaseTestCase):
 
     def test_queuepool_args(self):
         engines._init_connection_args(
-            utils.make_url("mysql+pymysql://u:p@host/test"), self.args,
-            max_pool_size=10, max_overflow=10)
+            utils.make_url("mysql+pymysql://u:p@host/test"),
+            self.args,
+            {'max_pool_size': 10, 'max_overflow': 10},
+        )
         self.assertEqual(10, self.args['pool_size'])
         self.assertEqual(10, self.args['max_overflow'])
 
     def test_sqlite_memory_pool_args(self):
         for _url in ("sqlite://", "sqlite:///:memory:"):
             engines._init_connection_args(
-                utils.make_url(_url), self.args,
-                max_pool_size=10, max_overflow=10)
+                utils.make_url(_url),
+                self.args,
+                {'max_pool_size': 10, 'max_overflow': 10},
+            )
 
-            # queuepool arguments are not peresnet
-            self.assertNotIn(
-                'pool_size', self.args)
-            self.assertNotIn(
-                'max_overflow', self.args)
+            # queuepool arguments are not present
+            self.assertNotIn('pool_size', self.args)
+            self.assertNotIn('max_overflow', self.args)
 
             self.assertEqual(False,
                              self.args['connect_args']['check_same_thread'])
@@ -721,8 +721,10 @@ class CreateEngineTest(test_base.BaseTestCase):
 
     def test_sqlite_file_pool_args(self):
         engines._init_connection_args(
-            utils.make_url("sqlite:///somefile.db"), self.args,
-            max_pool_size=10, max_overflow=10)
+            utils.make_url("sqlite:///somefile.db"),
+            self.args,
+            {'max_pool_size': 10, 'max_overflow': 10},
+        )
 
         # queuepool arguments are not peresnet
         self.assertNotIn('pool_size', self.args)
@@ -731,9 +733,12 @@ class CreateEngineTest(test_base.BaseTestCase):
 
         self.assertFalse(self.args['connect_args'])
 
-        # NullPool is the default for file based connections,
-        # no need to specify this
-        self.assertNotIn('poolclass', self.args)
+        if not compat.sqla_2:
+            # NullPool is the default for file based connections,
+            # no need to specify this
+            self.assertNotIn('poolclass', self.args)
+        else:
+            self.assertIs(self.args["poolclass"], NullPool)
 
     def _test_mysql_connect_args_default(self, connect_args):
         self.assertEqual({'charset': 'utf8', 'use_unicode': 1},
@@ -741,34 +746,29 @@ class CreateEngineTest(test_base.BaseTestCase):
 
     def test_mysql_connect_args_default(self):
         engines._init_connection_args(
-            utils.make_url("mysql://u:p@host/test"), self.args)
-        self._test_mysql_connect_args_default(self.args['connect_args'])
-
-    def test_mysql_oursql_connect_args_default(self):
-        engines._init_connection_args(
-            utils.make_url("mysql+oursql://u:p@host/test"), self.args)
+            utils.make_url("mysql://u:p@host/test"), self.args, {})
         self._test_mysql_connect_args_default(self.args['connect_args'])
 
     def test_mysql_pymysql_connect_args_default(self):
         engines._init_connection_args(
-            utils.make_url("mysql+pymysql://u:p@host/test"), self.args)
+            utils.make_url("mysql+pymysql://u:p@host/test"), self.args, {})
         self.assertEqual({'charset': 'utf8'}, self.args['connect_args'])
 
     def test_mysql_mysqldb_connect_args_default(self):
         engines._init_connection_args(
-            utils.make_url("mysql+mysqldb://u:p@host/test"), self.args)
+            utils.make_url("mysql+mysqldb://u:p@host/test"), self.args, {})
         self._test_mysql_connect_args_default(self.args['connect_args'])
 
     def test_postgresql_connect_args_default(self):
         engines._init_connection_args(
-            utils.make_url("postgresql://u:p@host/test"), self.args)
+            utils.make_url("postgresql://u:p@host/test"), self.args, {})
         self.assertEqual('utf8', self.args['client_encoding'])
         self.assertFalse(self.args['connect_args'])
 
     def test_mysqlconnector_raise_on_warnings_default(self):
         engines._init_connection_args(
             utils.make_url("mysql+mysqlconnector://u:p@host/test"),
-            self.args)
+            self.args, {})
         self.assertEqual(False, self.args['connect_args']['raise_on_warnings'])
 
     def test_mysqlconnector_raise_on_warnings_override(self):
@@ -776,7 +776,7 @@ class CreateEngineTest(test_base.BaseTestCase):
             utils.make_url(
                 "mysql+mysqlconnector://u:p@host/test"
                 "?raise_on_warnings=true"),
-            self.args
+            self.args, {}
         )
 
         self.assertNotIn('raise_on_warnings', self.args['connect_args'])
@@ -851,18 +851,18 @@ class ProcessGuardTest(db_test_base._DbTestCase):
 
         with mock.patch("os.getpid", get_parent_pid):
             with self.engine.connect() as conn:
-                dbapi_id = id(conn.connection.connection)
+                dbapi_id = id(compat.driver_connection(conn))
 
         with mock.patch("os.getpid", get_child_pid):
             with self.engine.connect() as conn:
-                new_dbapi_id = id(conn.connection.connection)
+                new_dbapi_id = id(compat.driver_connection(conn))
 
         self.assertNotEqual(dbapi_id, new_dbapi_id)
 
         # ensure it doesn't trip again
         with mock.patch("os.getpid", get_child_pid):
             with self.engine.connect() as conn:
-                newer_dbapi_id = id(conn.connection.connection)
+                newer_dbapi_id = id(compat.driver_connection(conn))
 
         self.assertEqual(new_dbapi_id, newer_dbapi_id)
 
@@ -906,13 +906,12 @@ class MySQLConnectPingListenerTest(db_test_base._MySQLOpportunisticTestCase):
             with self.engine.begin() as conn:
                 self.assertTrue(isinstance(conn._transaction,
                                            base_engine.RootTransaction))
-                engines._connect_ping_listener(conn, False)
                 # TODO(ralonsoh): drop this check once SQLAlchemy minimum
                 #  version is 2.0.
-                sqla_version = versionutils.convert_version_to_tuple(
-                    sqlalchemy.__version__)
-                if sqla_version[0] >= 2:
+                if compat.sqla_2:
+                    engines._connect_ping_listener(conn)
                     self.assertIsNone(conn._transaction)
                 else:
+                    engines._connect_ping_listener(conn, False)
                     self.assertTrue(isinstance(conn._transaction,
                                                base_engine.RootTransaction))

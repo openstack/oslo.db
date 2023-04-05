@@ -393,8 +393,8 @@ def update_returning_pk(query, values, surrogate_key):
     mapper = inspect(entity).mapper
     session = query.session
 
-    bind = session.connection(mapper=mapper)
-    if bind.dialect.implicit_returning:
+    bind = session.connection(bind_arguments=dict(mapper=mapper))
+    if bind.dialect.name == "postgresql":
         pk_strategy = _pk_strategy_returning
     elif bind.dialect.name == 'mysql' and \
         len(mapper.primary_key) == 1 and \

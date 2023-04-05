@@ -241,7 +241,6 @@ class Backend(object):
         :raises: ``BackendNotAvailable`` if the backend is not available.
 
         """
-
         if not self.verified:
             try:
                 eng = self._ensure_backend_available(self.url)
@@ -493,7 +492,6 @@ class BackendImpl(object, metaclass=abc.ABCMeta):
         then emit a command to switch to the named database.
 
         """
-
         url = utils.make_url(base_url)
 
         # TODO(zzzeek): remove hasattr() conditional in favor of "url.set()"
@@ -515,16 +513,14 @@ class MySQLBackendImpl(BackendImpl):
         return "mysql+pymysql://openstack_citest:openstack_citest@localhost/"
 
     def create_named_database(self, engine, ident, conditional=False):
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             if not conditional or not self.database_exists(conn, ident):
-                with conn.begin():
-                    conn.exec_driver_sql("CREATE DATABASE %s" % ident)
+                conn.exec_driver_sql("CREATE DATABASE %s" % ident)
 
     def drop_named_database(self, engine, ident, conditional=False):
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             if not conditional or self.database_exists(conn, ident):
-                with conn.begin():
-                    conn.exec_driver_sql("DROP DATABASE %s" % ident)
+                conn.exec_driver_sql("DROP DATABASE %s" % ident)
 
     def database_exists(self, engine, ident):
         s = sql.text("SHOW DATABASES LIKE :ident")
@@ -585,19 +581,17 @@ class PostgresqlBackendImpl(BackendImpl):
             isolation_level="AUTOCOMMIT",
         ) as conn:
             if not conditional or not self.database_exists(conn, ident):
-                with conn.begin():
-                    conn.exec_driver_sql("CREATE DATABASE %s" % ident)
+                conn.exec_driver_sql("CREATE DATABASE %s" % ident)
 
     def drop_named_database(self, engine, ident, conditional=False):
         with engine.connect().execution_options(
             isolation_level="AUTOCOMMIT",
         ) as conn:
             self._close_out_database_users(conn, ident)
-            with conn.begin():
-                if conditional:
-                    conn.exec_driver_sql("DROP DATABASE IF EXISTS %s" % ident)
-                else:
-                    conn.exec_driver_sql("DROP DATABASE %s" % ident)
+            if conditional:
+                conn.exec_driver_sql("DROP DATABASE IF EXISTS %s" % ident)
+            else:
+                conn.exec_driver_sql("DROP DATABASE %s" % ident)
 
     def drop_additional_objects(self, conn):
         enums = [e['name'] for e in sqlalchemy.inspect(conn).get_enums()]

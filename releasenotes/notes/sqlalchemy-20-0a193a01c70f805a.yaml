@@ -1,0 +1,11 @@
+---
+features:
+  - |
+    oslo.db now supports SQLAlchemy 2.0.
+  - |
+    A new ``oslo_db.compat`` module has been added. This provides a number of
+    shims for handling differences between SQLAlchemy 1.x and 2.x.
+upgrade:
+  - |
+    The ability to create engine facades that used autocommit, first deprecated
+    in 12.1.0, has now been removed. This is not supported in SQLAlchemy 2.x.

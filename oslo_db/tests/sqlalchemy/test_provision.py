@@ -13,6 +13,7 @@
 import os
 from unittest import mock
 
+from sqlalchemy.engine import url as sqla_url
 from sqlalchemy import exc as sa_exc
 from sqlalchemy import inspect
 from sqlalchemy import schema
@@ -156,8 +157,8 @@ class AdHocURLTest(test_base.BaseTestCase):
         fixture.setUp()
 
         self.assertEqual(
-            str(enginefacade._context_manager._factory._writer_engine.url),
-            "sqlite:///foo.db"
+            enginefacade._context_manager._factory._writer_engine.url,
+            sqla_url.make_url("sqlite:///foo.db")
             )
 
         self.assertTrue(os.path.exists("foo.db"))
@@ -176,14 +177,14 @@ class AdHocURLTest(test_base.BaseTestCase):
         self.addCleanup(
             mysql_backend.drop_named_database, "adhoc_test"
         )
-        url = str(mysql_backend.provisioned_database_url("adhoc_test"))
+        url = mysql_backend.provisioned_database_url("adhoc_test")
 
         fixture = test_fixtures.AdHocDbFixture(url)
 
         fixture.setUp()
 
         self.assertEqual(
-            str(enginefacade._context_manager._factory._writer_engine.url),
+            enginefacade._context_manager._factory._writer_engine.url,
             url
         )
 

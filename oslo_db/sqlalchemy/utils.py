@@ -213,7 +213,7 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
             null_order_by_stmt = {
                 "": None,
                 "nullsfirst": sort_key_attr.is_(None),
-                "nullslast": sort_key_attr.isnot(None),
+                "nullslast": sort_key_attr.is_not(None),
             }[null_sort_dir]
         except KeyError:
             raise ValueError(_("Unknown sort direction, "
@@ -1016,26 +1016,29 @@ def suspend_fk_constraints_for_col_alter(
         yield
     else:
         with engine.connect() as conn:
-            insp = inspect(conn)
-            fks = []
-            for ref_table_name in referents:
-                for fk in insp.get_foreign_keys(ref_table_name):
-                    if not fk.get('name'):
-                        raise AssertionError("foreign key hasn't a name.")
-                    if fk['referred_table'] == table_name and \
-                            column_name in fk['referred_columns']:
-                        fk['source_table'] = ref_table_name
-                        if 'options' not in fk:
-                            fk['options'] = {}
-                        fks.append(fk)
-
-            ctx = MigrationContext.configure(conn)
-            op = Operations(ctx)
-
             with conn.begin():
+                insp = inspect(conn)
+                fks = []
+                for ref_table_name in referents:
+                    for fk in insp.get_foreign_keys(ref_table_name):
+                        if not fk.get('name'):
+                            raise AssertionError("foreign key hasn't a name.")
+                        if fk['referred_table'] == table_name and \
+                                column_name in fk['referred_columns']:
+                            fk['source_table'] = ref_table_name
+                            if 'options' not in fk:
+                                fk['options'] = {}
+                            fks.append(fk)
+
+                ctx = MigrationContext.configure(conn)
+                op = Operations(ctx)
+
                 for fk in fks:
                     op.drop_constraint(
-                        fk['name'], fk['source_table'], type_="foreignkey")
+                        fk['name'],
+                        fk['source_table'],
+                        type_="foreignkey",
+                    )
 
             yield
 

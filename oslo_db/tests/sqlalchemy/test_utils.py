@@ -26,7 +26,7 @@ from sqlalchemy.dialects.postgresql import psycopg2
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import mapper
+from sqlalchemy.orm import registry
 from sqlalchemy.orm import Session
 from sqlalchemy import PrimaryKeyConstraint
 from sqlalchemy import sql
@@ -131,7 +131,8 @@ fake_table = Table(
     Column('key', String(50))
 )
 
-mapper(FakeTableClassicalyMapped, fake_table)
+reg = registry()
+reg.map_imperatively(FakeTableClassicalyMapped, fake_table)
 
 
 class FakeModel(object):
@@ -311,10 +312,16 @@ class TestPaginateQuery(test_base.BaseTestCase):
             'another_crit',
         ]
 
-        with mock.patch.object(self.model.user_id, 'isnot') as mock_isnot, \
-                mock.patch.object(self.model.user_id, 'is_') as mock_is_a, \
-                mock.patch.object(self.model.project_id, 'is_') as mock_is_b:
-            mock_isnot.return_value = 'asc_null_1'
+        with mock.patch.object(
+            self.model.user_id.comparator.expression, 'is_not'
+        ) as mock_is_not, \
+                mock.patch.object(
+                    self.model.user_id.comparator.expression, 'is_'
+                ) as mock_is_a, \
+                mock.patch.object(
+                    self.model.project_id.comparator.expression, 'is_'
+                ) as mock_is_b:
+            mock_is_not.return_value = 'asc_null_1'
             mock_is_a.side_effect = [
                 'desc_null_filter_1',
                 'desc_null_filter_2',
@@ -330,7 +337,7 @@ class TestPaginateQuery(test_base.BaseTestCase):
                                  sort_dirs=[
                                      'asc-nullslast', 'desc-nullsfirst'])
 
-            mock_isnot.assert_called_once_with(None)
+            mock_is_not.assert_called_once_with(None)
             mock_is_a.assert_has_calls([
                 mock.call(None),
                 mock.call(None),
@@ -384,11 +391,17 @@ class TestPaginateQuery(test_base.BaseTestCase):
         mock_and.return_value = 'some_crit'
         mock_or.side_effect = ['or_1', 'some_f']
 
-        with mock.patch.object(self.model.user_id, 'isnot') as mock_isnot, \
-                mock.patch.object(self.model.updated_at, 'is_') as mock_is_a, \
-                mock.patch.object(self.model.user_id, 'is_') as mock_is_b:
+        with mock.patch.object(
+            self.model.user_id.comparator.expression, 'is_not'
+        ) as mock_is_not, \
+                mock.patch.object(
+                    self.model.updated_at.comparator.expression, 'is_'
+                ) as mock_is_a, \
+                mock.patch.object(
+                    self.model.user_id.comparator.expression, 'is_'
+                ) as mock_is_b:
 
-            mock_isnot.return_value = 'asc_null_1'
+            mock_is_not.return_value = 'asc_null_1'
             mock_is_a.return_value = 'desc_null_1'
             mock_is_b.side_effect = ['asc_null_filter_1', 'asc_null_filter_2']
 
@@ -397,7 +410,7 @@ class TestPaginateQuery(test_base.BaseTestCase):
                                  marker=self.marker,
                                  sort_dirs=[
                                      'asc-nullslast', 'desc-nullsfirst'])
-            mock_isnot.assert_called_once_with(None)
+            mock_is_not.assert_called_once_with(None)
             mock_is_a.assert_called_once_with(None)
             mock_is_b.assert_has_calls([mock.call(None), mock.call(None)])
 
@@ -445,12 +458,20 @@ class TestPaginateQuery(test_base.BaseTestCase):
         ]
         self.query.filter.return_value = self.query
 
-        with mock.patch.object(self.model.user_id, 'isnot') as mock_isnot, \
-                mock.patch.object(self.model.updated_at, 'is_') as mock_is_a, \
-                mock.patch.object(self.model.user_id, 'is_') as mock_is_b, \
-                mock.patch.object(self.model.project_id, 'is_') as mock_is_c:
+        with mock.patch.object(
+            self.model.user_id.comparator.expression, 'is_not'
+        ) as mock_is_not, \
+                mock.patch.object(
+                    self.model.updated_at.comparator.expression, 'is_'
+                ) as mock_is_a, \
+                mock.patch.object(
+                    self.model.user_id.comparator.expression, 'is_'
+                ) as mock_is_b, \
+                mock.patch.object(
+                    self.model.project_id.comparator.expression, 'is_'
+                ) as mock_is_c:
 
-            mock_isnot.return_value = 'asc_null_1'
+            mock_is_not.return_value = 'asc_null_1'
             mock_is_a.return_value = 'desc_null_1'
             mock_is_b.side_effect = ['asc_null_filter_1', 'asc_null_filter_2']
             mock_is_c.side_effect = ['desc_null_3', 'desc_null_filter_3']
@@ -461,7 +482,7 @@ class TestPaginateQuery(test_base.BaseTestCase):
                                  sort_dirs=['asc-nullslast', 'desc-nullsfirst',
                                             'desc-nullsfirst'])
 
-            mock_isnot.assert_called_once_with(None)
+            mock_is_not.assert_called_once_with(None)
             mock_is_a.assert_called_once_with(None)
             mock_is_b.assert_has_calls([mock.call(None), mock.call(None)])
             mock_is_c.assert_has_calls([mock.call(None), mock.call(None)])
@@ -932,12 +953,12 @@ class TestConnectionUtils(test_base.BaseTestCase):
     def setUp(self):
         super(TestConnectionUtils, self).setUp()
 
-        self.full_credentials = {'backend': 'postgresql',
+        self.full_credentials = {'backend': 'postgresql+psycopg2',
                                  'database': 'test',
                                  'user': 'dude',
                                  'passwd': 'pass'}
 
-        self.connect_string = 'postgresql://dude:pass@localhost/test'
+        self.connect_string = 'postgresql+psycopg2://dude:pass@localhost/test'
 
         # NOTE(rpodolyaka): mock the dialect parts, so that we don't depend
         # on psycopg2 (or any other DBAPI implementation) in these tests
@@ -945,8 +966,20 @@ class TestConnectionUtils(test_base.BaseTestCase):
         @classmethod
         def fake_dbapi(cls):
             return mock.MagicMock()
-        patch_dbapi = mock.patch.object(psycopg2.PGDialect_psycopg2, 'dbapi',
-                                        new=fake_dbapi)
+
+        class OurDialect(psycopg2.PGDialect_psycopg2):
+            def dbapi(self):
+                return fake_dbapi
+
+            def import_dbapi(self):
+                return fake_dbapi
+
+        patch_dbapi = mock.patch.object(
+            psycopg2,
+            "PGDialect_psycopg2",
+            new=OurDialect,
+        )
+
         patch_dbapi.start()
         self.addCleanup(patch_dbapi.stop)
 
@@ -965,7 +998,7 @@ class TestConnectionUtils(test_base.BaseTestCase):
                 self.connect_string)
 
             self.assertIsInstance(eng, sqlalchemy.engine.base.Engine)
-            self.assertEqual(self.connect_string, str(eng.url))
+            self.assertEqual(utils.make_url(self.connect_string), eng.url)
 
             mock_connect.assert_called_once()
             fake_connection.close.assert_called_once()
@@ -982,10 +1015,10 @@ class TestConnectionUtils(test_base.BaseTestCase):
                 provision.Backend._ensure_backend_available,
                 self.connect_string)
             self.assertEqual(
-                "Backend 'postgresql' is unavailable: "
+                "Backend 'postgresql+psycopg2' is unavailable: "
                 "Could not connect", str(exc))
             self.assertEqual(
-                "The postgresql backend is unavailable: %s" % err,
+                "The postgresql+psycopg2 backend is unavailable: %s" % err,
                 log.output.strip())
 
     def test_ensure_backend_available_no_dbapi_raises(self):
@@ -1003,10 +1036,10 @@ class TestConnectionUtils(test_base.BaseTestCase):
                 utils.make_url(self.connect_string))
 
             self.assertEqual(
-                "Backend 'postgresql' is unavailable: "
+                "Backend 'postgresql+psycopg2' is unavailable: "
                 "No DBAPI installed", str(exc))
             self.assertEqual(
-                "The postgresql backend is unavailable: Can't import "
+                "The postgresql+psycopg2 backend is unavailable: Can't import "
                 "DBAPI module foobar", log.output.strip())
 
     def test_get_db_connection_info(self):

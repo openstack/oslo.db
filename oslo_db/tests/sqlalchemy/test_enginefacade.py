@@ -357,11 +357,11 @@ class MockFacadeTest(test_base.BaseTestCase):
         maker_factories = mock.Mock(side_effect=get_maker)
 
         maker_factories(
-            autocommit=False, engine=engines.writer,
+            engine=engines.writer,
             expire_on_commit=False)
         if self.slave_uri:
             maker_factories(
-                autocommit=False, engine=engines.async_reader,
+                engine=engines.async_reader,
                 expire_on_commit=False)
 
         yield makers
