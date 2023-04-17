@@ -22,7 +22,6 @@ import logging
 import os
 import re
 import time
-from urllib import parse
 
 import debtcollector.removals
 import debtcollector.renames
@@ -130,31 +129,6 @@ def _setup_logging(connection_debug=0):
             logger.setLevel(logging.WARNING)
 
 
-def _extend_url_parameters(url, connection_parameters):
-    # TODO(zzzeek): remove hasattr() conditional when SQLAlchemy 1.4 is the
-    # minimum version in requirements; call update_query_string()
-    # unconditionally
-    if hasattr(url, "update_query_string"):
-        return url.update_query_string(connection_parameters, append=True)
-
-    # TODO(zzzeek): remove the remainder of this method when SQLAlchemy 1.4
-    # is the minimum version in requirements
-    for key, value in parse.parse_qs(
-            connection_parameters).items():
-        if key in url.query:
-            existing = url.query[key]
-            if not isinstance(existing, list):
-                url.query[key] = existing = utils.to_list(existing)
-            existing.extend(value)
-            value = existing
-        else:
-            url.query[key] = value
-        if len(value) == 1:
-            url.query[key] = value[0]
-
-    return url
-
-
 def _vet_url(url):
     if "+" not in url.drivername and not url.drivername.startswith("sqlite"):
         if url.drivername.startswith("mysql"):
@@ -201,7 +175,7 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     url = utils.make_url(sql_connection)
 
     if connection_parameters:
-        url = _extend_url_parameters(url, connection_parameters)
+        url = url.update_query_string(connection_parameters, append=True)
 
     _vet_url(url)
 
