@@ -44,7 +44,7 @@ def filters(dbname, exception_type, regex):
     """
     def _receive(fn):
         _registry[dbname][exception_type].extend(
-            (fn, re.compile(reg))
+            (fn, re.compile(reg, re.DOTALL))
             for reg in
             ((regex,) if not isinstance(regex, tuple) else regex)
         )
@@ -432,50 +432,51 @@ def handler(context):
 
     dialect = compat.dialect_from_exception_context(context)
     for per_dialect in _dialect_registries(dialect):
-        for exc in (
-                context.sqlalchemy_exception,
-                context.original_exception):
+        for exc in (context.sqlalchemy_exception, context.original_exception):
             for super_ in exc.__class__.__mro__:
-                if super_ in per_dialect:
-                    regexp_reg = per_dialect[super_]
-                    for fn, regexp in regexp_reg:
-                        match = regexp.match(exc.args[0])
-                        if match:
-                            try:
-                                fn(
-                                    exc,
-                                    match,
-                                    dialect.name,
-                                    context.is_disconnect)
-                            except exception.DBError as dbe:
-                                if (
-                                    context.connection is not None and
-                                    not context.connection.closed and
-                                    not context.connection.invalidated and
-                                    ROLLBACK_CAUSE_KEY
-                                    in context.connection.info
-                                ):
-                                    dbe.cause = \
-                                        context.connection.info.pop(
-                                            ROLLBACK_CAUSE_KEY)
+                if super_ not in per_dialect:
+                    continue
 
-                                if isinstance(
-                                        dbe, exception.DBConnectionError):
-                                    context.is_disconnect = True
+                regexp_reg = per_dialect[super_]
+                for fn, regexp in regexp_reg:
+                    match = regexp.match(exc.args[0])
+                    if not match:
+                        continue
 
-                                    # new in 2.0.5
-                                    if (
-                                        hasattr(context, "is_pre_ping") and
-                                        context.is_pre_ping
-                                    ):
-                                        # if this is a pre-ping, need to
-                                        # integrate with the built
-                                        # in pre-ping handler that doesnt know
-                                        # about DBConnectionError, just needs
-                                        # the updated status
-                                        return None
+                    try:
+                        fn(
+                            exc,
+                            match,
+                            dialect.name,
+                            context.is_disconnect,
+                        )
+                    except exception.DBError as dbe:
+                        if (
+                            context.connection is not None and
+                            not context.connection.closed and
+                            not context.connection.invalidated and
+                            ROLLBACK_CAUSE_KEY in context.connection.info
+                        ):
+                            dbe.cause = context.connection.info.pop(
+                                ROLLBACK_CAUSE_KEY,
+                            )
 
-                                return dbe
+                        if isinstance(dbe, exception.DBConnectionError):
+                            context.is_disconnect = True
+
+                            # new in 2.0.5
+                            if (
+                                hasattr(context, "is_pre_ping") and
+                                context.is_pre_ping
+                            ):
+                                # if this is a pre-ping, need to
+                                # integrate with the built
+                                # in pre-ping handler that doesnt know
+                                # about DBConnectionError, just needs
+                                # the updated status
+                                return None
+
+                        return dbe
 
 
 def register_engine(engine):
