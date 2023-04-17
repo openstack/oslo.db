@@ -553,7 +553,7 @@ class _TestTransactionFactory(_TransactionFactory):
     Note that while this is used by oslo.db's own tests of
     the enginefacade system, it is also exported for use by
     the test suites of other projects, first as an element of the
-    oslo_db.sqlalchemy.test_base module, and secondly may be used by
+    oslo_db.sqlalchemy.test_fixtures module, and secondly may be used by
     external test suites directly.
 
     Includes a feature to inject itself temporarily as the factory
