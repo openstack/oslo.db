@@ -19,7 +19,6 @@ from urllib import parse
 import fixtures
 import sqlalchemy
 from sqlalchemy import Boolean, Index, Integer, DateTime, String
-from sqlalchemy import CheckConstraint
 from sqlalchemy import MetaData, Table, Column
 from sqlalchemy import ForeignKey, ForeignKeyConstraint
 from sqlalchemy.dialects.postgresql import psycopg2
@@ -800,23 +799,6 @@ class TestMigrationUtils(db_test_base._DbTestCase):
                          len(deleted_rows_ids))
         for value in soft_deleted_values:
             self.assertIn(value['id'], deleted_rows_ids)
-
-    def test_detect_boolean_deleted_constraint_detection(self):
-        table_name = 'abc'
-        table = Table(table_name, self.meta,
-                      Column('id', Integer, primary_key=True),
-                      Column('deleted', Boolean(create_constraint=True)))
-        ck = [
-            const for const in table.constraints if
-            isinstance(const, CheckConstraint)][0]
-
-        self.assertTrue(utils._is_deleted_column_constraint(ck))
-
-        self.assertFalse(
-            utils._is_deleted_column_constraint(
-                CheckConstraint("deleted > 5")
-            )
-        )
 
     def test_get_foreign_key_constraint_name(self):
         table_1 = Table('table_name_1', self.meta,
