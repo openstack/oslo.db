@@ -206,7 +206,7 @@ class ProgrammingError(Exception):
     pass
 
 
-class QueryParamTest(db_test_base.DbTestCase):
+class QueryParamTest(db_test_base._DbTestCase):
     def _fixture(self):
         from sqlalchemy import create_engine
 
