@@ -1,0 +1,24 @@
+---
+upgrade:
+  - |
+    The following test fixtures and base test classes were deprecated and have
+    now been removed:
+
+    - ``oslo_db.sqlalchemy.test_base.DbFixture``
+    - ``oslo_db.sqlalchemy.test_base.DbTestCase``
+    - ``oslo_db.sqlalchemy.test_base.OpportunisticTestCase``
+    - ``oslo_db.sqlalchemy.test_base.MySQLOpportunisticFixture``
+    - ``oslo_db.sqlalchemy.test_base.PostgreSQLOpportunisticFixture``
+    - ``oslo_db.sqlalchemy.test_base.MySQLOpportunisticTestCase``
+    - ``oslo_db.sqlalchemy.test_base.PostgreSQLOpportunisticTestCase``
+
+    They have all been replaced by equivalent test fixtures and test class
+    mixins in ``oslo_db.sqlalchemy.test_fixtures``.
+
+    In addition, the following test cases were being inadvertently used
+    publicly despite being private to oslo.db. They were also deprecated and
+    have now been removed:
+
+    - ``oslo_db.tests.sqlalchemy.base.DbTestCase``
+    - ``oslo_db.tests.sqlalchemy.base.MySQLOpportunisticTestCase``
+    - ``oslo_db.tests.sqlalchemy.base.PostgreSQLOpportunisticTestCase``

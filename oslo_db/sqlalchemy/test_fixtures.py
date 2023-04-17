@@ -546,9 +546,9 @@ def optimize_package_test_loader(file_):
 
     The function is invoked as::
 
-        from oslo_db.sqlalchemy import test_base
+        from oslo_db.sqlalchemy import test_fixtures
 
-        load_tests = test_base.optimize_package_test_loader(__file__)
+        load_tests = test_fixtures.optimize_package_test_loader(__file__)
 
     The loader *must* be present in the package level __init__.py.
 
@@ -586,9 +586,9 @@ def optimize_module_test_loader():
 
     The function is invoked as::
 
-        from oslo_db.sqlalchemy import test_base
+        from oslo_db.sqlalchemy import test_fixtures
 
-        load_tests = test_base.optimize_module_test_loader()
+        load_tests = test_fixtures.optimize_module_test_loader()
 
     The loader *must* be present in an individual module, and *not* the
     package level __init__.py.
