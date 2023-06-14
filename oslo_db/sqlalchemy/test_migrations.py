@@ -18,6 +18,7 @@ import abc
 import functools
 import logging
 import pprint
+import re
 
 import alembic
 import alembic.autogenerate
@@ -239,6 +240,12 @@ class ModelsMigrationsSync(object, metaclass=abc.ABCMeta):
                 isinstance(meta_def.arg, expr.True_) and insp_def == "1" or
                 isinstance(meta_def.arg, expr.False_) and insp_def == "0"
             )
+
+        if isinstance(meta_col.type, sqlalchemy.String):
+            if meta_def is None or insp_def is None:
+                return meta_def != insp_def
+            insp_def = re.sub(r"^'|'$", "", insp_def)
+            return meta_def.arg != insp_def
 
     def filter_metadata_diff(self, diff):
         """Filter changes before assert in test_models_sync().
