@@ -1,0 +1,4 @@
+---
+upgrade:
+  - |
+    MySQL NDB Cluster support has been removed.

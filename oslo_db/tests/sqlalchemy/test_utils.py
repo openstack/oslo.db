@@ -28,7 +28,6 @@ from sqlalchemy.orm import column_property
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import registry
 from sqlalchemy.orm import Session
-from sqlalchemy import PrimaryKeyConstraint
 from sqlalchemy import sql
 from sqlalchemy.sql.expression import cast
 from sqlalchemy.sql import select
@@ -818,103 +817,6 @@ class TestMigrationUtils(db_test_base._DbTestCase):
                                                     'table_name_2',
                                                     'foreign_id')
         self.assertEqual(fkc, 'table_name_2_fk1')
-
-    @db_test_base.backend_specific('mysql', 'postgresql')
-    def test_suspend_fk_constraints_for_col_alter(self):
-
-        a = Table(
-            'a', self.meta,
-            Column('id', Integer, primary_key=True)
-        )
-        b = Table(
-            'b', self.meta,
-            Column('key', Integer),
-            Column('archive_id', Integer),
-            Column('aid', ForeignKey('a.id')),
-            PrimaryKeyConstraint("key", "archive_id")
-        )
-        c = Table(
-            'c', self.meta,
-            Column('id', Integer, primary_key=True),
-            Column('aid', ForeignKey('a.id')),
-            Column('key', Integer),
-            Column('archive_id', Integer),
-            ForeignKeyConstraint(
-                ['key', 'archive_id'], ['b.key', 'b.archive_id'],
-                name="some_composite_fk")
-        )
-        self.meta.create_all(self.engine, tables=[a, b, c])
-
-        def get_fk_entries():
-            inspector = sqlalchemy.inspect(self.engine)
-            return sorted(
-                inspector.get_foreign_keys('b') +
-                inspector.get_foreign_keys('c'),
-                key=lambda fk: fk['referred_table']
-            )
-
-        def normalize_fk_entries(fks):
-            return [{
-                    'name': fk['name'],
-                    'referred_columns': fk['referred_columns'],
-                    'referred_table': fk['referred_table'],
-                    } for fk in fks]
-
-        existing_foreign_keys = get_fk_entries()
-        self.assertEqual(
-            [{'name': mock.ANY,
-              'referred_columns': ['id'], 'referred_table': 'a'},
-                {'name': mock.ANY,
-                 'referred_columns': ['id'], 'referred_table': 'a'},
-                {'name': 'some_composite_fk',
-                 'referred_columns': ['key', 'archive_id'],
-                 'referred_table': 'b'}],
-            normalize_fk_entries(existing_foreign_keys)
-        )
-
-        with mock.patch("oslo_db.sqlalchemy.ndb._ndb_status",
-                        mock.Mock(return_value=True)):
-            with utils.suspend_fk_constraints_for_col_alter(
-                    self.engine, 'a', 'id', referents=['b', 'c']):
-                no_a_foreign_keys = get_fk_entries()
-                self.assertEqual(
-                    [{'name': 'some_composite_fk',
-                      'referred_columns': ['key', 'archive_id'],
-                      'referred_table': 'b'}],
-                    normalize_fk_entries(no_a_foreign_keys)
-                )
-
-        self.assertEqual(existing_foreign_keys, get_fk_entries())
-
-        with mock.patch("oslo_db.sqlalchemy.ndb._ndb_status",
-                        mock.Mock(return_value=True)):
-            with utils.suspend_fk_constraints_for_col_alter(
-                    self.engine, 'b', 'archive_id', referents=['c']):
-                self.assertEqual(
-                    [{'name': mock.ANY,
-                      'referred_columns': ['id'], 'referred_table': 'a'},
-                        {'name': mock.ANY,
-                         'referred_columns': ['id'], 'referred_table': 'a'}],
-                    normalize_fk_entries(get_fk_entries())
-                )
-
-        self.assertEqual(existing_foreign_keys, get_fk_entries())
-
-        with utils.suspend_fk_constraints_for_col_alter(
-                self.engine, 'a', 'id', referents=['b', 'c']):
-            self.assertEqual(existing_foreign_keys, get_fk_entries())
-
-        if self.engine.name == 'mysql':
-            self.engine.dialect._oslodb_enable_ndb_support = True
-
-            self.addCleanup(
-                setattr, self.engine.dialect, "_oslodb_enable_ndb_support",
-                False
-            )
-
-            with utils.suspend_fk_constraints_for_col_alter(
-                    self.engine, 'a', 'id', referents=['b', 'c']):
-                self.assertEqual(no_a_foreign_keys, get_fk_entries())
 
 
 class PostgresqlTestMigrations(TestMigrationUtils,

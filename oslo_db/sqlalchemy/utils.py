@@ -18,14 +18,10 @@
 
 import collections
 from collections import abc
-import contextlib
 import itertools
 import logging
 import re
 
-from alembic.migration import MigrationContext
-from alembic.operations import Operations
-import debtcollector.removals
 from oslo_utils import timeutils
 import sqlalchemy
 from sqlalchemy import Boolean
@@ -45,7 +41,6 @@ from sqlalchemy import Table
 from oslo_db._i18n import _
 from oslo_db import exception
 from oslo_db.sqlalchemy import models
-from oslo_db.sqlalchemy import ndb
 
 # NOTE(ochuprykov): Add references for backwards compatibility
 InvalidSortKey = exception.InvalidSortKey
@@ -848,45 +843,6 @@ def get_non_innodb_tables(connectable, skip_tables=('migrate_version',
     return [i[0] for i in noninnodb]
 
 
-@debtcollector.removals.remove(
-    message=(
-        'Support for the MySQL NDB Cluster storage engine has been deprecated '
-        'and will be removed in a future release.'
-    ),
-    version='12.1.0',
-)
-def get_non_ndbcluster_tables(connectable, skip_tables=None):
-    """Get a list of tables which don't use MySQL Cluster (NDB) storage engine.
-
-    :param connectable: a SQLAlchemy Engine or Connection instance
-    :param skip_tables: a list of tables which might have a different
-                        storage engine
-    """
-    query_str = """
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema = :database AND
-              engine != 'ndbcluster'
-    """
-
-    params = {}
-    if skip_tables:
-        params = dict(
-            ('skip_%s' % i, table_name)
-            for i, table_name in enumerate(skip_tables)
-        )
-
-        placeholders = ', '.join(':' + p for p in params)
-        query_str += ' AND table_name NOT IN (%s)' % placeholders
-
-    params['database'] = connectable.engine.url.database
-    query = text(query_str)
-    # TODO(stephenfin): What about if this is already a Connection?
-    with connectable.connect() as conn, conn.begin():
-        nonndbcluster = connectable.execute(query, **params)
-    return [i[0] for i in nonndbcluster]
-
-
 def get_foreign_key_constraint_name(engine, table_name, column_name):
     """Find the name of foreign key in a table, given constrained column name.
 
@@ -904,93 +860,6 @@ def get_foreign_key_constraint_name(engine, table_name, column_name):
     for fk in insp.get_foreign_keys(table_name):
         if column_name in fk['constrained_columns']:
             return fk['name']
-
-
-@contextlib.contextmanager
-def suspend_fk_constraints_for_col_alter(
-    engine, table_name, column_name, referents=[],
-):
-    """Detect foreign key constraints, drop, and recreate.
-
-    This is used to guard against a column ALTER that on some backends
-    cannot proceed unless foreign key constraints are not present.
-
-    e.g.::
-
-        from oslo_db.sqlalchemy.util import (
-            suspend_fk_constraints_for_col_alter
-        )
-
-        with suspend_fk_constraints_for_col_alter(
-            migrate_engine, "user_table",
-            referents=[
-                "local_user", "nonlocal_user", "project"
-            ]):
-            user_table.c.domain_id.alter(nullable=False)
-
-    :param engine: a SQLAlchemy engine (or connection)
-
-    :param table_name: target table name.  All foreign key constraints
-     that refer to the table_name / column_name will be dropped and recreated.
-
-    :param column_name: target column name.  all foreign key constraints
-     which refer to this column, either partially or fully, will be dropped
-     and recreated.
-
-    :param referents: sequence of string table names to search for foreign
-     key constraints.   A future version of this function may no longer
-     require this argument, however for the moment it is required.
-    """
-    debtcollector.deprecate(
-        (
-            'Support for the MySQL NDB Cluster storage engine has been '
-            'deprecated and will be removed in a future release.'
-        ),
-        version='12.1.0',
-    )
-
-    if not ndb._ndb_status(engine):
-        yield
-    else:
-        with engine.connect() as conn:
-            with conn.begin():
-                insp = inspect(conn)
-                fks = []
-                for ref_table_name in referents:
-                    for fk in insp.get_foreign_keys(ref_table_name):
-                        if not fk.get('name'):
-                            raise AssertionError("foreign key hasn't a name.")
-                        if fk['referred_table'] == table_name and \
-                                column_name in fk['referred_columns']:
-                            fk['source_table'] = ref_table_name
-                            if 'options' not in fk:
-                                fk['options'] = {}
-                            fks.append(fk)
-
-                ctx = MigrationContext.configure(conn)
-                op = Operations(ctx)
-
-                for fk in fks:
-                    op.drop_constraint(
-                        fk['name'],
-                        fk['source_table'],
-                        type_="foreignkey",
-                    )
-
-            yield
-
-            with conn.begin():
-                for fk in fks:
-                    op.create_foreign_key(
-                        fk['name'], fk['source_table'],
-                        fk['referred_table'],
-                        fk['constrained_columns'],
-                        fk['referred_columns'],
-                        onupdate=fk['options'].get('onupdate'),
-                        ondelete=fk['options'].get('ondelete'),
-                        deferrable=fk['options'].get('deferrable'),
-                        initially=fk['options'].get('initially'),
-                    )
 
 
 def make_url(target):

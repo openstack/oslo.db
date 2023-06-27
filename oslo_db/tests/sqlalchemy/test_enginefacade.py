@@ -257,7 +257,6 @@ class MockFacadeTest(test_base.BaseTestCase):
             sql_connection=self.engine_uri,
             **{
                 k: mock.ANY for k in self.factory._engine_cfg.keys()
-                if k not in ('mysql_enable_ndb',)
             },
         )
         if self.slave_uri:
@@ -265,7 +264,6 @@ class MockFacadeTest(test_base.BaseTestCase):
                 sql_connection=self.slave_uri,
                 **{
                     k: mock.ANY for k in self.factory._engine_cfg.keys()
-                    if k not in ('mysql_enable_ndb',)
                 },
             )
 

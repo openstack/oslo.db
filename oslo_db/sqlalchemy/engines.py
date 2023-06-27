@@ -35,7 +35,6 @@ from oslo_db import exception
 
 from oslo_db.sqlalchemy import compat
 from oslo_db.sqlalchemy import exc_filters
-from oslo_db.sqlalchemy import ndb
 from oslo_db.sqlalchemy import utils
 
 LOG = logging.getLogger(__name__)
@@ -147,14 +146,6 @@ def _vet_url(url):
             )
 
 
-@debtcollector.removals.removed_kwarg(
-    'mysql_enable_ndb',
-    message=(
-        'Support for the MySQL NDB Cluster storage engine has been deprecated '
-        'and will be removed in a future release.'
-    ),
-    version='12.1.0',
-)
 @debtcollector.renames.renamed_kwarg(
     'idle_timeout',
     'connection_recycle_time',
@@ -162,7 +153,6 @@ def _vet_url(url):
 )
 def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                   mysql_wsrep_sync_wait=None,
-                  mysql_enable_ndb=False,
                   connection_recycle_time=3600,
                   connection_debug=0, max_pool_size=None, max_overflow=None,
                   pool_timeout=None, sqlite_synchronous=True,
@@ -202,9 +192,6 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     )
 
     engine = sqlalchemy.create_engine(url, **engine_args)
-
-    if mysql_enable_ndb:
-        ndb.enable_ndb_support(engine)
 
     _init_events(
         engine,
@@ -359,9 +346,6 @@ def _init_events(
                     "MySQL SQL mode is '%s', "
                     "consider enabling TRADITIONAL or STRICT_ALL_TABLES",
                     realmode)
-
-    if ndb.ndb_status(engine):
-        ndb.init_ndb_events(engine)
 
 
 @_init_events.dispatch_for("sqlite")

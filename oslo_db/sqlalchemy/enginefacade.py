@@ -159,7 +159,6 @@ class _TransactionFactory:
             'sqlite_fk': _Default(False),
             'mysql_sql_mode': _Default('TRADITIONAL'),
             'mysql_wsrep_sync_wait': _Default(),
-            'mysql_enable_ndb': _Default(),
             'connection_recycle_time': _Default(3600),
             'connection_debug': _Default(0),
             'max_pool_size': _Default(),
@@ -231,7 +230,6 @@ class _TransactionFactory:
         :param mysql_sql_mode: MySQL SQL mode, defaults to TRADITIONAL
         :param mysql_wsrep_sync_wait: MySQL wsrep_sync_wait, defaults to None,
             which indicates no setting will be passed
-        :param mysql_enable_ndb: enable MySQL Cluster (NDB) support
         :param connection_recycle_time: connection pool recycle time,
             defaults to 3600. Note the connection does not actually have to be
             "idle" to be recycled.
@@ -311,18 +309,11 @@ class _TransactionFactory:
         self._configure(False, kw)
 
     def _configure(self, as_defaults, kw):
-        if 'mysql_enable_ndb' in kw:
-            debtcollector.deprecate(
-                (
-                    'Support for the MySQL NDB Cluster storage engine has '
-                    'been deprecated and will be removed in a future release.'
-                ),
-                version='12.1.0',
-            )
-
         if self._started:
             raise AlreadyStartedError(
-                "this TransactionFactory is already started")
+                "this TransactionFactory is already started"
+            )
+
         not_supported = []
         for k, v in kw.items():
             for dict_ in (
@@ -1233,10 +1224,6 @@ class LegacyEngineFacade(object):
     :keyword mysql_wsrep_sync_wait: value of wsrep_sync_wait for Galera
                              (defaults to None, which indicates no setting
                              will be passed)
-    :keyword mysql_enable_ndb: If True, transparently enables support for
-                               handling MySQL Cluster (NDB).
-                               (defaults to False)
-                               **DEPRECATED**
     :keyword connection_recycle_time: Time period for connections to be
                             recycled upon checkout (defaults to 3600)
     :keyword connection_debug: verbosity of SQL debugging information.
