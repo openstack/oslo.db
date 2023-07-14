@@ -430,6 +430,10 @@ def handler(context):
         if '*' in _registry:
             yield _registry['*']
 
+    # do not reraise for our own exceptions
+    if isinstance(context.original_exception, exception.DBError):
+        return
+
     dialect = compat.dialect_from_exception_context(context)
     for per_dialect in _dialect_registries(dialect):
         for exc in (context.sqlalchemy_exception, context.original_exception):
