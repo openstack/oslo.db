@@ -24,6 +24,7 @@ from sqlalchemy import ForeignKey, ForeignKeyConstraint
 from sqlalchemy.dialects.postgresql import psycopg2
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import column_property
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import registry
 from sqlalchemy.orm import Session
@@ -73,7 +74,7 @@ class FakeTable(Base):
     updated_at = Column(DateTime, nullable=True)
     enabled = Column(Boolean, default=True)
 
-    _expr_to_appease_mox = project_id + snapshot_id
+    _some_hybrid = column_property(project_id + snapshot_id)
 
     @hybrid_property
     def some_hybrid(self):
@@ -81,7 +82,7 @@ class FakeTable(Base):
 
     @some_hybrid.expression
     def some_hybrid(cls):
-        return cls._expr_to_appease_mox
+        return cls._some_hybrid
 
     def foo(self):
         pass
