@@ -47,7 +47,6 @@ _ASYNC_READER = _symbol('ASYNC_READER')
 
 This state indicates that the transaction is a read-only and is
 safe to use on an asynchronously updated slave database.
-
 """
 
 _READER = _symbol('READER')
@@ -56,7 +55,6 @@ _READER = _symbol('READER')
 This state indicates that the transaction is a read-only and is
 only safe to use on a synchronously updated slave database; otherwise
 the master database should be used.
-
 """
 
 
@@ -65,7 +63,6 @@ _WRITER = _symbol('WRITER')
 
 This state indicates that the transaction writes data and
 should be directed at the master database.
-
 """
 
 
@@ -76,7 +73,6 @@ class _Default:
     _Default() will not take precedence over a value that is specified
     in cfg.CONF.   Values that are set after the fact using configure()
     will supersede those in cfg.CONF.
-
     """
 
     __slots__ = 'value',
@@ -143,7 +139,6 @@ class AlreadyStartedError(TypeError):
     """Raises when a factory is being asked to initialize a second time.
 
     Subclasses :class:`.TypeError` for legacy support.
-
     """
 
 
@@ -154,7 +149,6 @@ class _TransactionFactory:
     based on CONF, however instance-level :class:`._TransactionFactory`
     objects can be made, as is the case with the
     :class:`._TestTransactionFactory` subclass used by the oslo.db test suite.
-
     """
     def __init__(self):
         self._url_cfg = {
@@ -231,92 +225,70 @@ class _TransactionFactory:
         :data:`oslo_db.options.database_opts` configurational defaults to it.
 
         :param connection: database URL
-
         :param slave_connection: database URL
-
         :param sqlite_fk: whether to enable SQLite foreign key pragma; default
-         False
-
+            False
         :param mysql_sql_mode: MySQL SQL mode, defaults to TRADITIONAL
-
         :param mysql_wsrep_sync_wait: MySQL wsrep_sync_wait, defaults to None,
-         which indicates no setting will be passed
-
+            which indicates no setting will be passed
         :param mysql_enable_ndb: enable MySQL Cluster (NDB) support
-
         :param connection_recycle_time: connection pool recycle time,
-         defaults to 3600. Note the connection does not actually have to
-         be "idle" to be recycled.
-
+            defaults to 3600. Note the connection does not actually have to be
+            "idle" to be recycled.
         :param connection_debug: engine logging level, defaults to 0. set to
-         50 for INFO, 100 for DEBUG.
-
+            50 for INFO, 100 for DEBUG.
         :param connection_parameters: additional parameters to append onto the
-         database URL query string, pass as "param1=value1&param2=value2&..."
-
+            database URL query string, pass as
+            "param1=value1&param2=value2&..."
         :param max_pool_size: max size of connection pool, uses CONF for
-         default
-
+            default
         :param max_overflow: max overflow for connection pool, uses CONF for
-         default
-
+            default
         :param sqlite_synchronous: disable SQLite SYNCHRONOUS pragma if False;
-         defaults to True
-
+            defaults to True
         :param connection_trace: enable tracing comments in logging
-
         :param max_retries: max retries to connect, defaults to !0
-
         :param retry_interval: time in seconds between retries, defaults to 10
-
         :param thread_checkin: add sleep(0) on connection checkin to allow
-         greenlet yields, defaults to True
-
+            greenlet yields, defaults to True
         :param json_serializer: JSON serializer for PostgreSQL connections
-
         :param json_deserializer: JSON deserializer for PostgreSQL connections
-
         :param logging_name: logging name for engine
-
         :param expire_on_commit: sets expire_on_commit for SQLAlchemy
-         sessionmaker; defaults to False
-
+            sessionmaker; defaults to False
         :param rollback_reader_sessions: if True, a :class:`.Session` object
-         will have its :meth:`.Session.rollback` method invoked at the end
-         of a ``@reader`` block, actively rolling back the transaction and
-         expiring the objects within, before the :class:`.Session` moves
-         on to be closed, which has the effect of releasing connection
-         resources back to the connection pool and detaching all objects.
-         If False, the :class:`.Session` is
-         not affected at the end of a ``@reader`` block; the underlying
-         connection referred to by this :class:`.Session` will still
-         be released in the enclosing context via the :meth:`.Session.close`
-         method, which still ensures that the DBAPI connection is rolled
-         back, however the objects associated with the :class:`.Session`
-         retain their database-persisted contents after they are detached.
+            will have its :meth:`.Session.rollback` method invoked at the end
+            of a ``@reader`` block, actively rolling back the transaction and
+            expiring the objects within, before the :class:`.Session` moves on
+            to be closed, which has the effect of releasing connection
+            resources back to the connection pool and detaching all objects.
+            If False, the :class:`.Session` is not affected at the end of a
+            ``@reader`` block; the underlying connection referred to by this
+            :class:`.Session` will still be released in the enclosing context
+            via the :meth:`.Session.close` method, which still ensures that the
+            DBAPI connection is rolled back, however the objects associated
+            with the :class:`.Session` retain their database-persisted contents
+            after they are detached.
 
-         .. seealso::
+            .. seealso::
 
-            http://docs.sqlalchemy.org/en/rel_0_9/glossary.html#term-released\
-            SQLAlchemy documentation on what "releasing resources" means.
-
+                http://docs.sqlalchemy.org/en/rel_0_9/glossary.html#term-released\
+                SQLAlchemy documentation on what "releasing resources" means.
         :param synchronous_reader: whether or not to assume a "reader" context
-         needs to guarantee it can read data committed by a "writer" assuming
-         replication lag is present; defaults to True.  When False, a
-         @reader context works the same as @async_reader and will select
-         the "slave" database if present.
-
+            needs to guarantee it can read data committed by a "writer"
+            assuming replication lag is present; defaults to True.  When False,
+            a @reader context works the same as @async_reader and will select
+            the "slave" database if present.
         :param flush_on_subtransaction: if True, a :class:`.Session` object
-         will have its :meth:`.Session.flush` method invoked whenever a context
-         manager or decorator that is not itself the originator of the top-
-         level or savepoint :class:`.Session` transaction exits - in this way
-         it behaves like a "subtransaction" from a :class:`.Session`
-         perspective.
+            will have its :meth:`.Session.flush` method invoked whenever a
+            context manager or decorator that is not itself the originator of
+            the top- level or savepoint :class:`.Session` transaction exits -
+            in this way it behaves like a "subtransaction" from a
+            :class:`.Session` perspective.
 
         .. seealso::
 
             :meth:`._TransactionFactory.configure`
-
         """
         self._configure(True, kw)
 
@@ -335,7 +307,6 @@ class _TransactionFactory:
         .. seealso::
 
             :meth:`._TransactionFactory.configure_defaults`
-
         """
         self._configure(False, kw)
 
@@ -382,7 +353,6 @@ class _TransactionFactory:
         as this factory, however will not share the same transaction context;
         the legacy facade continues to work the old way of returning
         a new Session each time get_session() is called.
-
         """
         if not self._legacy_facade:
             self._legacy_facade = LegacyEngineFacade(None, _factory=self)
@@ -395,7 +365,6 @@ class _TransactionFactory:
         """Return the writer engine for this factory.
 
         Implies start.
-
         """
         if not self._started:
             self._start()
@@ -405,7 +374,6 @@ class _TransactionFactory:
         """Return the reader engine for this factory.
 
         Implies start.
-
         """
         if not self._started:
             self._start()
@@ -415,7 +383,6 @@ class _TransactionFactory:
         """Return the writer sessionmaker for this factory.
 
         Implies start.
-
         """
         if not self._started:
             self._start()
@@ -425,7 +392,6 @@ class _TransactionFactory:
         """Return the reader sessionmaker for this factory.
 
         Implies start.
-
         """
         if not self._started:
             self._start()
@@ -554,7 +520,8 @@ class _TransactionFactory:
             self._started = True
 
     def _setup_for_connection(
-            self, sql_connection, engine_kwargs, maker_kwargs):
+        self, sql_connection, engine_kwargs, maker_kwargs,
+    ):
         if sql_connection is None:
             raise exception.CantStartEngineError(
                 "No sql_connection parameter is established")
@@ -616,13 +583,11 @@ class _TransactionContext(object):
         """Construct a new :class:`.TransactionContext`.
 
         :param factory: the :class:`.TransactionFactory` which will
-         serve as a source of connectivity.
-
+            serve as a source of connectivity.
         :param global_factory: the "global" factory which will be used
-         by the global ``_context_manager`` for new ``_TransactionContext``
-         objects created under this one.  When left as None the actual
-         "global" factory is used.
-
+            by the global ``_context_manager`` for new ``_TransactionContext``
+            objects created under this one.  When left as None the actual
+            "global" factory is used.
         """
         self.factory = factory
         self.global_factory = global_factory
