@@ -431,6 +431,7 @@ def handler(context):
             yield _registry['*']
 
     # do not reraise for our own exceptions
+    # https://github.com/sqlalchemy/sqlalchemy/issues/10116
     if isinstance(context.original_exception, exception.DBError):
         return
 
