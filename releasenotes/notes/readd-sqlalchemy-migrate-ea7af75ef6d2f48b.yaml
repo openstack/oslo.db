@@ -1,0 +1,9 @@
+---
+upgrade:
+  - |
+    The ``oslo_db.sqlalchemy.migration`` module and ``WalkVersionsMixin``
+    test mixin in the ``oslo_db.sqlalchemy.test_migrations``, which were
+    removed in 13.0.0, have been re-added temporarily to allow a longer
+    transition time for projects. These are still deprecated as
+    SQLAlchemy-Migrate is not compatible with SQLAlchemy 2.x. They will
+    be removed again in a future release.
