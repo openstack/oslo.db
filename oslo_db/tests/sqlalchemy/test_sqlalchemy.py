@@ -432,7 +432,9 @@ class EngineFacadeTestCase(test_base.BaseTestCase):
             logging_name=mock.ANY,
         )
         get_maker.assert_called_once_with(
-            engine=create_engine(), expire_on_commit=True,
+            engine=create_engine(),
+            autocommit=False,
+            expire_on_commit=True,
         )
 
     def test_slave_connection(self):

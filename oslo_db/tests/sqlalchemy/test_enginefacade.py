@@ -361,10 +361,12 @@ class MockFacadeTest(test_base.BaseTestCase):
         maker_factories = mock.Mock(side_effect=get_maker)
 
         maker_factories(
+            autocommit=False,
             engine=engines.writer,
             expire_on_commit=False)
         if self.slave_uri:
             maker_factories(
+                autocommit=False,
                 engine=engines.async_reader,
                 expire_on_commit=False)
 
@@ -1384,6 +1386,19 @@ class PatchFactoryTest(test_base.BaseTestCase):
         self.assertEqual("FOOBAR", engine_args["mysql_sql_mode"])
         self.assertEqual(38, engine_args["max_overflow"])
         self.assertNotIn("mysql_wsrep_sync_wait", engine_args)
+
+    def test_new_manager_deprecated_options(self):
+        normal_mgr = enginefacade.transaction_context()
+        normal_mgr.configure(
+            connection="sqlite://",
+            __autocommit=True,
+        )
+
+        normal_mgr._factory._start()
+        copied_mgr = normal_mgr.make_new_manager()
+
+        engine_args = copied_mgr._factory._maker_args_for_conf(None)
+        self.assertTrue(engine_args['autocommit'])
 
     def test_new_manager_from_options(self):
         """test enginefacade's defaults given a default structure from opts"""

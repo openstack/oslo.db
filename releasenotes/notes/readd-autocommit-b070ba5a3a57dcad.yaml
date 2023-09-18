@@ -1,0 +1,7 @@
+---
+upgrade:
+  - |
+    The ability to create engine facades that used autocommit, which was
+    removed in 13.0.0, has been re-added temporarily to allow a longer
+    transition time for projects. It is still deprecated and requires
+    SQLAlchemy < 2.x. It will be removed again in a future release.
