@@ -16,15 +16,12 @@ from oslo_config import cfg
 database_opts = [
     cfg.BoolOpt(
         'sqlite_synchronous',
-        deprecated_group='DEFAULT',
         default=True,
         help='If True, SQLite uses synchronous mode.',
     ),
     cfg.StrOpt(
         'backend',
         default='sqlalchemy',
-        deprecated_name='db_backend',
-        deprecated_group='DEFAULT',
         help='The back end to use for the database.',
     ),
     cfg.StrOpt(
@@ -34,11 +31,6 @@ database_opts = [
             'the database.'
         ),
         secret=True,
-        deprecated_opts=[
-            cfg.DeprecatedOpt('sql_connection', group='DEFAULT'),
-            cfg.DeprecatedOpt('sql_connection', group='DATABASE'),
-            cfg.DeprecatedOpt('connection', group='sql'),
-        ],
     ),
     cfg.StrOpt(
         'slave_connection',
@@ -89,10 +81,6 @@ database_opts = [
     cfg.IntOpt(
         'max_retries',
         default=10,
-        deprecated_opts=[
-            cfg.DeprecatedOpt('sql_max_retries', group='DEFAULT'),
-            cfg.DeprecatedOpt('sql_max_retries', group='DATABASE'),
-        ],
         help=(
             'Maximum number of database connection retries during startup. '
             'Set to -1 to specify an infinite retry count.'
@@ -101,19 +89,11 @@ database_opts = [
     cfg.IntOpt(
         'retry_interval',
         default=10,
-        deprecated_opts=[
-            cfg.DeprecatedOpt('sql_retry_interval', group='DEFAULT'),
-            cfg.DeprecatedOpt('reconnect_interval', group='DATABASE'),
-        ],
         help='Interval between retries of opening a SQL connection.',
     ),
     cfg.IntOpt(
         'max_overflow',
         default=50,
-        deprecated_opts=[
-            cfg.DeprecatedOpt('sql_max_overflow', group='DEFAULT'),
-            cfg.DeprecatedOpt('sqlalchemy_max_overflow', group='DATABASE'),
-        ],
         help='If set, use this value for max_overflow with SQLAlchemy.',
     ),
     cfg.IntOpt(
@@ -121,9 +101,6 @@ database_opts = [
         default=0,
         min=0,
         max=100,
-        deprecated_opts=[
-            cfg.DeprecatedOpt('sql_connection_debug', group='DEFAULT')
-        ],
         help=(
             'Verbosity of SQL debugging information: 0=None, '
             '100=Everything.'
@@ -132,16 +109,10 @@ database_opts = [
     cfg.BoolOpt(
         'connection_trace',
         default=False,
-        deprecated_opts=[
-            cfg.DeprecatedOpt('sql_connection_trace', group='DEFAULT')
-        ],
         help='Add Python stack traces to SQL as comment strings.',
     ),
     cfg.IntOpt(
         'pool_timeout',
-        deprecated_opts=[
-            cfg.DeprecatedOpt('sqlalchemy_pool_timeout', group='DATABASE')
-        ],
         help='If set, use this value for pool_timeout with SQLAlchemy.',
     ),
     cfg.BoolOpt(
