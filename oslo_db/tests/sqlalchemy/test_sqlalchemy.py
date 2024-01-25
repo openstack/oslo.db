@@ -903,8 +903,8 @@ class MySQLConnectPingListenerTest(db_test_base._MySQLOpportunisticTestCase):
     def test__connect_ping_listener(self):
         for idx in range(2):
             with self.engine.begin() as conn:
-                self.assertTrue(isinstance(conn._transaction,
-                                           base_engine.RootTransaction))
+                self.assertIsInstance(conn._transaction,
+                                      base_engine.RootTransaction)
                 # TODO(ralonsoh): drop this check once SQLAlchemy minimum
                 #  version is 2.0.
                 if compat.sqla_2:
@@ -912,5 +912,5 @@ class MySQLConnectPingListenerTest(db_test_base._MySQLOpportunisticTestCase):
                     self.assertIsNone(conn._transaction)
                 else:
                     engines._connect_ping_listener(conn, False)
-                    self.assertTrue(isinstance(conn._transaction,
-                                               base_engine.RootTransaction))
+                    self.assertIsInstance(conn._transaction,
+                                          base_engine.RootTransaction)
