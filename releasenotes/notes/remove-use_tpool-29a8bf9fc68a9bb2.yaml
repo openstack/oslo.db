@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    The ``oslo_db.concurrency.TpoolDbapiWrapper`` class and supporting
+    ``[database] use_tpool`` config option have been removed.
