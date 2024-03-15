@@ -65,6 +65,8 @@ def filters(dbname, exception_type, regex):
          r"^.*\b1213\b.*detected deadlock/conflict.*")
 @filters("mysql", sqla_exc.InternalError,
          r"^.*\b1213\b.*Deadlock: wsrep aborted.*")
+@filters("mysql", sqla_exc.OperationalError,
+         r"^.*\b1213\b.*Deadlock: wsrep aborted.*")
 @filters("postgresql", sqla_exc.OperationalError, r"^.*deadlock detected.*")
 @filters("postgresql", sqla_exc.DBAPIError, r"^.*deadlock detected.*")
 def _deadlock_error(operational_error, match, engine_name, is_disconnect):
