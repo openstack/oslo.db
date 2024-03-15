@@ -993,6 +993,12 @@ class TestDeadlock(TestsExceptionFilter):
             orig_exception_cls=self.InternalError
         )
 
+        self._run_deadlock_detect_test(
+            "mysql",
+            "(1213, 'Deadlock: wsrep aborted transaction')",
+            orig_exception_cls=self.OperationalError
+        )
+
     def test_mysql_pymysql_galera_deadlock(self):
         self._run_deadlock_detect_test(
             "mysql",
