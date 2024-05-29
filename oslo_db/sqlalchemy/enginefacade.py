@@ -187,14 +187,14 @@ class _TransactionFactory:
         }
 
         # other options that are defined in oslo_db.options.database_opts
-        # or oslo_db.concurrency.tpool_opts but do not apply to the standard
-        # enginefacade arguments (most seem to apply to api.DBAPI).
+        # but do not apply to the standard enginefacade arguments (most seem
+        # to apply to api.DBAPI).
         self._ignored_cfg = dict(
             (k, _Default(None)) for k in [
                 'db_max_retries', 'db_inc_retry_interval',
                 'use_db_reconnect',
                 'db_retry_interval',
-                'db_max_retry_interval', 'backend', 'use_tpool'
+                'db_max_retry_interval', 'backend',
             ]
         )
 
