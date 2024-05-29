@@ -166,7 +166,7 @@ class TestsExceptionFilter(_SQLAExceptionMatcher, test_base.BaseTestCase):
             yield
 
     def _run_test(self, dialect_name, statement, raises, expected,
-                  is_disconnect=False, params=()):
+                  is_disconnect=False, params=None):
         with self._fixture(dialect_name, raises, is_disconnect=is_disconnect):
             with self.engine.connect() as conn:
                 matched = self.assertRaises(
