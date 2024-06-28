@@ -41,6 +41,22 @@ database_opts = [
         ),
     ),
     cfg.StrOpt(
+        'asyncio_connection',
+        help=(
+            'The SQLAlchemy asyncio connection string to use to connect to '
+            'the database.'
+        ),
+        secret=True,
+    ),
+    cfg.StrOpt(
+        'asyncio_slave_connection',
+        help=(
+            'The SQLAlchemy asyncio connection string to use to connect to '
+            'the slave database.'
+        ),
+        secret=True,
+    ),
+    cfg.StrOpt(
         'mysql_sql_mode',
         default='TRADITIONAL',
         help=(

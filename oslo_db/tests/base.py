@@ -10,6 +10,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import unittest
+
 from oslotest import base
 
 from oslo_db.tests import fixtures
@@ -23,3 +25,11 @@ class BaseTestCase(base.BaseTestCase):
         super().setUp()
 
         self.warning_fixture = self.useFixture(fixtures.WarningsFixture())
+
+
+class BaseAsyncioCase(unittest.IsolatedAsyncioTestCase):
+    def run(self, result=None):
+        # work around stestr sending a result object that's not a
+        # unittest.Result
+        result.addDuration = lambda test, elapsed: None
+        return super().run(result=result)

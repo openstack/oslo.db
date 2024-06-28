@@ -87,17 +87,18 @@ def _connect_ping_listener(connection, branch):
         # new connections assuming they are good now.
         # run the select again to re-validate the Connection.
         LOG.exception(
-            'Database connection was found disconnected; reconnecting')
+            "Database connection was found disconnected; reconnecting"
+        )
         # TODO(ralonsoh): drop this attr check once SQLAlchemy minimum version
         # is 2.0.
-        if hasattr(connection, 'rollback'):
+        if hasattr(connection, "rollback"):
             connection.rollback()
         connection.scalar(select(1))
     finally:
         connection.should_close_with_result = save_should_close_with_result
         # TODO(ralonsoh): drop this attr check once SQLAlchemy minimum version
         # is 2.0.
-        if hasattr(connection, 'rollback'):
+        if hasattr(connection, "rollback"):
             connection.rollback()
 
 
@@ -106,7 +107,8 @@ def _connect_ping_listener(connection, branch):
 # and wrap out a parameter that is deprecated
 if compat.sqla_2:
     _connect_ping_listener = functools.partial(
-        _connect_ping_listener, branch=False)
+        _connect_ping_listener, branch=False
+    )
 
 
 def _setup_logging(connection_debug=0):
@@ -119,7 +121,7 @@ def _setup_logging(connection_debug=0):
     100=Processed only messages with DEBUG level
     """
     if connection_debug >= 0:
-        logger = logging.getLogger('sqlalchemy.engine')
+        logger = logging.getLogger("sqlalchemy.engine")
         if connection_debug == 100:
             logger.setLevel(logging.DEBUG)
         elif connection_debug >= 50:
@@ -136,30 +138,78 @@ def _vet_url(url):
                 "and will make use of a default driver.  "
                 "A full dbname+drivername:// protocol is recommended. "
                 "For MySQL, it is strongly recommended that mysql+pymysql:// "
-                "be specified for maximum service compatibility", url
+                "be specified for maximum service compatibility",
+                url,
             )
         else:
             LOG.warning(
                 "URL %r does not contain a '+drivername' portion, "
                 "and will make use of a default driver.  "
-                "A full dbname+drivername:// protocol is recommended.", url
+                "A full dbname+drivername:// protocol is recommended.",
+                url,
             )
 
 
+def _create_engine(url, **engine_args):
+    engine = sqlalchemy.create_engine(url, **engine_args)
+    return engine, engine
+
+
+def _test_connection(engine, max_retries, retry_interval, _close=True):
+    if max_retries == -1:
+        attempts = itertools.count()
+    else:
+        attempts = range(max_retries)
+    # See: http://legacy.python.org/dev/peps/pep-3110/#semantic-changes for
+    # why we are not using 'de' directly (it can be removed from the local
+    # scope).
+    de_ref = conn = None
+    for attempt in attempts:
+        try:
+            conn = engine.connect()
+        except exception.DBConnectionError as de:
+            msg = "SQL connection failed. %s attempts left."
+            LOG.warning(msg, max_retries - attempt)
+            time.sleep(retry_interval)
+            de_ref = de
+        else:
+            if _close:
+                conn.close()
+            break
+    else:
+        if de_ref is not None:
+            raise de_ref
+
+    return conn
+
+
 @debtcollector.renames.renamed_kwarg(
-    'idle_timeout',
-    'connection_recycle_time',
+    "idle_timeout",
+    "connection_recycle_time",
     replace=True,
 )
-def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
-                  mysql_wsrep_sync_wait=None,
-                  connection_recycle_time=3600,
-                  connection_debug=0, max_pool_size=None, max_overflow=None,
-                  pool_timeout=None, sqlite_synchronous=True,
-                  connection_trace=False, max_retries=10, retry_interval=10,
-                  thread_checkin=True, logging_name=None,
-                  json_serializer=None,
-                  json_deserializer=None, connection_parameters=None):
+def create_engine(
+    sql_connection,
+    sqlite_fk=False,
+    mysql_sql_mode=None,
+    mysql_wsrep_sync_wait=None,
+    connection_recycle_time=3600,
+    connection_debug=0,
+    max_pool_size=None,
+    max_overflow=None,
+    pool_timeout=None,
+    sqlite_synchronous=True,
+    connection_trace=False,
+    max_retries=10,
+    retry_interval=10,
+    thread_checkin=True,
+    logging_name=None,
+    json_serializer=None,
+    json_deserializer=None,
+    connection_parameters=None,
+    _engine_target=_create_engine,
+    _test_connection=_test_connection,
+):
     """Return a new SQLAlchemy engine."""
 
     url = utils.make_url(sql_connection)
@@ -172,56 +222,58 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
     _native_pre_ping = compat.native_pre_ping_event_support
 
     engine_args = {
-        'pool_recycle': connection_recycle_time,
-        'pool_pre_ping': _native_pre_ping,
-        'connect_args': {},
-        'logging_name': logging_name
+        "pool_recycle": connection_recycle_time,
+        "pool_pre_ping": _native_pre_ping,
+        "connect_args": {},
+        "logging_name": logging_name,
     }
 
     _setup_logging(connection_debug)
 
     _init_connection_args(
-        url, engine_args,
+        url,
+        engine_args,
         dict(
             max_pool_size=max_pool_size,
             max_overflow=max_overflow,
             pool_timeout=pool_timeout,
             json_serializer=json_serializer,
             json_deserializer=json_deserializer,
-        )
+        ),
     )
 
-    engine = sqlalchemy.create_engine(url, **engine_args)
+    engine, engine_event_target = _engine_target(url, **engine_args)
 
     _init_events(
-        engine,
+        engine_event_target,
         mysql_sql_mode=mysql_sql_mode,
         mysql_wsrep_sync_wait=mysql_wsrep_sync_wait,
         sqlite_synchronous=sqlite_synchronous,
         sqlite_fk=sqlite_fk,
         thread_checkin=thread_checkin,
-        connection_trace=connection_trace
+        connection_trace=connection_trace,
     )
 
     # register alternate exception handler
-    exc_filters.register_engine(engine)
+    exc_filters.register_engine(engine_event_target)
 
     if not _native_pre_ping:
         # register engine connect handler.
 
-        event.listen(engine, "engine_connect", _connect_ping_listener)
+        event.listen(
+            engine_event_target, "engine_connect", _connect_ping_listener
+        )
 
     # initial connect + test
     # NOTE(viktors): the current implementation of _test_connection()
     #                does nothing, if max_retries == 0, so we can skip it
     if max_retries:
-        test_conn = _test_connection(engine, max_retries, retry_interval)
-        test_conn.close()
+        _test_connection(engine_event_target, max_retries, retry_interval)
 
     return engine
 
 
-@utils.dispatch_for_dialect('*', multiple=True)
+@utils.dispatch_for_dialect("*", multiple=True)
 def _init_connection_args(url, engine_args, kw):
 
     # (zzzeek) kw is passed by reference rather than as **kw so that the
@@ -236,11 +288,11 @@ def _init_connection_args(url, engine_args, kw):
     pool_class = url.get_dialect().get_pool_class(url)
     if issubclass(pool_class, pool.QueuePool):
         if max_pool_size is not None:
-            engine_args['pool_size'] = max_pool_size
+            engine_args["pool_size"] = max_pool_size
         if max_overflow is not None:
-            engine_args['max_overflow'] = max_overflow
+            engine_args["max_overflow"] = max_overflow
         if pool_timeout is not None:
-            engine_args['pool_timeout'] = pool_timeout
+            engine_args["pool_timeout"] = pool_timeout
 
 
 @_init_connection_args.dispatch_for("sqlite")
@@ -250,7 +302,7 @@ def _init_connection_args(url, engine_args, kw):
         # singletonthreadpool is used for :memory: connections;
         # replace it with StaticPool.
         engine_args["poolclass"] = pool.StaticPool
-        engine_args['connect_args']['check_same_thread'] = False
+        engine_args["connect_args"]["check_same_thread"] = False
     elif issubclass(pool_class, pool.QueuePool):
         # SQLAlchemy 2.0 uses QueuePool for sqlite file DBs; put NullPool
         # back to avoid compatibility issues
@@ -263,19 +315,19 @@ def _init_connection_args(url, engine_args, kw):
 
 @_init_connection_args.dispatch_for("postgresql")
 def _init_connection_args(url, engine_args, kw):
-    if 'client_encoding' not in url.query:
+    if "client_encoding" not in url.query:
         # Set encoding using engine_args instead of connect_args since
         # it's supported for PostgreSQL 8.*. More details at:
         # http://docs.sqlalchemy.org/en/rel_0_9/dialects/postgresql.html
-        engine_args['client_encoding'] = 'utf8'
-    engine_args['json_serializer'] = kw.get('json_serializer')
-    engine_args['json_deserializer'] = kw.get('json_deserializer')
+        engine_args["client_encoding"] = "utf8"
+    engine_args["json_serializer"] = kw.get("json_serializer")
+    engine_args["json_deserializer"] = kw.get("json_deserializer")
 
 
 @_init_connection_args.dispatch_for("mysql")
 def _init_connection_args(url, engine_args, kw):
-    if 'charset' not in url.query:
-        engine_args['connect_args']['charset'] = 'utf8'
+    if "charset" not in url.query:
+        engine_args["connect_args"]["charset"] = "utf8"
 
 
 @_init_connection_args.dispatch_for("mysql+mysqlconnector")
@@ -283,8 +335,8 @@ def _init_connection_args(url, engine_args, kw):
     # mysqlconnector engine (<1.0) incorrectly defaults to
     # raise_on_warnings=True
     #  https://bitbucket.org/zzzeek/sqlalchemy/issue/2515
-    if 'raise_on_warnings' not in url.query:
-        engine_args['connect_args']['raise_on_warnings'] = False
+    if "raise_on_warnings" not in url.query:
+        engine_args["connect_args"]["raise_on_warnings"] = False
 
 
 @_init_connection_args.dispatch_for("mysql+mysqldb")
@@ -292,11 +344,11 @@ def _init_connection_args(url, engine_args, kw):
     # Those drivers require use_unicode=0 to avoid performance drop due
     # to internal usage of Python unicode objects in the driver
     #  http://docs.sqlalchemy.org/en/rel_0_9/dialects/mysql.html
-    if 'use_unicode' not in url.query:
-        engine_args['connect_args']['use_unicode'] = 1
+    if "use_unicode" not in url.query:
+        engine_args["connect_args"]["use_unicode"] = 1
 
 
-@utils.dispatch_for_dialect('*', multiple=True)
+@utils.dispatch_for_dialect("*", multiple=True)
 def _init_events(engine, thread_checkin=True, connection_trace=False, **kw):
     """Set up event listeners for all database backends."""
 
@@ -306,15 +358,17 @@ def _init_events(engine, thread_checkin=True, connection_trace=False, **kw):
         _add_trace_comments(engine)
 
     if thread_checkin:
-        sqlalchemy.event.listen(engine, 'checkin', _thread_yield)
+        sqlalchemy.event.listen(engine, "checkin", _thread_yield)
 
 
 @_init_events.dispatch_for("mysql")
 def _init_events(
-        engine, mysql_sql_mode=None, mysql_wsrep_sync_wait=None, **kw):
+    engine, mysql_sql_mode=None, mysql_wsrep_sync_wait=None, **kw
+):
     """Set up event listeners for MySQL."""
 
     if mysql_sql_mode is not None or mysql_wsrep_sync_wait is not None:
+
         @sqlalchemy.event.listens_for(engine, "connect")
         def _set_session_variables(dbapi_con, connection_rec):
             cursor = dbapi_con.cursor()
@@ -322,8 +376,7 @@ def _init_events(
                 cursor.execute("SET SESSION sql_mode = %s", [mysql_sql_mode])
             if mysql_wsrep_sync_wait is not None:
                 cursor.execute(
-                    "SET SESSION wsrep_sync_wait = %s",
-                    [mysql_wsrep_sync_wait]
+                    "SET SESSION wsrep_sync_wait = %s", [mysql_wsrep_sync_wait]
                 )
 
     @sqlalchemy.event.listens_for(engine, "first_connect")
@@ -336,16 +389,19 @@ def _init_events(
         realmode = cursor.fetchone()
 
         if realmode is None:
-            LOG.warning('Unable to detect effective SQL mode')
+            LOG.warning("Unable to detect effective SQL mode")
         else:
             realmode = realmode[1]
-            LOG.debug('MySQL server mode set to %s', realmode)
-            if 'TRADITIONAL' not in realmode.upper() and \
-                    'STRICT_ALL_TABLES' not in realmode.upper():
+            LOG.debug("MySQL server mode set to %s", realmode)
+            if (
+                "TRADITIONAL" not in realmode.upper() and
+                "STRICT_ALL_TABLES" not in realmode.upper()
+            ):
                 LOG.warning(
                     "MySQL SQL mode is '%s', "
                     "consider enabling TRADITIONAL or STRICT_ALL_TABLES",
-                    realmode)
+                    realmode,
+                )
 
 
 @_init_events.dispatch_for("sqlite")
@@ -365,7 +421,7 @@ def _init_events(engine, sqlite_synchronous=True, sqlite_fk=False, **kw):
     def _sqlite_connect_events(dbapi_con, con_record):
 
         # Add REGEXP functionality on SQLite connections
-        dbapi_con.create_function('regexp', 2, regexp)
+        dbapi_con.create_function("regexp", 2, regexp)
 
         if not sqlite_synchronous:
             # Switch sqlite connections to non-synchronous mode
@@ -380,43 +436,21 @@ def _init_events(engine, sqlite_synchronous=True, sqlite_fk=False, **kw):
 
         if sqlite_fk:
             # Ensures that the foreign key constraints are enforced in SQLite.
-            dbapi_con.execute('pragma foreign_keys=ON')
+            dbapi_con.execute("pragma foreign_keys=ON")
 
     @sqlalchemy.event.listens_for(engine, "begin")
     def _sqlite_emit_begin(conn):
         # emit our own BEGIN, checking for existing
         # transactional state
-        if 'in_transaction' not in conn.info:
+        if "in_transaction" not in conn.info:
             conn.execute(sqlalchemy.text("BEGIN"))
-            conn.info['in_transaction'] = True
+            conn.info["in_transaction"] = True
 
     @sqlalchemy.event.listens_for(engine, "rollback")
     @sqlalchemy.event.listens_for(engine, "commit")
     def _sqlite_end_transaction(conn):
         # remove transactional marker
-        conn.info.pop('in_transaction', None)
-
-
-def _test_connection(engine, max_retries, retry_interval):
-    if max_retries == -1:
-        attempts = itertools.count()
-    else:
-        attempts = range(max_retries)
-    # See: http://legacy.python.org/dev/peps/pep-3110/#semantic-changes for
-    # why we are not using 'de' directly (it can be removed from the local
-    # scope).
-    de_ref = None
-    for attempt in attempts:
-        try:
-            return engine.connect()
-        except exception.DBConnectionError as de:
-            msg = 'SQL connection failed. %s attempts left.'
-            LOG.warning(msg, max_retries - attempt)
-            time.sleep(retry_interval)
-            de_ref = de
-    else:
-        if de_ref is not None:
-            raise de_ref
+        conn.info.pop("in_transaction", None)
 
 
 def _add_process_guards(engine):
@@ -429,21 +463,22 @@ def _add_process_guards(engine):
 
     @sqlalchemy.event.listens_for(engine, "connect")
     def connect(dbapi_connection, connection_record):
-        connection_record.info['pid'] = os.getpid()
+        connection_record.info["pid"] = os.getpid()
 
     @sqlalchemy.event.listens_for(engine, "checkout")
     def checkout(dbapi_connection, connection_record, connection_proxy):
         pid = os.getpid()
-        if connection_record.info['pid'] != pid:
+        if connection_record.info["pid"] != pid:
             LOG.debug(
                 "Parent process %(orig)s forked (%(newproc)s) with an open "
                 "database connection, "
                 "which is being discarded and recreated.",
-                {"newproc": pid, "orig": connection_record.info['pid']})
+                {"newproc": pid, "orig": connection_record.info["pid"]},
+            )
             raise exc.DisconnectionError(
                 "Connection record belongs to pid %s, "
-                "attempting to check out in pid %s" %
-                (connection_record.info['pid'], pid)
+                "attempting to check out in pid %s"
+                % (connection_record.info["pid"], pid)
             )
 
 
@@ -457,20 +492,26 @@ def _add_trace_comments(engine):
     import os
     import sys
     import traceback
-    target_paths = set([
-        os.path.dirname(sys.modules['oslo_db'].__file__),
-        os.path.dirname(sys.modules['sqlalchemy'].__file__)
-    ])
+
+    target_paths = set(
+        [
+            os.path.dirname(sys.modules["oslo_db"].__file__),
+            os.path.dirname(sys.modules["sqlalchemy"].__file__),
+        ]
+    )
     try:
-        skip_paths = set([
-            os.path.dirname(sys.modules['oslo_db.tests'].__file__),
-        ])
+        skip_paths = set(
+            [
+                os.path.dirname(sys.modules["oslo_db.tests"].__file__),
+            ]
+        )
     except KeyError:
         skip_paths = set()
 
     @sqlalchemy.event.listens_for(engine, "before_cursor_execute", retval=True)
-    def before_cursor_execute(conn, cursor, statement, parameters, context,
-                              executemany):
+    def before_cursor_execute(
+        conn, cursor, statement, parameters, context, executemany
+    ):
 
         # NOTE(zzzeek) - if different steps per DB dialect are desirable
         # here, switch out on engine.name for now.
@@ -491,12 +532,9 @@ def _add_trace_comments(engine):
 
         if our_line:
             trace = "; ".join(
-                "File: %s (%s) %s" % (
-                    line[0], line[1], line[2]
-                )
+                "File: %s (%s) %s" % (line[0], line[1], line[2])
                 # include three lines of context.
-                for line in stack[our_line - 3:our_line]
-
+                for line in stack[our_line - 3: our_line]
             )
             statement = "%s  -- %s" % (statement, trace)
 
