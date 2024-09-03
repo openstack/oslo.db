@@ -17,7 +17,6 @@ import operator
 import threading
 import warnings
 
-import debtcollector.moves
 import debtcollector.removals
 import debtcollector.renames
 from oslo_config import cfg
@@ -1053,18 +1052,6 @@ class _TransactionContextManager(object):
                 del transaction_contexts_by_thread.current
             elif current is not restore:
                 transaction_contexts_by_thread.current = restore
-
-
-@property
-@debtcollector.moves.moved_property("async_")
-def async_compat(self):
-    return self.async_
-
-
-setattr(
-    _TransactionContextManager,
-    "async", async_compat
-)
 
 
 def _context_descriptor(attr=None):
