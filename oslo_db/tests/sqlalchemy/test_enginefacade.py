@@ -15,7 +15,6 @@ import contextlib
 import copy
 import fixtures
 import pickle
-import sys
 from unittest import mock
 import warnings
 
@@ -784,26 +783,6 @@ class MockFacadeTest(test_base.BaseTestCase):
                     session.execute("test1")
                 with self._assert_writer_session(makers) as session:
                     session.execute("test2")
-
-    def test_deprecated_async_reader_name(self):
-        if sys.version_info >= (3, 7):
-            self.skipTest("Test only runs on Python < 3.7")
-
-        context = oslo_context.RequestContext()
-
-        old = getattr(enginefacade.reader, "async")
-
-        @old
-        def go1(context):
-            context.session.execute("test1")
-
-        go1(context)
-
-        with self._assert_engines() as engines:
-            with self._assert_makers(engines) as makers:
-                with self._assert_async_reader_session(
-                        makers, assert_calls=False) as session:
-                    session.execute("test1")
 
     def test_async_reader_then_reader_ok(self):
         context = oslo_context.RequestContext()
