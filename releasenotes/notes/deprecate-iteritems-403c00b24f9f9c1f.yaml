@@ -1,0 +1,5 @@
+---
+deprecations:
+  - |
+    The ``iteritems`` method of the ``oslo_db.sqlalchemy.models.ModelBase``
+    class has been deprecated. Use the ``items`` method instead.
