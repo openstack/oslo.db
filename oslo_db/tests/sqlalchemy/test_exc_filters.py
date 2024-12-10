@@ -1552,7 +1552,8 @@ class TestDBConnectRetry(TestsExceptionFilter):
 
         with self._dbapi_fixture(dialect_name):
             with mock.patch.object(engine.dialect, "connect", cant_connect):
-                return engines._test_connection(engine, retries, .01)
+                return engines._test_connection(
+                    engine, retries, .01, _close=False)
 
     def test_connect_no_retries(self):
         conn = self._run_test(
