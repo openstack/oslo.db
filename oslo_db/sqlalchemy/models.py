@@ -20,6 +20,7 @@
 SQLAlchemy models.
 """
 
+import debtcollector
 from oslo_utils import timeutils
 from sqlalchemy import Column
 from sqlalchemy import DateTime
@@ -94,6 +95,10 @@ class ModelBase(object):
         local.update(joined)
         return local
 
+    @debtcollector.removals.remove(
+        message='This method is deprecated in favor of the items() method',
+        version='17.1.0'
+    )
     def iteritems(self):
         """Make the model object behave like a dict."""
         return self._as_dict().items()
@@ -104,7 +109,7 @@ class ModelBase(object):
 
     def keys(self):
         """Make the model object behave like a dict."""
-        return [key for key, value in self.iteritems()]
+        return [key for key, value in self.items()]
 
 
 class ModelIterator(object):
