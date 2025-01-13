@@ -28,9 +28,9 @@ from oslo_db import tests
 from oslo_db.tests.sqlalchemy import base as test_base
 
 
-class EventletTestMixin(object):
+class EventletTestMixin:
     def setUp(self):
-        super(EventletTestMixin, self).setUp()
+        super().setUp()
 
         BASE = orm.declarative_base()
 

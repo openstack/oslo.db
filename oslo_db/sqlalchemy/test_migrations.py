@@ -34,7 +34,7 @@ from oslo_db.sqlalchemy import utils
 LOG = logging.getLogger(__name__)
 
 
-class ModelsMigrationsSync(object, metaclass=abc.ABCMeta):
+class ModelsMigrationsSync(metaclass=abc.ABCMeta):
     """A helper class for comparison of DB migration scripts and models.
 
     It's intended to be inherited by test cases in target projects. They have

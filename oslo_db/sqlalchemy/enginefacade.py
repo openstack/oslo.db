@@ -230,8 +230,8 @@ class _AbstractTransactionFactory:
         # other options that are defined in oslo_db.options.database_opts
         # but do not apply to the standard enginefacade arguments (most seem
         # to apply to api.DBAPI).
-        self._ignored_cfg = dict(
-            (k, _Default(None))
+        self._ignored_cfg = {
+            k: _Default(None)
             for k in [
                 "db_max_retries",
                 "db_inc_retry_interval",
@@ -240,7 +240,7 @@ class _AbstractTransactionFactory:
                 "db_max_retry_interval",
                 "backend",
             ]
-        )
+        }
 
         self._started = False
         self._legacy_facade = None
@@ -1333,7 +1333,7 @@ writer = _context_manager.writer
 """The global 'writer' starting point."""
 
 
-class LegacyEngineFacade(object):
+class LegacyEngineFacade:
     """A helper class for removing of global engine instances from oslo.db.
 
     .. deprecated:: 1.12.0

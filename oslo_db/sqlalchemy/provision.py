@@ -35,7 +35,7 @@ from oslo_db.sqlalchemy import utils
 LOG = logging.getLogger(__name__)
 
 
-class ProvisionedDatabase(object):
+class ProvisionedDatabase:
     """Represents a database engine pointing to a DB ready to run tests.
 
     backend: an instance of :class:`.Backend`
@@ -60,7 +60,7 @@ class ProvisionedDatabase(object):
         self.db_token = db_token
 
 
-class Schema(object):
+class Schema:
     """"Represents a database schema that has or will be populated.
 
     This is a marker object as required by testresources but otherwise
@@ -72,7 +72,7 @@ class Schema(object):
 
 class BackendResource(testresources.TestResourceManager):
     def __init__(self, database_type, ad_hoc_url=None):
-        super(BackendResource, self).__init__()
+        super().__init__()
         self.database_type = database_type
         self.backend = Backend.backend_for_database_type(self.database_type)
         self.ad_hoc_url = ad_hoc_url
@@ -107,7 +107,7 @@ class DatabaseResource(testresources.TestResourceManager):
 
     def __init__(self, database_type, _enginefacade=None,
                  provision_new_database=True, ad_hoc_url=None):
-        super(DatabaseResource, self).__init__()
+        super().__init__()
         self.database_type = database_type
         self.provision_new_database = provision_new_database
 
@@ -139,7 +139,7 @@ class DatabaseResource(testresources.TestResourceManager):
             url = backend.url
 
         _enginefacade.configure(
-            logging_name="%s@%s" % (self.database_type, db_token))
+            logging_name="{}@{}".format(self.database_type, db_token))
 
         _enginefacade._factory._start(connection=url)
         engine = _enginefacade._factory._writer_engine
@@ -159,7 +159,7 @@ class DatabaseResource(testresources.TestResourceManager):
 class SchemaResource(testresources.TestResourceManager):
 
     def __init__(self, database_resource, generate_schema, teardown=False):
-        super(SchemaResource, self).__init__()
+        super().__init__()
         self.generate_schema = generate_schema
         self.teardown = teardown
         self.resources = [
@@ -185,7 +185,7 @@ class SchemaResource(testresources.TestResourceManager):
             return False
 
 
-class Backend(object):
+class Backend:
     """Represent a particular database backend that may be provisionable.
 
     The ``Backend`` object maintains a database type (e.g. database without
@@ -367,7 +367,7 @@ class Backend(object):
                 Backend(database_type, url)
 
 
-class BackendImpl(object, metaclass=abc.ABCMeta):
+class BackendImpl(metaclass=abc.ABCMeta):
     """Provide database-specific implementations of key provisioning
 
     functions.

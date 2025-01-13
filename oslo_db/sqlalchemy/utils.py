@@ -58,7 +58,7 @@ _VALID_SORT_DIR = [
 def sanitize_db_url(url):
     match = _DBURL_REGEX.match(url)
     if match:
-        return '%s****:****%s' % (url[:match.start(1)], url[match.end(2):])
+        return '{}****:****{}'.format(url[:match.start(1)], url[match.end(2):])
     return url
 
 
@@ -236,7 +236,7 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
                 for j in range(i):
                     model_attr = getattr(model, sort_keys[j])
                     if marker_values[j] is not None:
-                        crit_attrs.append((model_attr == marker_values[j]))
+                        crit_attrs.append(model_attr == marker_values[j])
 
                 model_attr = getattr(model, sort_keys[i])
                 val = marker_values[i]
@@ -604,7 +604,7 @@ def column_exists(engine, table_name, column):
     return column in t.c
 
 
-class DialectFunctionDispatcher(object):
+class DialectFunctionDispatcher:
     @classmethod
     def dispatch_for_dialect(cls, expr, multiple=False):
         """Provide dialect-specific functionality within distinct functions.
@@ -772,7 +772,7 @@ class DialectSingleFunctionDispatcher(DialectFunctionDispatcher):
         else:
             raise ValueError(
                 "No default function found for driver: %r" %
-                ("%s+%s" % (dbname, driver)))
+                ("{}+{}".format(dbname, driver)))
 
     def _dispatch_on_db_driver(self, dbname, driver, arg, kw):
         fn = self._matches(dbname, driver)
@@ -796,8 +796,7 @@ class DialectMultiFunctionDispatcher(DialectFunctionDispatcher):
         for db in (dbname, '*'):
             subdict = self.reg[db]
             for drv in drivers:
-                for fn in subdict[drv]:
-                    yield fn
+                yield from subdict[drv]
 
     def _dispatch_on_db_driver(self, dbname, driver, arg, kw):
         for fn in self._matches(dbname, driver):
@@ -827,10 +826,10 @@ def get_non_innodb_tables(connectable, skip_tables=('migrate_version',
 
     params = {}
     if skip_tables:
-        params = dict(
-            ('skip_%s' % i, table_name)
+        params = {
+            'skip_%s' % i: table_name
             for i, table_name in enumerate(skip_tables)
-        )
+        }
 
         placeholders = ', '.join(':' + p for p in params)
         query_str += ' AND table_name NOT IN (%s)' % placeholders

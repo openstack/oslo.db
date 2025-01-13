@@ -35,7 +35,7 @@ class JsonTable(BASE, models.ModelBase):
 
 class JsonTypesTestCase(test_base._DbTestCase):
     def setUp(self):
-        super(JsonTypesTestCase, self).setUp()
+        super().setUp()
         JsonTable.__table__.create(self.engine)
         self.addCleanup(JsonTable.__table__.drop, self.engine)
         self.session = self.sessionmaker()

@@ -26,7 +26,7 @@ from oslo_db.tests.sqlalchemy import base as db_test_base
 class ModelsMigrationSyncMixin(db_test_base._DbTestCase):
 
     def setUp(self):
-        super(ModelsMigrationSyncMixin, self).setUp()
+        super().setUp()
 
         self.metadata = sa.MetaData()
         self.metadata_migrations = sa.MetaData()

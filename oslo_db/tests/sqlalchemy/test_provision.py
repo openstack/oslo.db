@@ -30,7 +30,7 @@ from oslo_db.tests.sqlalchemy import base as db_test_base
 class DropAllObjectsTest(db_test_base._DbTestCase):
 
     def setUp(self):
-        super(DropAllObjectsTest, self).setUp()
+        super().setUp()
 
         self.metadata = metadata = schema.MetaData()
         schema.Table(
@@ -67,7 +67,7 @@ class DropAllObjectsTest(db_test_base._DbTestCase):
     def test_drop_all(self):
         insp = inspect(self.engine)
         self.assertEqual(
-            set(['a', 'b', 'c', 'd']),
+            {'a', 'b', 'c', 'd'},
             set(insp.get_table_names())
         )
 

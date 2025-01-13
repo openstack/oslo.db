@@ -33,7 +33,7 @@ def get_backend():
     return DBAPI()
 
 
-class DBAPI(object):
+class DBAPI:
     def _api_raise(self, *args, **kwargs):
         """Simulate raising a database-has-gone-away error
 

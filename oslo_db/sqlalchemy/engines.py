@@ -493,18 +493,14 @@ def _add_trace_comments(engine):
     import sys
     import traceback
 
-    target_paths = set(
-        [
-            os.path.dirname(sys.modules["oslo_db"].__file__),
-            os.path.dirname(sys.modules["sqlalchemy"].__file__),
-        ]
-    )
+    target_paths = {
+        os.path.dirname(sys.modules["oslo_db"].__file__),
+        os.path.dirname(sys.modules["sqlalchemy"].__file__),
+    }
     try:
-        skip_paths = set(
-            [
-                os.path.dirname(sys.modules["oslo_db.tests"].__file__),
-            ]
-        )
+        skip_paths = {
+            os.path.dirname(sys.modules["oslo_db.tests"].__file__),
+        }
     except KeyError:
         skip_paths = set()
 
@@ -532,10 +528,10 @@ def _add_trace_comments(engine):
 
         if our_line:
             trace = "; ".join(
-                "File: %s (%s) %s" % (line[0], line[1], line[2])
+                "File: {} ({}) {}".format(line[0], line[1], line[2])
                 # include three lines of context.
                 for line in stack[our_line - 3: our_line]
             )
-            statement = "%s  -- %s" % (statement, trace)
+            statement = "{}  -- {}".format(statement, trace)
 
         return statement, parameters

@@ -29,7 +29,7 @@ from sqlalchemy.orm import object_mapper
 from oslo_db.sqlalchemy import types
 
 
-class ModelBase(object):
+class ModelBase:
     """Base class for models."""
     __table_initialized__ = False
 
@@ -89,9 +89,8 @@ class ModelBase(object):
 
         Includes attributes from joins.
         """
-        local = dict((key, value) for key, value in self)
-        joined = dict([(k, v) for k, v in self.__dict__.items()
-                      if not k[0] == '_'])
+        local = {key: value for key, value in self}
+        joined = {k: v for k, v in self.__dict__.items() if not k[0] == '_'}
         local.update(joined)
         return local
 
@@ -112,7 +111,7 @@ class ModelBase(object):
         return [key for key, value in self.items()]
 
 
-class ModelIterator(object):
+class ModelIterator:
 
     def __init__(self, model, columns):
         self.model = model
@@ -126,12 +125,12 @@ class ModelIterator(object):
         return n, getattr(self.model, n)
 
 
-class TimestampMixin(object):
+class TimestampMixin:
     created_at = Column(DateTime, default=lambda: timeutils.utcnow())
     updated_at = Column(DateTime, onupdate=lambda: timeutils.utcnow())
 
 
-class SoftDeleteMixin(object):
+class SoftDeleteMixin:
     deleted_at = Column(DateTime)
     deleted = Column(types.SoftDeleteInteger, default=0)
 

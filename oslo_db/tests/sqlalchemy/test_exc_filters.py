@@ -1,4 +1,3 @@
-#    -*- encoding: utf-8 -*-
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -37,7 +36,7 @@ from oslo_db.tests import utils as test_utils
 _TABLE_NAME = '__tmp__test__tmp__'
 
 
-class _SQLAExceptionMatcher(object):
+class _SQLAExceptionMatcher:
     def assertInnerException(
             self,
             matched, exception_type, message, sql=None, params=None):
@@ -108,7 +107,7 @@ class TestsExceptionFilter(_SQLAExceptionMatcher, test_base.BaseTestCase):
         """
 
     def setUp(self):
-        super(TestsExceptionFilter, self).setUp()
+        super().setUp()
         self.engine = sqla.create_engine("sqlite://")
         exc_filters.register_engine(self.engine)
         self.engine.connect().close()  # initialize
@@ -263,7 +262,7 @@ class TestNonExistentConstraint(
 ):
 
     def setUp(self):
-        super(TestNonExistentConstraint, self).setUp()
+        super().setUp()
 
         meta = sqla.MetaData()
 
@@ -336,7 +335,7 @@ class TestNonExistentTable(
 ):
 
     def setUp(self):
-        super(TestNonExistentTable, self).setUp()
+        super().setUp()
 
         self.meta = sqla.MetaData()
 
@@ -413,7 +412,7 @@ class TestNonExistentDatabase(
 ):
 
     def setUp(self):
-        super(TestNonExistentDatabase, self).setUp()
+        super().setUp()
 
         url = utils.make_url(self.engine.url)
         self.url = url.set(database="non_existent_database")
@@ -487,7 +486,7 @@ class TestReferenceErrorSQLite(
 ):
 
     def setUp(self):
-        super(TestReferenceErrorSQLite, self).setUp()
+        super().setUp()
 
         meta = sqla.MetaData()
 
@@ -702,7 +701,7 @@ class TestExceptionCauseMySQLSavepoint(
     db_test_base._MySQLOpportunisticTestCase,
 ):
     def setUp(self):
-        super(TestExceptionCauseMySQLSavepoint, self).setUp()
+        super().setUp()
 
         Base = declarative_base()
 
@@ -1086,7 +1085,7 @@ class IntegrationTest(db_test_base._DbTestCase):
     """Test an actual error-raising round trips against the database."""
 
     def setUp(self):
-        super(IntegrationTest, self).setUp()
+        super().setUp()
         meta = sqla.MetaData()
         self.test_table = sqla.Table(
             _TABLE_NAME, meta,
@@ -1101,7 +1100,7 @@ class IntegrationTest(db_test_base._DbTestCase):
 
         reg = registry()
 
-        class Foo(object):
+        class Foo:
             def __init__(self, counter):
                 self.counter = counter
 

@@ -57,7 +57,7 @@ class ReplaceEngineFacadeFixture(fixtures.Fixture):
 
     """
     def __init__(self, enginefacade, replace_with_enginefacade):
-        super(ReplaceEngineFacadeFixture, self).__init__()
+        super().__init__()
         self.enginefacade = enginefacade
         self.replace_with_enginefacade = replace_with_enginefacade
 
@@ -91,7 +91,7 @@ class BaseDbFixture(fixtures.Fixture):
     _schema_resources = {}
 
     def __init__(self, driver=None, ident=None):
-        super(BaseDbFixture, self).__init__()
+        super().__init__()
         self.driver = driver or self.DRIVER
         self.ident = ident or "default"
         self.resource_key = (self.driver, self.__class__, self.ident)
@@ -177,7 +177,7 @@ class BaseDbFixture(fixtures.Fixture):
             ]
 
 
-class GeneratesSchema(object):
+class GeneratesSchema:
     """Mixin defining a fixture as generating a schema using create_all().
 
     This is a "capability" mixin that works in conjunction with classes
@@ -217,7 +217,7 @@ class GeneratesSchemaFromMigrations(GeneratesSchema):
         """
 
 
-class ResetsData(object):
+class ResetsData:
     """Mixin defining a fixture that resets schema data without dropping."""
 
     _DROP_SCHEMA_PER_TEST = False
@@ -308,7 +308,7 @@ class SimpleDbFixture(BaseDbFixture):
                                           provision_new_database=False)
 
     def _setUp(self):
-        super(SimpleDbFixture, self)._setUp()
+        super()._setUp()
 
         cls = self.__class__
 
@@ -392,7 +392,7 @@ class OpportunisticDbFixture(BaseDbFixture):
 
     """
     def __init__(self, test, driver=None, ident=None):
-        super(OpportunisticDbFixture, self).__init__(
+        super().__init__(
             driver=driver, ident=ident)
         self.test = test
 
@@ -404,7 +404,7 @@ class OpportunisticDbFixture(BaseDbFixture):
             self.driver, _enginefacade, provision_new_database=True)
 
     def _setUp(self):
-        super(OpportunisticDbFixture, self)._setUp()
+        super()._setUp()
 
         if not self._has_db_resource():
             return
@@ -426,7 +426,7 @@ class OpportunisticDbFixture(BaseDbFixture):
                 provisioned_db.engine, provisioned_db.enginefacade)
 
 
-class OpportunisticDBTestMixin(object):
+class OpportunisticDBTestMixin:
     """Test mixin that integrates the test suite with testresources.
 
     There are three goals to this system:
@@ -488,7 +488,7 @@ class OpportunisticDBTestMixin(object):
 
     def setUp(self):
         self._setup_fixtures()
-        super(OpportunisticDBTestMixin, self).setUp()
+        super().setUp()
 
     def _get_default_provisioned_db(self):
         return self._db_default

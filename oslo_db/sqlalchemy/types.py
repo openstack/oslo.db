@@ -26,7 +26,7 @@ class JsonEncodedType(TypeDecorator):
 
     def __init__(self, mysql_as_long=False, mysql_as_medium=False):
         """Initialize JSON-encoding type."""
-        super(JsonEncodedType, self).__init__()
+        super().__init__()
 
         if mysql_as_long and mysql_as_medium:
             raise TypeError("mysql_as_long and mysql_as_medium are mutually "

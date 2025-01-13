@@ -13,7 +13,7 @@
 import abc
 
 
-class MigrationExtensionBase(object, metaclass=abc.ABCMeta):
+class MigrationExtensionBase(metaclass=abc.ABCMeta):
 
     # used to sort migration in logical order
     order = 0

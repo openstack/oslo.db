@@ -81,7 +81,7 @@ def retry_on_request(f):
     return f
 
 
-class wrap_db_retry(object):
+class wrap_db_retry:
     """Retry db.api methods, if db_error raised
 
     Retry decorated db.api methods. This decorator catches db_error and retries
@@ -116,7 +116,7 @@ class wrap_db_retry(object):
                  retry_on_deadlock=False,
                  exception_checker=lambda exc: False,
                  jitter=False):
-        super(wrap_db_retry, self).__init__()
+        super().__init__()
 
         self.jitter = jitter
         self.db_error = (exception.RetryRequest, )
@@ -198,7 +198,7 @@ class wrap_db_retry(object):
         return min(sleep_time, self.max_retry_interval), n
 
 
-class DBAPI(object):
+class DBAPI:
     """Initialize the chosen DB API backend.
 
     After initialization API methods is available as normal attributes of

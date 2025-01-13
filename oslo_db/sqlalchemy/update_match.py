@@ -289,17 +289,17 @@ def manufacture_entity_criteria(entity, include_only=None, exclude=None):
     state = inspect(entity)
     exclude = set(exclude) if exclude is not None else set()
 
-    existing = dict(
-        (attr.key, attr.loaded_value)
+    existing = {
+        attr.key: attr.loaded_value
         for attr in state.attrs
         if attr.loaded_value is not orm.attributes.NO_VALUE and
         attr.key not in exclude
-    )
+    }
     if include_only:
-        existing = dict(
-            (k, existing[k])
+        existing = {
+            k: existing[k]
             for k in set(existing).intersection(include_only)
-        )
+        }
 
     return manufacture_criteria(state.mapper, existing)
 
@@ -479,11 +479,9 @@ def _pk_strategy_mysql_last_insert_id(query, mapper, values, surrogate_key):
 
 
 def _update_stmt_from_query(mapper, query, values):
-    upd_values = dict(
-        (
-            mapper.column_attrs[key], value
-        ) for key, value in values.items()
-    )
+    upd_values = {
+        mapper.column_attrs[key]: value for key, value in values.items()
+    }
     primary_table = inspect(query.column_descriptions[0]['entity']).local_table
     where_criteria = query.whereclause
     update_stmt = sql.update(

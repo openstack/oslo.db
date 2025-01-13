@@ -86,7 +86,7 @@ class ManufactureCriteriaTest(test_base.BaseTestCase):
 
 class UpdateMatchTest(db_test_base._DbTestCase):
     def setUp(self):
-        super(UpdateMatchTest, self).setUp()
+        super().setUp()
         Base.metadata.create_all(self.engine)
         self.addCleanup(Base.metadata.drop_all, self.engine)
         # self.engine.echo = 'debug'

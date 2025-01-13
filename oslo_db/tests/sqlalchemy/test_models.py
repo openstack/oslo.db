@@ -31,7 +31,7 @@ BASE = declarative_base()
 
 class ModelBaseTest(db_test_base._DbTestCase):
     def setUp(self):
-        super(ModelBaseTest, self).setUp()
+        super().setUp()
         self.mb = models.ModelBase()
         self.ekm = ExtraKeysModel()
 
@@ -127,10 +127,10 @@ class ModelBaseTest(db_test_base._DbTestCase):
         self.assertEqual(len(expected), found_items)
 
     def test_modelbase_keys(self):
-        self.assertEqual(set(('id', 'smth', 'name')), set(self.ekm.keys()))
+        self.assertEqual({'id', 'smth', 'name'}, set(self.ekm.keys()))
 
         self.ekm.update({'a': '1', 'b': '2'})
-        self.assertEqual(set(('a', 'b', 'id', 'smth', 'name')),
+        self.assertEqual({'a', 'b', 'id', 'smth', 'name'},
                          set(self.ekm.keys()))
 
     def test_modelbase_several_iters(self):
@@ -192,7 +192,7 @@ class SoftDeletedModel(BASE, models.ModelBase, models.SoftDeleteMixin):
 
 class SoftDeleteMixinTest(db_test_base._DbTestCase):
     def setUp(self):
-        super(SoftDeleteMixinTest, self).setUp()
+        super().setUp()
 
         t = BASE.metadata.tables['test_model_soft_deletes']
         t.create(self.engine)

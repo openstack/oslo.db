@@ -31,7 +31,7 @@ def check_plugin_enabled(ext):
     'directly',
     version='8.3.0'
 )
-class MigrationManager(object):
+class MigrationManager:
 
     def __init__(self, migration_config, engine=None):
         if engine is None:

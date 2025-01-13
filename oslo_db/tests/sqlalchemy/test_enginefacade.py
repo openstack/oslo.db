@@ -43,7 +43,7 @@ enginefacade.transaction_context_provider(oslo_context.RequestContext)
 
 class SingletonOnName(mock.MagicMock):
     def __init__(self, the_name, **kw):
-        super(SingletonOnName, self).__init__(
+        super().__init__(
             __eq__=lambda self, other: other._assert_name == self._assert_name,
             _assert_name=the_name,
             **kw
@@ -55,14 +55,14 @@ class SingletonOnName(mock.MagicMock):
 
 class SingletonConnection(SingletonOnName):
     def __init__(self, **kw):
-        super(SingletonConnection, self).__init__(
+        super().__init__(
             "connection", **kw)
         self.info = {}
 
 
 class SingletonEngine(SingletonOnName):
     def __init__(self, connection, **kw):
-        super(SingletonEngine, self).__init__(
+        super().__init__(
             "engine",
             connect=mock.Mock(return_value=connection),
             pool=mock.Mock(),
@@ -72,7 +72,7 @@ class SingletonEngine(SingletonOnName):
         )
 
 
-class NonDecoratedContext(object):
+class NonDecoratedContext:
     """a Context object that's not run through transaction_context_provider."""
 
 
@@ -111,7 +111,7 @@ class MockFacadeTest(test_base.BaseTestCase):
     slave_uri = None
 
     def setUp(self):
-        super(MockFacadeTest, self).setUp()
+        super().setUp()
 
         writer_conn = SingletonConnection()
         writer_engine = SingletonEngine(writer_conn)
@@ -1155,7 +1155,7 @@ class MockFacadeTest(test_base.BaseTestCase):
     def test_context_found_for_class_method(self):
         context = oslo_context.RequestContext()
 
-        class Spam(object):
+        class Spam:
             @classmethod
             @enginefacade.reader
             def go(cls, context):
@@ -1463,7 +1463,7 @@ class ThreadingTest(db_test_base._DbTestCase):
 
         test_instance = self
 
-        class MockThreadingLocal(object):
+        class MockThreadingLocal:
             def __init__(self):
                 self.__dict__['state'] = collections.defaultdict(dict)
 
@@ -1653,7 +1653,7 @@ class LiveFacadeTest(db_test_base._DbTestCase):
     """
 
     def setUp(self):
-        super(LiveFacadeTest, self).setUp()
+        super().setUp()
 
         metadata = MetaData()
         user_table = Table(
@@ -1669,7 +1669,7 @@ class LiveFacadeTest(db_test_base._DbTestCase):
 
         reg = registry()
 
-        class User(object):
+        class User:
             def __init__(self, name):
                 self.name = name
 

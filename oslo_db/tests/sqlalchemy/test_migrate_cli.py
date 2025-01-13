@@ -26,13 +26,13 @@ class MockWithCmp(mock.MagicMock):
     order = 0
 
     def __init__(self, *args, **kwargs):
-        super(MockWithCmp, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.__lt__ = lambda self, other: self.order < other.order
 
 
-@mock.patch(('oslo_db.sqlalchemy.migration_cli.'
-             'ext_alembic.alembic.command'))
+@mock.patch('oslo_db.sqlalchemy.migration_cli.'
+            'ext_alembic.alembic.command')
 class TestAlembicExtension(test_base.BaseTestCase):
 
     def setUp(self):
@@ -41,7 +41,7 @@ class TestAlembicExtension(test_base.BaseTestCase):
         self.engine = sqlalchemy.create_engine(self.migration_config['db_url'])
         self.alembic = ext_alembic.AlembicExtension(
             self.engine, self.migration_config)
-        super(TestAlembicExtension, self).setUp()
+        super().setUp()
 
     def test_check_enabled_true(self, command):
         """Check enabled returns True
@@ -97,8 +97,8 @@ class TestAlembicExtension(test_base.BaseTestCase):
         self.assertIsNone(version)
 
     def test_has_revision(self, command):
-        with mock.patch(('oslo_db.sqlalchemy.migration_cli.'
-                         'ext_alembic.alembic_script')) as mocked:
+        with mock.patch('oslo_db.sqlalchemy.migration_cli.'
+                        'ext_alembic.alembic_script') as mocked:
             self.alembic.config.get_main_option = mock.Mock()
             # since alembic_script is mocked and no exception is raised, call
             # will result in success
@@ -113,8 +113,8 @@ class TestAlembicExtension(test_base.BaseTestCase):
             self.assertIs(True, self.alembic.has_revision('+1'))
 
     def test_has_revision_negative(self, command):
-        with mock.patch(('oslo_db.sqlalchemy.migration_cli.'
-                         'ext_alembic.alembic_script')) as mocked:
+        with mock.patch('oslo_db.sqlalchemy.migration_cli.'
+                        'ext_alembic.alembic_script') as mocked:
             mocked.ScriptDirectory().get_revision.side_effect = (
                 alembic.util.CommandError)
             self.alembic.config.get_main_option = mock.Mock()
@@ -138,7 +138,7 @@ class TestMigrationManager(test_base.BaseTestCase):
         self.ext = mock.Mock()
         self.ext.obj.version = mock.Mock(return_value=0)
         self.migration_manager._manager.extensions = [self.ext]
-        super(TestMigrationManager, self).setUp()
+        super().setUp()
 
     def test_manager_update(self):
         self.migration_manager.upgrade('head')
@@ -199,7 +199,7 @@ class TestMigrationMultipleExtensions(test_base.BaseTestCase):
         self.second_ext.obj.downgrade.return_value = 100
         self.migration_manager._manager.extensions = [self.first_ext,
                                                       self.second_ext]
-        super(TestMigrationMultipleExtensions, self).setUp()
+        super().setUp()
 
     def test_upgrade_right_order(self):
         results = self.migration_manager.upgrade(None)

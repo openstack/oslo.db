@@ -20,7 +20,7 @@ from oslo_db.tests import base as test_base
 
 
 @enginefacade.transaction_context_provider
-class Context(object):
+class Context:
     pass
 
 
@@ -35,7 +35,7 @@ class _DbTestCase(
 ):
 
     def setUp(self):
-        super(_DbTestCase, self).setUp()
+        super().setUp()
 
         self.engine = enginefacade.writer.get_engine()
         self.sessionmaker = enginefacade.writer.get_sessionmaker()

@@ -119,7 +119,7 @@ class FakeTableWithIndexes(Base):
     )
 
 
-class FakeTableClassicalyMapped(object):
+class FakeTableClassicalyMapped:
     pass
 
 
@@ -134,7 +134,7 @@ reg = registry()
 reg.map_imperatively(FakeTableClassicalyMapped, fake_table)
 
 
-class FakeModel(object):
+class FakeModel:
     def __init__(self, values):
         self.values = values
 
@@ -157,7 +157,7 @@ class FakeModel(object):
 
 class TestPaginateQuery(test_base.BaseTestCase):
     def setUp(self):
-        super(TestPaginateQuery, self).setUp()
+        super().setUp()
 
         self.query = mock.Mock()
         self.mock_asc = self.useFixture(
@@ -599,7 +599,7 @@ class TestGetUniqueKeys(test_base.BaseTestCase):
 
     def test_cache(self):
 
-        class CacheTable(object):
+        class CacheTable:
             info = {}
             constraints_called = 0
             indexes_called = 0
@@ -614,7 +614,7 @@ class TestGetUniqueKeys(test_base.BaseTestCase):
                 self.indexes_called += 1
                 return []
 
-        class CacheModel(object):
+        class CacheModel:
             pass
 
         table = CacheTable()
@@ -684,7 +684,7 @@ class TestMigrationUtils(db_test_base._DbTestCase):
     """Class for testing utils that are used in db migrations."""
 
     def setUp(self):
-        super(TestMigrationUtils, self).setUp()
+        super().setUp()
         self.meta = MetaData()
         self.conn = self.engine.connect()
 
@@ -836,7 +836,7 @@ class MySQLTestMigrations(TestMigrationUtils,
 class TestConnectionUtils(test_base.BaseTestCase):
 
     def setUp(self):
-        super(TestConnectionUtils, self).setUp()
+        super().setUp()
 
         self.full_credentials = {'backend': 'postgresql+psycopg2',
                                  'database': 'test',
@@ -954,7 +954,7 @@ class MyModelSoftDeleted(declarative_base(), models.ModelBase,
 class TestModelQuery(test_base.BaseTestCase):
 
     def setUp(self):
-        super(TestModelQuery, self).setUp()
+        super().setUp()
 
         self.session = mock.MagicMock()
         self.session.query.return_value = self.session.query
@@ -1029,7 +1029,7 @@ class TestModelQuery(test_base.BaseTestCase):
 
 class TestUtils(db_test_base._DbTestCase):
     def setUp(self):
-        super(TestUtils, self).setUp()
+        super().setUp()
         meta = MetaData()
         self.test_table = Table(
             'test_table',

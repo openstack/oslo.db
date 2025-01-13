@@ -1,5 +1,3 @@
-# coding=utf-8
-
 # Copyright (c) 2012 Rackspace Hosting
 # All Rights Reserved.
 #
@@ -59,7 +57,7 @@ class RegexpTable(BASE, models.ModelBase):
 class RegexpFilterTestCase(db_test_base._DbTestCase):
 
     def setUp(self):
-        super(RegexpFilterTestCase, self).setUp()
+        super().setUp()
         meta = MetaData()
         test_table = Table(_REGEXP_TABLE_NAME, meta,
                            Column('id', Integer, primary_key=True,
@@ -95,7 +93,7 @@ class RegexpFilterTestCase(db_test_base._DbTestCase):
 
 class SQLiteSavepointTest(db_test_base._DbTestCase):
     def setUp(self):
-        super(SQLiteSavepointTest, self).setUp()
+        super().setUp()
         meta = MetaData()
         self.test_table = Table(
             "test_table", meta,
@@ -180,21 +178,21 @@ class SQLiteSavepointTest(db_test_base._DbTestCase):
             )
 
 
-class FakeDBAPIConnection(object):
+class FakeDBAPIConnection:
     def cursor(self):
         return FakeCursor()
 
 
-class FakeCursor(object):
+class FakeCursor:
     def execute(self, sql):
         pass
 
 
-class FakeConnectionProxy(object):
+class FakeConnectionProxy:
     pass
 
 
-class FakeConnectionRec(object):
+class FakeConnectionRec:
     pass
 
 
@@ -302,13 +300,13 @@ class MySQLDefaultModeTestCase(db_test_base._MySQLOpportunisticTestCase):
 class MySQLModeTestCase(db_test_base._MySQLOpportunisticTestCase):
 
     def __init__(self, *args, **kwargs):
-        super(MySQLModeTestCase, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # By default, run in empty SQL mode.
         # Subclasses override this with specific modes.
         self.mysql_mode = ''
 
     def setUp(self):
-        super(MySQLModeTestCase, self).setUp()
+        super().setUp()
         mode_engine = session.create_engine(
             self.engine.url,
             mysql_sql_mode=self.mysql_mode)
@@ -347,7 +345,7 @@ class MySQLStrictAllTablesModeTestCase(MySQLModeTestCase):
     "Test data integrity enforcement in MySQL STRICT_ALL_TABLES mode."
 
     def __init__(self, *args, **kwargs):
-        super(MySQLStrictAllTablesModeTestCase, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.mysql_mode = 'STRICT_ALL_TABLES'
 
     def test_string_too_long(self):
@@ -366,13 +364,13 @@ class MySQLTraditionalModeTestCase(MySQLStrictAllTablesModeTestCase):
     """
 
     def __init__(self, *args, **kwargs):
-        super(MySQLTraditionalModeTestCase, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.mysql_mode = 'TRADITIONAL'
 
 
 class EngineFacadeTestCase(test_base.BaseTestCase):
     def setUp(self):
-        super(EngineFacadeTestCase, self).setUp()
+        super().setUp()
 
         self.facade = session.EngineFacade('sqlite://')
 
@@ -688,7 +686,7 @@ class CreateEngineTest(test_base.BaseTestCase):
     """
 
     def setUp(self):
-        super(CreateEngineTest, self).setUp()
+        super().setUp()
         self.args = {'connect_args': {}}
 
     def test_queuepool_args(self):

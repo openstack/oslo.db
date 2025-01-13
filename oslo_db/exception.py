@@ -58,7 +58,7 @@ class DBError(CausedByException):
 
     def __init__(self, inner_exception=None, cause=None):
         self.inner_exception = inner_exception
-        super(DBError, self).__init__(str(inner_exception), cause)
+        super().__init__(str(inner_exception), cause)
 
 
 class DBDuplicateEntry(DBError):
@@ -84,7 +84,7 @@ class DBDuplicateEntry(DBError):
     def __init__(self, columns=None, inner_exception=None, value=None):
         self.columns = columns or []
         self.value = value
-        super(DBDuplicateEntry, self).__init__(inner_exception)
+        super().__init__(inner_exception)
 
 
 class DBConstraintError(DBError):
@@ -101,7 +101,7 @@ class DBConstraintError(DBError):
     def __init__(self, table, check_name, inner_exception=None):
         self.table = table
         self.check_name = check_name
-        super(DBConstraintError, self).__init__(inner_exception)
+        super().__init__(inner_exception)
 
 
 class DBReferenceError(DBError):
@@ -123,7 +123,7 @@ class DBReferenceError(DBError):
         self.constraint = constraint
         self.key = key
         self.key_table = key_table
-        super(DBReferenceError, self).__init__(inner_exception)
+        super().__init__(inner_exception)
 
 
 class DBNonExistentConstraint(DBError):
@@ -138,7 +138,7 @@ class DBNonExistentConstraint(DBError):
     def __init__(self, table, constraint, inner_exception=None):
         self.table = table
         self.constraint = constraint
-        super(DBNonExistentConstraint, self).__init__(inner_exception)
+        super().__init__(inner_exception)
 
 
 class DBNonExistentTable(DBError):
@@ -150,7 +150,7 @@ class DBNonExistentTable(DBError):
 
     def __init__(self, table, inner_exception=None):
         self.table = table
-        super(DBNonExistentTable, self).__init__(inner_exception)
+        super().__init__(inner_exception)
 
 
 class DBNonExistentDatabase(DBError):
@@ -162,7 +162,7 @@ class DBNonExistentDatabase(DBError):
 
     def __init__(self, database, inner_exception=None):
         self.database = database
-        super(DBNonExistentDatabase, self).__init__(inner_exception)
+        super().__init__(inner_exception)
 
 
 class DBDeadlock(DBError):
@@ -175,7 +175,7 @@ class DBDeadlock(DBError):
     """
 
     def __init__(self, inner_exception=None):
-        super(DBDeadlock, self).__init__(inner_exception)
+        super().__init__(inner_exception)
 
 
 class DBInvalidUnicodeParameter(Exception):
@@ -187,7 +187,7 @@ class DBInvalidUnicodeParameter(Exception):
     """
 
     def __init__(self):
-        super(DBInvalidUnicodeParameter, self).__init__(
+        super().__init__(
             _("Invalid Parameter: Encoding directive wasn't provided."))
 
 
@@ -198,7 +198,7 @@ class DBMigrationError(DBError):
     Raised when migrations couldn't be completed successfully.
     """
     def __init__(self, message):
-        super(DBMigrationError, self).__init__(message)
+        super().__init__(message)
 
 
 class DBConnectionError(DBError):
@@ -227,7 +227,7 @@ class InvalidSortKey(Exception):
     """A sort key destined for database query usage is invalid."""
 
     def __init__(self, key=None):
-        super(InvalidSortKey, self).__init__(
+        super().__init__(
             _("Sort key supplied is invalid: %s") % key)
         self.key = key
 
