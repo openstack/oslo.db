@@ -1016,10 +1016,13 @@ class TestModelQuery(test_base.BaseTestCase):
             MyModelSoftDeletedProjectId,
             session=self.session, project_id=(10, None))
 
-        self.assertEqual(
+        self.assertRegex(
+            str(
+                mock_query.filter.call_args[0][0].
+                compile(compile_kwargs={"render_postcompile": True})
+            ),
             'soft_deleted_project_id_test_model.project_id'
-            ' IN (:project_id_1, NULL)',
-            str(mock_query.filter.call_args[0][0])
+            r' IN \(:project_id.+, (?::project_id.+|NULL)\)',
         )
 
     def test_model_query_common(self):
