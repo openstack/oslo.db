@@ -303,6 +303,8 @@ def _init_connection_args(url, engine_args, kw):
         # replace it with StaticPool.
         engine_args["poolclass"] = pool.StaticPool
         engine_args["connect_args"]["check_same_thread"] = False
+        # NOTE(amorin): see https://github.com/python/cpython/issues/118172
+        engine_args["connect_args"]["cached_statements"] = 0
     elif issubclass(pool_class, pool.QueuePool):
         # SQLAlchemy 2.0 uses QueuePool for sqlite file DBs; put NullPool
         # back to avoid compatibility issues

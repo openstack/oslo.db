@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Disable cached statement on sqlite3 to avoid multithreading cache
+    inconsistencies since python 3.12.
+    See related bug on https://github.com/python/cpython/issues/118172
