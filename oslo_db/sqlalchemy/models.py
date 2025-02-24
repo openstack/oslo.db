@@ -20,7 +20,7 @@
 SQLAlchemy models.
 """
 
-import debtcollector
+import debtcollector.removals
 from oslo_utils import timeutils
 from sqlalchemy import Column
 from sqlalchemy import DateTime
