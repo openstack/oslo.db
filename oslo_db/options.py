@@ -56,6 +56,24 @@ database_opts = [
         ),
         secret=True,
     ),
+    cfg.BoolOpt(
+        'synchronous_reader',
+        default=True,
+        help=(
+            'Whether or not to assume a reader context needs to guarantee '
+            'it can read data committed by a writer assuming replication '
+            'lag is present; defaults to True. When False, a reader '
+            'context works the same as async_reader and will select the '
+            'slave database if present. When using a galera cluster, this '
+            'can be set to False only if you set mysql_wsrep_sync_wait to 1 '
+            '(this will guarantee that the reader will wait until writesets '
+            'are committed).'
+            'Note that this may incur a performance degradation within the '
+            'galera cluster. '
+            'Note also that this parameter has no effect if you do not set '
+            'any slave_connection.'
+        ),
+    ),
     cfg.StrOpt(
         'mysql_sql_mode',
         default='TRADITIONAL',

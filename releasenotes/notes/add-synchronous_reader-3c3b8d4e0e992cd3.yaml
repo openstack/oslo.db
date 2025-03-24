@@ -1,0 +1,15 @@
+---
+features:
+  - |
+    Add a new parameter named ``synchronous_reader`` for sqlalchemy backend so
+    an operator can choose from configuration file if reader context should
+    be synchronous or not.
+    When ``synchronous_reader`` is set to ``True`` (the default), a database
+    reader context will guarantee it can read data from a writer context by
+    reusing the same ``connection`` parameter, thus ignoring the
+    ``slave_connection`` parameter.
+    When ``synchronous_reader`` is set to ``False``, a database reader context
+    works the same as an async_reader and will select the ``slave_connection``
+    parameter to connect to the database if present.
+    When setting this parameter to ``False``, make sure your cluster lag is
+    not a problem or set ``mysql_wsrep_sync_wait`` accordingly.
