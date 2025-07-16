@@ -1053,6 +1053,48 @@ class TestDeadlock(TestsExceptionFilter):
         )
 
 
+class TestMariaDBConsistencyError(TestsExceptionFilter):
+    """Test MariaDB consistency error detection."""
+
+    statement = ('UPDATE users SET status = :status_1 '
+                 'WHERE users.id = :id_1')
+    params = {
+        'status_1': 'active',
+        'id_1': 123
+    }
+
+    def _run_consistency_error_test(
+        self, dialect_name, message,
+        orig_exception_cls=TestsExceptionFilter.OperationalError):
+        self._run_test(
+            dialect_name, self.statement,
+            orig_exception_cls(message),
+            exception.DBConsistencyError,
+            params=self.params
+        )
+
+    def test_mariadb_pymysql_consistency_error(self):
+        self._run_consistency_error_test(
+            "mysql",
+            "(1020, \"Record has changed since "
+            "last read in table 'test_table'\")"
+        )
+
+    def test_mariadb_mysqlconnector_consistency_error(self):
+        self._run_consistency_error_test(
+            "mysql",
+            "1020 (HY000): Record has changed since "
+            "last read in table 'test_table'"
+        )
+
+    def test_mariadb_consistency_error_with_details(self):
+        self._run_consistency_error_test(
+            "mysql",
+            "(1020, \"Record has changed since last read "
+            "in table 'users' (transaction id 12345)\")"
+        )
+
+
 class TestDataError(TestsExceptionFilter):
     def _run_bad_data_test(self, dialect_name, message, error_class):
         self._run_test(dialect_name,

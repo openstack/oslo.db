@@ -92,6 +92,25 @@ def _deadlock_error(operational_error, match, engine_name, is_disconnect):
     raise exception.DBDeadlock(operational_error)
 
 
+@filters("mysql", sqla_exc.OperationalError,
+         r"^.*\b1020\b.*Record has changed since last read.*")
+def _mariadb_consistency_error(operational_error, match, engine_name,
+                               is_disconnect):
+    """Filter for MariaDB consistency error.
+
+    MariaDB under REPEATABLE-READ isolation level can raise error 1020
+    when it detects that a row has changed since it was last read in the
+    current transaction. This is part of MariaDB's transaction validation
+    model and typically indicates a transient condition that can be resolved
+    by retrying the transaction.
+
+    Example error message:
+        (OperationalError) (pymysql.err.OperationalError) (1020,
+        "Record has changed since last read in table 'table_name'")
+    """
+    raise exception.DBConsistencyError(operational_error)
+
+
 @filters("mysql", sqla_exc.IntegrityError,
          r"^.*\b1062\b.*Duplicate entry '(?P<value>.*)'"
          r" for key '(?P<columns>[^']+)'.*$")
