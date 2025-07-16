@@ -167,15 +167,30 @@ class DBNonExistentDatabase(DBError):
 
 class DBDeadlock(DBError):
 
-    """Database dead lock error.
+    """Database deadlock error.
 
-    Deadlock is a situation that occurs when two or more different database
-    sessions have some data locked, and each database session requests a lock
-    on the data that another, different, session has already locked.
+    Raised when a database operation fails due to concurrent access conflicts,
+    including traditional deadlocks where two or more database sessions have
+    conflicting locks, as well as other transient concurrency issues like
+    consistency validation failures. These conditions are typically resolved
+    by retrying the transaction.
     """
 
     def __init__(self, inner_exception=None):
         super().__init__(inner_exception)
+
+
+class DBConsistencyError(DBDeadlock):
+
+    """Database consistency error.
+
+    Raised when a database operation fails due to consistency requirements,
+    such as when MariaDB detects that a row has changed since it was last
+    read in the current transaction under REPEATABLE-READ isolation level.
+    This is a subclass of DBDeadlock as it represents the same kind of
+    transient concurrency issue that can be resolved by retrying the
+    transaction.
+    """
 
 
 class DBInvalidUnicodeParameter(Exception):
