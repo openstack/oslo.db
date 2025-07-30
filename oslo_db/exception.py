@@ -174,9 +174,6 @@ class DBDeadlock(DBError):
     on the data that another, different, session has already locked.
     """
 
-    def __init__(self, inner_exception=None):
-        super().__init__(inner_exception)
-
 
 class DBInvalidUnicodeParameter(Exception):
 
@@ -197,8 +194,6 @@ class DBMigrationError(DBError):
 
     Raised when migrations couldn't be completed successfully.
     """
-    def __init__(self, message):
-        super().__init__(message)
 
 
 class DBConnectionError(DBError):
@@ -207,8 +202,6 @@ class DBConnectionError(DBError):
 
     Raised when database connection is failed.
     """
-
-    pass
 
 
 class DBDataError(DBError):
