@@ -1,0 +1,23 @@
+---
+features:
+  - |
+    Added support for detecting and handling MariaDB error 1020 "Record has
+    changed since last read" which occurs under REPEATABLE-READ isolation
+    level when MariaDB detects that a row has changed since it was last read
+    in the current transaction. This error is now wrapped in a new
+    ``DBConsistencyError`` exception class that inherits from ``DBDeadlock``,
+    ensuring that existing retry decorators and error handling code will
+    automatically handle this transient concurrency condition.
+fixes:
+  - |
+    Fixed handling of MariaDB error 1020 that was previously not properly
+    categorized by oslo.db's exception filtering system. This error, which
+    can occur in OpenStack services like Nova and Keystone when using MariaDB
+    with REPEATABLE-READ isolation level, is now properly wrapped in a
+    ``DBConsistencyError`` exception (a subclass of ``DBDeadlock``) instead
+    of being passed through as a generic ``OperationalError``. This ensures
+    that existing retry mechanisms that handle deadlock-like conditions will
+    automatically work with this MariaDB-specific consistency error.
+
+    For more details, see `bug 2116186
+    <https://bugs.launchpad.net/nova/+bug/2116186>`_.
