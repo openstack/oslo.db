@@ -1,6 +1,6 @@
 - job:
-    name: oslodb-tox-py39-tips
-    parent: openstack-tox-py39
+    name: oslodb-tox-py310-tips
+    parent: openstack-tox-py310
     description: |
       Run unit tests for oslo.db with main branch of important libs.
       Takes advantage of the base tox job's install-siblings feature.
@@ -42,11 +42,11 @@
     name: oslodb-tox-unit-tips
     check:
       jobs:
-        - oslodb-tox-py39-tips
+        - oslodb-tox-py310-tips
         - oslodb-tox-py312-tips
     gate:
       jobs:
-        - oslodb-tox-py39-tips
+        - oslodb-tox-py310-tips
         - oslodb-tox-py312-tips
 
 - project:
