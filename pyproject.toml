@@ -29,8 +29,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://docs.openstack.org/oslo.db/latest"
-Repository = "https://opendev.org/openstack/oslo.db/"
+Homepage = "https://docs.openstack.org/oslo.db"
+Repository = "https://opendev.org/openstack/oslo.db"
 
 [project.optional-dependencies]
 # So e.g. nova can test-depend on oslo.db[mysql]
