@@ -223,7 +223,7 @@ class _AbstractTransactionFactory:
             "flush_on_subtransaction": False,
         }
         self._facade_cfg = {
-            "synchronous_reader": True,
+            "synchronous_reader": _Default(True),
             "on_engine_create": [],
         }
 
@@ -495,6 +495,9 @@ class _AbstractTransactionFactory:
         maker_args = self._args_for_conf(self._maker_cfg, conf)
         return maker_args
 
+    def _facade_args_for_conf(self, conf):
+        return self._args_for_conf(self._facade_cfg, conf)
+
     @property
     def is_started(self):
         """True if this :class:`._TransactionFactory` is already started."""
@@ -544,7 +547,8 @@ class _AbstractTransactionFactory:
                     self._writer_maker,
                 )
 
-            self.synchronous_reader = self._facade_cfg["synchronous_reader"]
+            facade_args = self._facade_args_for_conf(conf)
+            self.synchronous_reader = facade_args["synchronous_reader"]
 
             # set up _started last, so that in case of exceptions
             # we try the whole thing again and report errors
