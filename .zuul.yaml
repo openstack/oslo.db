@@ -19,8 +19,8 @@
       zuul_work_dir: src/opendev.org/openstack/oslo.db
 
 - job:
-    name: oslodb-tox-py312-tips
-    parent: openstack-tox-py312
+    name: oslodb-tox-py313-tips
+    parent: openstack-tox-py313
     description: |
       Run unit tests for oslo.db with main branch of important libs.
       Takes advantage of the base tox job's install-siblings feature.
@@ -43,11 +43,11 @@
     check:
       jobs:
         - oslodb-tox-py310-tips
-        - oslodb-tox-py312-tips
+        - oslodb-tox-py313-tips
     gate:
       jobs:
         - oslodb-tox-py310-tips
-        - oslodb-tox-py312-tips
+        - oslodb-tox-py313-tips
 
 - project:
     templates:
