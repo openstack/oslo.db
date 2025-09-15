@@ -1,0 +1,9 @@
+---
+upgrade:
+  - |
+    The ``oslo_db.sqlalchemy.enginefacade.LegacyEngineFacade`` class and related
+    helpers, namely ``_TransactionFactory.get_legacy_facade``,
+    ``_TransactionContextManager.get_legacy_facade`` and ``get_legacy_facade``
+    from the same module, have all been removed. The ``LegacyEngineFacade``
+    class has been deprecated since 1.12.0 in favour of using the
+    ``oslo_db.sqlalchemy.enginefacade`` module directly.

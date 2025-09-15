@@ -1391,64 +1391,6 @@ class AsyncReaderWSlaveMockFacadeTest(MockFacadeTest):
     slave_uri = 'some_slave_connection'
 
 
-class LegacyIntegrationtest(db_test_base._DbTestCase):
-
-    def test_legacy_integration(self):
-        legacy_facade = enginefacade.get_legacy_facade()
-        self.assertTrue(
-            legacy_facade.get_engine() is
-            enginefacade._context_manager._factory._writer_engine
-        )
-
-        self.assertTrue(
-            enginefacade.get_legacy_facade() is legacy_facade
-        )
-
-    def test_get_sessionmaker(self):
-        legacy_facade = enginefacade.get_legacy_facade()
-        self.assertTrue(
-            legacy_facade.get_sessionmaker() is
-            enginefacade._context_manager._factory._writer_maker
-        )
-
-    def test_legacy_facades_from_different_context_managers(self):
-        transaction_context1 = enginefacade.transaction_context()
-        transaction_context2 = enginefacade.transaction_context()
-
-        transaction_context1.configure(connection='sqlite:///?conn1')
-        transaction_context2.configure(connection='sqlite:///?conn2')
-
-        legacy1 = transaction_context1.get_legacy_facade()
-        legacy2 = transaction_context2.get_legacy_facade()
-
-        self.assertNotEqual(legacy1, legacy2)
-
-    def test_legacy_not_started(self):
-
-        factory = enginefacade._TransactionFactory()
-
-        self.assertRaises(
-            exception.CantStartEngineError,
-            factory.get_legacy_facade
-        )
-
-        legacy_facade = factory.get_legacy_facade()
-        self.assertRaises(
-            exception.CantStartEngineError,
-            legacy_facade.get_session
-        )
-
-        self.assertRaises(
-            exception.CantStartEngineError,
-            legacy_facade.get_session
-        )
-
-        self.assertRaises(
-            exception.CantStartEngineError,
-            legacy_facade.get_engine
-        )
-
-
 class ThreadingTest(db_test_base._DbTestCase):
     """Test copy/pickle on new threads using real connections and sessions."""
 
