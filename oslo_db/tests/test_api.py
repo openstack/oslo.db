@@ -18,15 +18,11 @@
 from unittest import mock
 
 from oslo_config import cfg
-from oslo_utils import importutils
+import sqlalchemy
 
 from oslo_db import api
 from oslo_db import exception
 from oslo_db.tests import base as test_base
-
-sqla = importutils.try_import('sqlalchemy')
-if not sqla:
-    raise ImportError("Unable to import module 'sqlalchemy'.")
 
 
 def get_backend():
@@ -47,7 +43,7 @@ class DBAPI:
 
         if self.error_counter > 0:
             self.error_counter -= 1
-            orig = sqla.exc.DBAPIError(False, False, False)
+            orig = sqlalchemy.exc.DBAPIError(False, False, False)
             orig.args = [2006, 'Test raise operational error']
             e = exception.DBConnectionError(orig)
             raise e
