@@ -57,7 +57,7 @@ def _setup_logging(connection_debug=0):
     50=Processed only messages with INFO level or higher
     100=Processed only messages with DEBUG level
     """
-    if connection_debug >= 0:
+    if connection_debug > 0:
         logger = logging.getLogger("sqlalchemy.engine")
         if connection_debug == 100:
             logger.setLevel(logging.DEBUG)
