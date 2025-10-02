@@ -21,7 +21,7 @@ repos:
     rev: 1.8.6
     hooks:
       - id: bandit
-        args: ['-x', 'tests', '-s', 'B105,B311']
+        args: ['-c', 'pyproject.toml']
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.20.0
     hooks:
