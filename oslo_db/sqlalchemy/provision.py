@@ -139,7 +139,7 @@ class DatabaseResource(testresources.TestResourceManager):
             url = backend.url
 
         _enginefacade.configure(
-            logging_name="{}@{}".format(self.database_type, db_token))
+            logging_name=f"{self.database_type}@{db_token}")
 
         _enginefacade._factory._start(connection=url)
         engine = _enginefacade._factory._writer_engine

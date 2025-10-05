@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncIterator
 import contextlib
 import contextvars
 import functools
@@ -20,7 +21,6 @@ import itertools
 import logging
 import operator
 from typing import AsyncContextManager
-from typing import AsyncIterator
 from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union

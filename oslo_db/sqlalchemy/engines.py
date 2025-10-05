@@ -530,10 +530,10 @@ def _add_trace_comments(engine):
 
         if our_line:
             trace = "; ".join(
-                "File: {} ({}) {}".format(line[0], line[1], line[2])
+                f"File: {line[0]} ({line[1]}) {line[2]}"
                 # include three lines of context.
                 for line in stack[our_line - 3: our_line]
             )
-            statement = "{}  -- {}".format(statement, trace)
+            statement = f"{statement}  -- {trace}"
 
         return statement, parameters

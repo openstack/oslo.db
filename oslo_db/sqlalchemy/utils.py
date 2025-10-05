@@ -58,7 +58,7 @@ _VALID_SORT_DIR = [
 def sanitize_db_url(url):
     match = _DBURL_REGEX.match(url)
     if match:
-        return '{}****:****{}'.format(url[:match.start(1)], url[match.end(2):])
+        return f'{url[:match.start(1)]}****:****{url[match.end(2):]}'
     return url
 
 
@@ -772,7 +772,7 @@ class DialectSingleFunctionDispatcher(DialectFunctionDispatcher):
         else:
             raise ValueError(
                 "No default function found for driver: %r" %
-                ("{}+{}".format(dbname, driver)))
+                (f"{dbname}+{driver}"))
 
     def _dispatch_on_db_driver(self, dbname, driver, arg, kw):
         fn = self._matches(dbname, driver)
