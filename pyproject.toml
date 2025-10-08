@@ -52,3 +52,7 @@ alembic = "oslo_db.sqlalchemy.migration_cli.ext_alembic:AlembicExtension"
 packages = [
     "oslo_db"
 ]
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ['B105', 'B311']
