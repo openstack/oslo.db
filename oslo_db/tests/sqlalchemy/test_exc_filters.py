@@ -150,16 +150,13 @@ class TestsExceptionFilter(_SQLAExceptionMatcher, test_base.BaseTestCase):
             mock.patch.object(engine.dialect, "name", dialect_name),
             mock.patch.object(engine.dialect,
                               "is_disconnect",
-                              lambda *args: is_disconnect)
-        ]
-        if compat.sqla_2:
-            patches.append(
-                mock.patch.object(
-                    engine.dialect,
-                    "loaded_dbapi",
-                    mock.Mock(Error=self.Error),
-                )
+                              lambda *args: is_disconnect),
+            mock.patch.object(
+                engine.dialect,
+                "loaded_dbapi",
+                mock.Mock(Error=self.Error),
             )
+        ]
 
         with test_utils.nested(*patches):
             yield
@@ -756,7 +753,7 @@ class TestExceptionCauseMySQLSavepoint(
             session.execute(sql.text("select 1"))
 
             # close underying DB connection
-            compat.driver_connection(session.connection()).close()
+            session.connection().connection.driver_connection.close()
 
             # alternate approach, but same idea:
             # conn_id = session.scalar("select connection_id()")
@@ -781,7 +778,7 @@ class TestExceptionCauseMySQLSavepoint(
             session.execute(sql.text("select 1"))
 
             # close underying DB connection
-            compat.driver_connection(session.connection()).close()
+            session.connection().connection.driver_connection.close()
 
             # alternate approach, but same idea:
             # conn_id = session.scalar("select connection_id()")

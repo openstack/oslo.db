@@ -20,7 +20,6 @@ from sqlalchemy import event
 from sqlalchemy import exc as sqla_exc
 
 from oslo_db import exception
-from oslo_db.sqlalchemy import compat
 
 LOG = logging.getLogger(__name__)
 
@@ -456,8 +455,7 @@ def handler(context):
     if isinstance(context.original_exception, exception.DBError):
         return
 
-    dialect = compat.dialect_from_exception_context(context)
-    for per_dialect in _dialect_registries(dialect):
+    for per_dialect in _dialect_registries(context.dialect):
         for exc in (context.sqlalchemy_exception, context.original_exception):
             for super_ in exc.__class__.__mro__:
                 if super_ not in per_dialect:
@@ -473,7 +471,7 @@ def handler(context):
                         fn(
                             exc,
                             match,
-                            dialect.name,
+                            context.dialect.name,
                             context.is_disconnect,
                         )
                     except exception.DBError as dbe:

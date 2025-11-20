@@ -622,13 +622,7 @@ class CreateEngineTest(test_base.BaseTestCase):
             'max_overflow', self.args)
 
         self.assertFalse(self.args['connect_args'])
-
-        if not compat.sqla_2:
-            # NullPool is the default for file based connections,
-            # no need to specify this
-            self.assertNotIn('poolclass', self.args)
-        else:
-            self.assertIs(self.args["poolclass"], NullPool)
+        self.assertIs(self.args["poolclass"], NullPool)
 
     def _test_mysql_connect_args_default(self, connect_args):
         self.assertEqual({'charset': 'utf8', 'use_unicode': 1},
@@ -741,18 +735,18 @@ class ProcessGuardTest(db_test_base._DbTestCase):
 
         with mock.patch("os.getpid", get_parent_pid):
             with self.engine.connect() as conn:
-                dbapi_id = id(compat.driver_connection(conn))
+                dbapi_id = id(conn.connection.driver_connection)
 
         with mock.patch("os.getpid", get_child_pid):
             with self.engine.connect() as conn:
-                new_dbapi_id = id(compat.driver_connection(conn))
+                new_dbapi_id = id(conn.connection.driver_connection)
 
         self.assertNotEqual(dbapi_id, new_dbapi_id)
 
         # ensure it doesn't trip again
         with mock.patch("os.getpid", get_child_pid):
             with self.engine.connect() as conn:
-                newer_dbapi_id = id(compat.driver_connection(conn))
+                newer_dbapi_id = id(conn.connection.driver_connection)
 
         self.assertEqual(new_dbapi_id, newer_dbapi_id)
 

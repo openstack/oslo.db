@@ -19,20 +19,3 @@ _vers = versionutils.convert_version_to_tuple(__version__)
 sqla_2 = _vers >= (2, )
 
 native_pre_ping_event_support = _vers >= (2, 0, 5)
-
-
-def dialect_from_exception_context(ctx):
-    if sqla_2:
-        # SQLAlchemy 2.0 still has context.engine, however if the
-        # exception context is called in the context of a ping handler,
-        # engine is not present.  need to use dialect instead
-        return ctx.dialect
-    else:
-        return ctx.engine.dialect
-
-
-def driver_connection(connection):
-    if sqla_2:
-        return connection.connection.driver_connection
-    else:
-        return connection.connection.connection
