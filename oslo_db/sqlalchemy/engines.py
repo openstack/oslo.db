@@ -16,7 +16,6 @@
 """Core SQLAlchemy connectivity routines.
 """
 
-import functools
 import itertools
 import logging
 import os
@@ -26,14 +25,11 @@ import time
 import debtcollector.removals
 import debtcollector.renames
 import sqlalchemy
-from sqlalchemy import event
 from sqlalchemy import exc
 from sqlalchemy import pool
-from sqlalchemy import select
 
 from oslo_db import exception
 
-from oslo_db.sqlalchemy import compat
 from oslo_db.sqlalchemy import exc_filters
 from oslo_db.sqlalchemy import utils
 
@@ -50,65 +46,6 @@ def _thread_yield(dbapi_con, con_record):
     implemented by C libraries that eventlet cannot monkey patch.
     """
     time.sleep(0)
-
-
-def _connect_ping_listener(connection, branch):
-    """Ping the server at connection startup.
-
-    Ping the server at transaction begin and transparently reconnect
-    if a disconnect exception occurs.
-
-    This listener is used up until SQLAlchemy 2.0.5.  At 2.0.5, we use the
-    ``pool_pre_ping`` parameter instead of this event handler.
-
-    Note the current test suite in test_exc_filters still **tests** this
-    handler using all SQLAlchemy versions including 2.0.5 and greater.
-
-    """
-    if branch:
-        return
-
-    # turn off "close with result".  This can also be accomplished
-    # by branching the connection, however just setting the flag is
-    # more performant and also doesn't get involved with some
-    # connection-invalidation awkardness that occurs (see
-    # https://bitbucket.org/zzzeek/sqlalchemy/issue/3215/)
-    save_should_close_with_result = connection.should_close_with_result
-    connection.should_close_with_result = False
-    try:
-        # run a SELECT 1.   use a core select() so that
-        # any details like that needed by the backend are handled.
-        connection.scalar(select(1))
-    except exception.DBConnectionError:
-        # catch DBConnectionError, which is raised by the filter
-        # system.
-        # disconnect detected.  The connection is now
-        # "invalid", but the pool should be ready to return
-        # new connections assuming they are good now.
-        # run the select again to re-validate the Connection.
-        LOG.exception(
-            "Database connection was found disconnected; reconnecting"
-        )
-        # TODO(ralonsoh): drop this attr check once SQLAlchemy minimum version
-        # is 2.0.
-        if hasattr(connection, "rollback"):
-            connection.rollback()
-        connection.scalar(select(1))
-    finally:
-        connection.should_close_with_result = save_should_close_with_result
-        # TODO(ralonsoh): drop this attr check once SQLAlchemy minimum version
-        # is 2.0.
-        if hasattr(connection, "rollback"):
-            connection.rollback()
-
-
-# SQLAlchemy 2.0 is compatible here, however oslo.db's test suite
-# raises for all deprecation errors, so we have to check for 2.0
-# and wrap out a parameter that is deprecated
-if compat.sqla_2:
-    _connect_ping_listener = functools.partial(
-        _connect_ping_listener, branch=False
-    )
 
 
 def _setup_logging(connection_debug=0):
@@ -219,11 +156,9 @@ def create_engine(
 
     _vet_url(url)
 
-    _native_pre_ping = compat.native_pre_ping_event_support
-
     engine_args = {
         "pool_recycle": connection_recycle_time,
-        "pool_pre_ping": _native_pre_ping,
+        "pool_pre_ping": True,
         "connect_args": {},
         "logging_name": logging_name,
     }
@@ -256,13 +191,6 @@ def create_engine(
 
     # register alternate exception handler
     exc_filters.register_engine(engine_event_target)
-
-    if not _native_pre_ping:
-        # register engine connect handler.
-
-        event.listen(
-            engine_event_target, "engine_connect", _connect_ping_listener
-        )
 
     # initial connect + test
     # NOTE(viktors): the current implementation of _test_connection()
