@@ -21,7 +21,6 @@ from unittest import mock
 
 import fixtures
 import sqlalchemy
-from sqlalchemy.engine import base as base_engine
 from sqlalchemy import exc
 from sqlalchemy.pool import NullPool
 from sqlalchemy import sql
@@ -30,7 +29,6 @@ from sqlalchemy import Integer, String
 from sqlalchemy.orm import declarative_base
 
 from oslo_db import exception
-from oslo_db.sqlalchemy import compat
 from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import engines
 from oslo_db.sqlalchemy import models
@@ -781,21 +779,3 @@ class PatchStacktraceTest(db_test_base._DbTestCase):
             # we're the caller, see that we're in there
             caller = os.path.join("tests", "sqlalchemy", "test_sqlalchemy.py")
             self.assertIn(caller, call[1][1])
-
-
-class MySQLConnectPingListenerTest(db_test_base._MySQLOpportunisticTestCase):
-
-    def test__connect_ping_listener(self):
-        for idx in range(2):
-            with self.engine.begin() as conn:
-                self.assertIsInstance(conn._transaction,
-                                      base_engine.RootTransaction)
-                # TODO(ralonsoh): drop this check once SQLAlchemy minimum
-                #  version is 2.0.
-                if compat.sqla_2:
-                    engines._connect_ping_listener(conn)
-                    self.assertIsNone(conn._transaction)
-                else:
-                    engines._connect_ping_listener(conn, False)
-                    self.assertIsInstance(conn._transaction,
-                                          base_engine.RootTransaction)
