@@ -1143,6 +1143,7 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
             callable_fn.mysql,
             callable_fn.mysql_pymysql,
             callable_fn.postgresql,
+            callable_fn.postgresql_psycopg,
             callable_fn.postgresql_psycopg2,
             callable_fn.pyodbc
         ]:
@@ -1157,6 +1158,8 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
             callable_fn.mysql)
         dispatcher = dispatcher.dispatch_for("postgresql+*")(
             callable_fn.postgresql)
+        dispatcher = dispatcher.dispatch_for("postgresql+psycopg")(
+            callable_fn.postgresql_psycopg)
         dispatcher = dispatcher.dispatch_for("postgresql+psycopg2")(
             callable_fn.postgresql_psycopg2)
         dispatcher = dispatcher.dispatch_for("*+pyodbc")(
@@ -1229,9 +1232,14 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
             ValueError,
             dispatcher, "postgresql://s:t@localhost/test"
         )
-        self.assertEqual(
-            "No default function found for driver: 'postgresql+psycopg2'",
-            str(exc)
+        self.assertIn(
+            str(exc),
+            (
+                # SQLAlchemy < 2.1
+                "No default function found for driver: 'postgresql+psycopg2'",
+                # SQLAlchemy >= 2.1
+                "No default function found for driver: 'postgresql+psycopg'",
+            )
         )
 
     def test_multiple_no_dispatcher(self):
@@ -1382,24 +1390,44 @@ class TestDialectFunctionDispatcher(test_base.BaseTestCase):
         # TODO(zzzeek): there is a deterministic order here, but we might
         # want to tweak it, or maybe provide options.  default first?
         # most specific first?  is *+pyodbc or postgresql+* more specific?
-        self.assertEqual(
-            [
-                mock.call.postgresql('postgresql+pyodbc://', 1),
-                mock.call.pyodbc('postgresql+pyodbc://', 1),
-                mock.call.default('postgresql+pyodbc://', 1),
-                mock.call.mysql_pymysql('mysql+pymysql://', 2),
-                mock.call.mysql('mysql+pymysql://', 2),
-                mock.call.default('mysql+pymysql://', 2),
-                mock.call.postgresql_psycopg2('postgresql+psycopg2://', 4),
-                mock.call.postgresql('postgresql+psycopg2://', 4),
-                mock.call.default('postgresql+psycopg2://', 4),
-                # note this is called because we resolve the default
-                # DBAPI for the url
-                mock.call.postgresql_psycopg2('postgresql://', 5),
-                mock.call.postgresql('postgresql://', 5),
-                mock.call.default('postgresql://', 5),
-            ],
-            callable_fn.mock_calls
+        self.assertIn(
+            callable_fn.mock_calls,
+            (
+                # SQLAlchemy < 2.1
+                [
+                    mock.call.postgresql('postgresql+pyodbc://', 1),
+                    mock.call.pyodbc('postgresql+pyodbc://', 1),
+                    mock.call.default('postgresql+pyodbc://', 1),
+                    mock.call.mysql_pymysql('mysql+pymysql://', 2),
+                    mock.call.mysql('mysql+pymysql://', 2),
+                    mock.call.default('mysql+pymysql://', 2),
+                    mock.call.postgresql_psycopg2('postgresql+psycopg2://', 4),
+                    mock.call.postgresql('postgresql+psycopg2://', 4),
+                    mock.call.default('postgresql+psycopg2://', 4),
+                    # note this is called because we resolve the default
+                    # DBAPI for the url
+                    mock.call.postgresql_psycopg2('postgresql://', 5),
+                    mock.call.postgresql('postgresql://', 5),
+                    mock.call.default('postgresql://', 5),
+                ],
+                # SQLAlchemy >= 2.1
+                [
+                    mock.call.postgresql('postgresql+pyodbc://', 1),
+                    mock.call.pyodbc('postgresql+pyodbc://', 1),
+                    mock.call.default('postgresql+pyodbc://', 1),
+                    mock.call.mysql_pymysql('mysql+pymysql://', 2),
+                    mock.call.mysql('mysql+pymysql://', 2),
+                    mock.call.default('mysql+pymysql://', 2),
+                    mock.call.postgresql_psycopg2('postgresql+psycopg2://', 4),
+                    mock.call.postgresql('postgresql+psycopg2://', 4),
+                    mock.call.default('postgresql+psycopg2://', 4),
+                    # note this is called because we resolve the default
+                    # DBAPI for the url
+                    mock.call.postgresql_psycopg('postgresql://', 5),
+                    mock.call.postgresql('postgresql://', 5),
+                    mock.call.default('postgresql://', 5),
+                ]
+            )
         )
 
     def test_multiple_no_return_value(self):
