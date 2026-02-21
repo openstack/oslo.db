@@ -489,7 +489,7 @@ class MysqlConnectTest(db_test_base._MySQLOpportunisticTestCase):
         # If "SHOW VARIABLES LIKE 'sql_mode'" results in no row, then
         # we get a log indicating can't detect the mode.
 
-        log = self.useFixture(fixtures.FakeLogger(level=logging.WARN))
+        log = self.useFixture(fixtures.FakeLogger(level=logging.WARNING))
 
         mysql_conn = self.engine.raw_connection()
         self.addCleanup(mysql_conn.close)
@@ -544,7 +544,7 @@ class MysqlConnectTest(db_test_base._MySQLOpportunisticTestCase):
         # If "SHOW VARIABLES LIKE 'sql_mode'" results in a value that doesn't
         # include 'TRADITIONAL', then a warning is logged.
 
-        log = self.useFixture(fixtures.FakeLogger(level=logging.WARN))
+        log = self.useFixture(fixtures.FakeLogger(level=logging.WARNING))
         self._fixture(sql_mode='ANSI')
 
         self.assertIn("consider enabling TRADITIONAL or STRICT_ALL_TABLES",
@@ -554,7 +554,7 @@ class MysqlConnectTest(db_test_base._MySQLOpportunisticTestCase):
         # If "SHOW VARIABLES LIKE 'sql_mode'" results in a value that includes
         # 'TRADITIONAL', then no warning is logged.
 
-        log = self.useFixture(fixtures.FakeLogger(level=logging.WARN))
+        log = self.useFixture(fixtures.FakeLogger(level=logging.WARNING))
         self._fixture(sql_mode='TRADITIONAL')
 
         self.assertNotIn("consider enabling TRADITIONAL or STRICT_ALL_TABLES",
@@ -564,7 +564,7 @@ class MysqlConnectTest(db_test_base._MySQLOpportunisticTestCase):
         # If "SHOW VARIABLES LIKE 'sql_mode'" results in a value that includes
         # 'STRICT_ALL_TABLES', then no warning is logged.
 
-        log = self.useFixture(fixtures.FakeLogger(level=logging.WARN))
+        log = self.useFixture(fixtures.FakeLogger(level=logging.WARNING))
         self._fixture(sql_mode='TRADITIONAL')
 
         self.assertNotIn("consider enabling TRADITIONAL or STRICT_ALL_TABLES",
