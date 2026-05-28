@@ -9,14 +9,14 @@ authors = [
     {name = "OpenStack", email = "openstack-discuss@lists.openstack.org"},
 ]
 readme = {file = "README.rst", content-type = "text/x-rst"}
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 dynamic = ["version", "dependencies"]
 requires-python = ">=3.10"
 classifiers = [
+    "Development Status :: 5 - Production/Stable",
     "Environment :: OpenStack",
     "Intended Audience :: Information Technology",
     "Intended Audience :: System Administrators",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
@@ -31,6 +31,7 @@ classifiers = [
 [project.urls]
 Homepage = "https://docs.openstack.org/oslo.db"
 Repository = "https://opendev.org/openstack/oslo.db"
+"Bug Tracker" = "https://bugs.launchpad.net/oslo.db"
 
 [project.optional-dependencies]
 # So e.g. nova can test-depend on oslo.db[mysql]
@@ -56,10 +57,8 @@ test = [
 [project.entry-points."oslo.db.migration"]
 alembic = "oslo_db.sqlalchemy.migration_cli.ext_alembic:AlembicExtension"
 
-[tool.setuptools]
-packages = [
-    "oslo_db"
-]
+[tool.setuptools.packages.find]
+include = ["oslo_db*"]
 
 [tool.bandit]
 exclude_dirs = ["tests"]
