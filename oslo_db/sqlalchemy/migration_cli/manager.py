@@ -10,7 +10,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from debtcollector import removals
+import warnings
+
 import sqlalchemy
 from stevedore import enabled
 
@@ -25,15 +26,18 @@ def check_plugin_enabled(ext):
     return ext.obj.enabled
 
 
-@removals.remove(
-    message='Support for sqlalchemy-migrate and with it the migration manager '
-    'is deprecated for removal; consider migrating to and using alembic '
-    'directly',
-    version='8.3.0'
-)
 class MigrationManager:
 
     def __init__(self, migration_config, engine=None):
+        warnings.warn(
+            'oslo_db.sqlalchemy.migration_cli.manager.MigrationManager is '
+            'deprecated for removal in version 8.3.0. Support for '
+            'sqlalchemy-migrate and with it the migration manager is '
+            'deprecated for removal; consider migrating to and using alembic '
+            'directly',
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if engine is None:
             if migration_config.get('db_url'):
                 engine = sqlalchemy.create_engine(
