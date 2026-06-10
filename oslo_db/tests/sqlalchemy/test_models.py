@@ -203,7 +203,7 @@ class SoftDeleteMixinTest(db_test_base._DbTestCase):
 
     @mock.patch('oslo_utils.timeutils.utcnow')
     def test_soft_delete(self, mock_utcnow):
-        dt = datetime.datetime.now(datetime.timezone.utc).replace(
+        dt = datetime.datetime.now(datetime.UTC).replace(
             microsecond=0, tzinfo=None
         )
         mock_utcnow.return_value = dt
