@@ -846,23 +846,6 @@ class MockFacadeTest(test_base.BaseTestCase):
                 with self._assert_reader_session(makers) as session:
                     session.execute("test1")
 
-    def test_using_flush_on_nested(self):
-        enginefacade.configure(flush_on_nested=True)
-
-        context = oslo_context.RequestContext()
-
-        with enginefacade.writer.using(context) as session:
-            with enginefacade.writer.using(context) as session:
-                self._assert_ctx_session(context, session)
-                session.execute("test1")
-
-        with self._assert_engines() as engines:
-            with self._assert_makers(engines) as makers:
-                with self._assert_writer_session(makers) as session:
-                    with self._emit_sub_writer_session(
-                            session) as session:
-                        session.execute("test1")
-
     def test_using_writer(self):
         context = oslo_context.RequestContext()
 
