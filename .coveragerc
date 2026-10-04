@@ -1,8 +1,0 @@
-[run]
-branch = True
-source = oslo_db
-omit = oslo_db/tests/*
-
-[report]
-ignore_errors = True
-precision = 2
