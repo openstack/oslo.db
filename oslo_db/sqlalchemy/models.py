@@ -126,8 +126,8 @@ class ModelIterator:
 
 
 class TimestampMixin:
-    created_at = Column(DateTime, default=lambda: timeutils.utcnow())
-    updated_at = Column(DateTime, onupdate=lambda: timeutils.utcnow())
+    created_at = Column(DateTime, default=timeutils.utcnow)
+    updated_at = Column(DateTime, onupdate=timeutils.utcnow)
 
 
 class SoftDeleteMixin:
